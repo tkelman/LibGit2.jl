@@ -63,3 +63,11 @@ Base.hash(oid::Oid) = begin
     hash(oid.oid)
 end
 
+#TODO: hook this up when ccall is figured out
+#Base.cmp(oid1::Oid, oid2::Oid) = begin
+#    git_cmp = ccall((:git_oid_cmp, libgit2),
+#                    Cint,
+#                    (Ptr{Uint8}, Ptr{Uint8}),
+#                    oid1.oid, oid2.oid)
+#    return git_cmp
+#end
