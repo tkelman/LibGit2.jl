@@ -1,1 +1,1 @@
-# LibGit2
+# LibGit2.jl

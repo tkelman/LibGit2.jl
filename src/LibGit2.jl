@@ -1,5 +1,7 @@
 module LibGit2
 
-# package code goes here
+export Oid
+
+include("oid.jl")
 
 end # module

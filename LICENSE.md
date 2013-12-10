@@ -1,4 +1,4 @@
-The LibGit2.jl package is licensed under the MIT "Expat" License:
+The LibGit2.jl.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2013: Jake Bolewski.
 >
