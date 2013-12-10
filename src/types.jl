@@ -1,7 +1,7 @@
 #TODO: is this valid for 32 & 64 bit sytems
 typealias GitAtomic Clong
 
-immutable GitRefCount
+type GitRefCount
     refcount::GitAtomic
     owner::Ptr{Void}
 
@@ -15,7 +15,7 @@ end
 # int (*git_vector_cmp)(const void *, const void *)
 typealias GitVectorCmp Ptr{Void}
 
-immutable GitVector
+type GitVector
     _alloc_size::Csize_t
     _cmp::GitVectorCmp
     contents::Ptr{Ptr{Void}}
@@ -31,7 +31,7 @@ immutable GitVector
     end
 end
 
-immutable GitConfig
+type GitConfig
     #git_refcount rc
     rc_refcount::Clong
     rc_owner::Ptr{Void}

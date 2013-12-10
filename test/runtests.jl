@@ -1,4 +1,4 @@
-testnames = ["oid"]
+testnames = ["oid", "types"]
 
 tests = ARGS==["all"] ? testnames : ARGS
 

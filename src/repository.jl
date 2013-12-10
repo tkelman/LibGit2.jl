@@ -1,12 +1,15 @@
 
-typealias CGitRepository Void
 
-immutable Repository
-    ptr::Ptr{CGitRepository}
+Repository(path::String) = begin
+    bpath  = bytestring(path)
+    repo = nothing
+    @check ccall((:git_repository_open, libgit2),
+                 Cint,
+                 (Ptr{Void}, Ptr{Cchar}),
+                 repo, bpath)
+    Repository(repo, nothing, nothing)
 end
 
-immutable Oid
-end
 
 immutable Odb
 end
