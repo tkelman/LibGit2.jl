@@ -17,8 +17,6 @@ macro check(git_func)
         if err < 0
             throw(GitError(err))
         end
+        err
     end
-    err
 end
-
-

@@ -1,24 +1,22 @@
-
+type Repository
+    repo::GitRepositry
+end
 
 Repository(path::String) = begin
-    bpath  = bytestring(path)
-    repo = nothing
-    @check ccall((:git_repository_open, libgit2),
+    repo = GitRepositry()
+    @check ccall((:git_repository_open, :libgit2),
                  Cint,
-                 (Ptr{Void}, Ptr{Cchar}),
-                 repo, bpath)
-    Repository(repo, nothing, nothing)
-end
-
-
-immutable Odb
-end
-
-immutable Tree
+                 (Ptr{GitRepositry}, Ptr{Cchar}),
+                 &repo, bytestring(path))
+    Repository(repo)
 end
 
 
 function free(r::Repository)
+    @check ccall((:git_repository_free, :libgit2),
+                 Cint,
+                 (Ptr{GitRepositry},),
+                 &r.repo)
 end
 
 
@@ -48,8 +46,8 @@ function index(r::Repository)
 end
 
 
-function lookup_type(r::Repository, oid::Oid, t::ObjectType)
-end
+#function lookup_type(r::Repository, oid::Oid, t::ObjectType)
+#end
 
 
 function lookup(r::Repository, oid::Oid)
@@ -80,17 +78,17 @@ function walk(r::Repository)
 end
 
 
-function create_commit(refname::String,
-                       author::Signiture,
-                       committer::Signiture,
-                       message::String,
-                       tree::Tree,
-                       parents...)
-end
+#function create_commit(refname::String,
+#                       author::Signiture,
+#                       committer::Signiture,
+#                       message::String,
+#                       tree::Tree,
+#                       parents...)
+#end
 
 
-function free(o::Odb)
-end
+#function free(o::Odb)
+#end
 
 
 function path(r::Repository)
@@ -122,7 +120,6 @@ end
 function read(r::Repository, oid::Oid)
 end
 
-function write(r::Repository, type, data)
-end
-
+#function write(r::Repository, type, data)
+#end
 
