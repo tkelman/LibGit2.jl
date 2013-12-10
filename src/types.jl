@@ -180,6 +180,168 @@ type GitAttrCache
     end
 end
 
+typealias GitFunctionPtr Ptr{Void}
+
+type GitRefDBBackend
+    version::Cuint
+    exists::GitFunctionPtr
+    lookup::GitFunctionPtr
+    iterator::GitFunctionPtr
+    write::GitFunctionPtr
+    rename::GitFunctionPtr
+    del::GitFunctionPtr
+    compress::GitFunctionPtr
+    free::GitFunctionPtr
+    reflog_read::GitFunctionPtr
+    reflog_write::GitFunctionPtr
+    reflog_renmae::GitFunctionPtr
+    reflog_delete::GitFunctionPtr
+
+    function GitRefDBBackend()
+        new(zero(Cuint),
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL)
+    end
+end
+
+type GitRefDB
+    #git_refcount rc
+    rc_refcount::GitAtomic
+    rc_owner::Ptr{Void}
+    
+    #git_repo* repo
+    #repo::Ptr{GitRepositry}
+    repo::Ptr{Void}
+
+    #git_refdb_backend* backend
+    backend::Ptr{GitRefDBBackend}
+
+    function GitRefDB()
+        new(zero(GitAtomic),
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL)
+    end
+end
+
+immutable GitFUtilsFilestamp
+    #git_time_t mtime;
+    mtime::Int64
+    #git_off_t size;
+    size::Int64
+    #unsigned int ino;
+    ino::Cuint
+end
+
+type GitIndex
+    #git_refcount rc;
+    rc_refcount::GitAtomic
+    rc_owner::Ptr{Void}
+
+    #char *index_file_path;
+    index_file_path::Ptr{Cchar}
+
+    #git_futils_filestamp stamp;
+    stamp_mtime::Int64
+    stamp_size::Int64
+    stamp_ino::Cuint
+
+    #git_vector entries;
+    entries__alloc_size::Csize_t
+    entries__cmp::GitVectorCmp
+    entries_contents::Ptr{Ptr{Void}}
+    entries_length::Csize_t
+    entries_sorted::Cint
+
+    #unsigned int on_disk:1;
+    on_disk::Cuint
+    #unsigned int ignore_case:1;
+    ignore_case::Cuint
+    #unsigned int distrust_filemode:1;
+    distrust_filemode::Cuint
+    #unsigned int no_symlinks:1;
+    no_symlinks::Cuint
+
+    #git_tree_cache *tree;
+    tree::Ptr{Void}
+
+    #git_vector names;
+    names__alloc_size::Csize_t
+    names__cmp::GitVectorCmp
+    names_contents::Ptr{Ptr{Void}}
+    names_length::Csize_t
+    names_sorted::Cint
+
+    #git_vector reuc;
+    reuc__alloc_size::Csize_t
+    reuc__cmp::GitVectorCmp
+    reuc_contents::Ptr{Ptr{Void}}
+    reuc_length::Csize_t
+    reuc_sorted::Cint
+
+    #git_vector_cmp entries_cmp_path;
+    entries_cmp_path::GitVectorCmp
+    #git_vector_cmp entries_search;
+    entries_search::GitVectorCmp
+    #git_vector_cmp entries_search_path;
+    entries_search_path::GitVectorCmp
+    #git_vector_cmp reuc_search;
+    reuc_search::GitVectorCmp
+
+    function GitIndex()
+        new(zero(GitAtomic),
+            C_NULL,
+
+            convert(Ptr{Cchar}, ""),
+
+            zero(Int64),
+            zero(Int64),
+            zero(Cuint),
+
+            zero(Csize_t),
+            C_NULL,
+            C_NULL,
+            zero(Csize_t),
+            zero(Cint),
+
+            one(Cuint),
+            one(Cuint),
+            one(Cuint),
+            one(Cuint),
+
+            C_NULL,
+
+            zero(Csize_t),
+            C_NULL,
+            C_NULL,
+            zero(Csize_t),
+            zero(Cint),
+            
+            zero(Csize_t),
+            C_NULL,
+            C_NULL,
+            zero(Csize_t),
+            zero(Cint),
+
+            C_NULL,
+            C_NULL,
+            C_NULL,
+            C_NULL)
+    end
+end
+
+
 type GitRepositry
     #git_odb* _odb
     _odb::Ptr{GitOdb}
@@ -274,59 +436,5 @@ type GitRepositry
             zero(Cint),
             zero(Cint),
             zero(Cint))
-    end
-end
-
-typealias GitFunctionPtr Ptr{Void}
-
-type GitRefDBBackend
-    version::Cuint
-    exists::GitFunctionPtr
-    lookup::GitFunctionPtr
-    iterator::GitFunctionPtr
-    write::GitFunctionPtr
-    rename::GitFunctionPtr
-    del::GitFunctionPtr
-    compress::GitFunctionPtr
-    free::GitFunctionPtr
-    reflog_read::GitFunctionPtr
-    reflog_write::GitFunctionPtr
-    reflog_renmae::GitFunctionPtr
-    reflog_delete::GitFunctionPtr
-
-    function GitRefDBBackend()
-        new(zero(Cuint),
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL)
-    end
-end
-
-type GitRefDB
-    #git_refcount rc
-    rc_refcount::GitAtomic
-    rc_owner::Ptr{Void}
-    
-    #git_repo* repo
-    repo::Ptr{GitRepositry}
-
-    #git_refdb_backend* backend
-    backend::Ptr{GitRefDBBackend}
-
-    function GitRefDB()
-        new(zero(GitAtomic),
-            C_NULL,
-            C_NULL,
-            C_NULL,
-            C_NULL)
     end
 end
