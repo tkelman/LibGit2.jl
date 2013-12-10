@@ -53,13 +53,11 @@ Base.isequal(oid1::Oid, oid2::Oid) = begin
     return true
 end
 
-#TODO: comparisons
 Base.isless(oid1::Oid, oid2::Oid) = begin
     sum(oid1.oid) < sum(oid2.oid)
 end
 
 Base.hash(oid::Oid) = begin
-    #TODO: this is incorrect, hash on ptr location
     hash(oid.oid)
 end
 
