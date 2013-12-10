@@ -44,17 +44,21 @@ Base.string(oid::Oid) = begin
     
 end
 
+#Base.isequal(oid1::Oid, oid2::Oid) = begin
+#    for i in 1:GIT_OID_RAWSZ
+#        if oid1.oid[i] != oid2.oid[i]
+#            return false
+#        end
+#    end
+#    return true
+#end
+
 Base.isequal(oid1::Oid, oid2::Oid) = begin
-    for i in 1:GIT_OID_RAWSZ
-        if oid1.oid[i] != oid2.oid[i]
-            return false
-        end
-    end
-    return true
+    cmp(oid1, oid2) == 0
 end
 
 Base.isless(oid1::Oid, oid2::Oid) = begin
-    sum(oid1.oid) < sum(oid2.oid)
+    cmp(oid1, oid2) < 0
 end
 
 Base.hash(oid::Oid) = begin
@@ -62,10 +66,10 @@ Base.hash(oid::Oid) = begin
 end
 
 #TODO: hook this up when ccall is figured out
-#Base.cmp(oid1::Oid, oid2::Oid) = begin
-#    git_cmp = ccall((:git_oid_cmp, libgit2),
-#                    Cint,
-#                    (Ptr{Uint8}, Ptr{Uint8}),
-#                    oid1.oid, oid2.oid)
-#    return git_cmp
-#end
+Base.cmp(oid1::Oid, oid2::Oid) = begin
+    git_cmp = ccall((:git_oid_cmp, libgit2),
+                    Cint,
+                    (Ptr{Uint8}, Ptr{Uint8}),
+                    oid1.oid, oid2.oid)
+    return git_cmp
+end
