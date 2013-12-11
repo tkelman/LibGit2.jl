@@ -1,21 +1,24 @@
+
 type Repository
-    repo::GitRepositry
+    #repo::GitRepository
+    repo::Ptr{Void}
 end
 
 Repository(path::String) = begin
-    repo = GitRepositry()
+    #repo = GitRepository()
+    ptr C_NULL
     @check ccall((:git_repository_open, :libgit2),
                  Cint,
-                 (Ptr{GitRepositry}, Ptr{Cchar}),
-                 &repo, bytestring(path))
-    Repository(repo)
+                 (Ptr{Void}, Ptr{Cchar}),
+                 ptr, bytestring(path))
+    Repository(ptr)
 end
 
 
 function free(r::Repository)
     @check ccall((:git_repository_free, :libgit2),
                  Cint,
-                 (Ptr{GitRepositry},),
+                 (Ptr{GitRepository},),
                  &r.repo)
 end
 
@@ -96,16 +99,48 @@ end
 
 
 function isbare(r::Repository)
+    res = ccall((:git_repository_is_bare, :libgit2), Cint,
+                (Ptr{GitRepository},), &r.repo)
+    return res > 0 ? true : false
+end
+
+function isbare(r::GitRepository)
+    res = ccall((:git_repository_is_bare, :libgit2), Cint,
+                (Ptr{GitRepository},), &r)
+    return res > 0 ? true : false
 end
 
 
-function isempty(r::Repository)
+function Base.isempty(r::Repository)
+    res = ccall((:git_repository_is_empty, :libgit2), Cint,
+                (Ptr{GitRepository},), &r.repo)
+    return res > 0 ? true : false
 end
 
+function Base.isempty(r::GitRepository)
+    res = ccall((:git_repository_is_empty, :libgit2), Cint,
+                (Ptr{GitRepository},), &r)
+    return res > 0 ? true : false
+end
 
 function workdir(r::Repository)
+    res = ccall((:git_repository_workdir, :libgit2), Ptr{Cchar},
+                (Ptr{GitRepository},), &r.repo)
+    if res == C_NULL
+        return nothing
+    end
+    return bytestring(res)
 end
 
+function repo_path(r::Repository)
+    res = ccall((:git_repository_path, :libgit2), Ptr{Cchar},
+                (Ptr{GitRepository},), &r.repo)
+    @show res
+    if res == C_NULL
+        return nothing
+    end
+    return bytestring(res)
+end
 
 function set_workdir(r::Repository, dir::String, update::Bool)
 end
@@ -122,4 +157,3 @@ end
 
 #function write(r::Repository, type, data)
 #end
-

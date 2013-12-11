@@ -1,8 +1,14 @@
 module LibGit2
 
-export Oid, GitConfig, GitRepositry, Repository, libgit2_version
+export Oid, GitConfig,GitRepository, Repository,
+       isbare, isempty, workdir
 
-const libgit2 = "libgit2"
+include("error.jl")
+
+function init_threads()
+    @check ccall((:git_threads_init, :libgit2), Cint, ())
+end
+init_threads()
 
 function libgit2_version()
     #TODO: version is not exported 
@@ -13,7 +19,6 @@ function libgit2_version()
 end
 
 include("types.jl")
-include("error.jl")
 include("oid.jl")
 include("repository.jl")
 

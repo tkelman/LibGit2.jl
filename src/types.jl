@@ -54,6 +54,7 @@ type GitConfig
     end
 end
 
+#TODO: long int __align...
 #TODO: In threaded versions this it a pthread_mutex_t
 typealias GitMutex Cuint
 
@@ -342,18 +343,18 @@ type GitIndex
 end
 
 
-type GitRepositry
+immutable GitRepository
     #git_odb* _odb
-    _odb::Ptr{GitOdb}
+    _odb::Ptr{Void}
     #git_refdb* _refdb
-    _refdb::Ptr{GitRefDB}
+    _refdb::Ptr{Void}
     #git_config* _config
-    _config::Ptr{GitConfig}
+    _config::Ptr{Void}
     #git_index* _index
-    _index::Ptr{GitIndex}
+    _index::Ptr{Void}
 
     #git_cache objects
-    objects_map::Ptr{GitOidMap}
+    objects_map::Ptr{Void}
     objects_lock::GitMutex
     objects_used_memory::Csize_t
 
@@ -375,7 +376,6 @@ type GitRepositry
 
     #git_strmap * submodules
     submodules::Ptr{Void}
-
     #git diff_driver_registry *diff_drivers
     diff_drivers::Ptr{Void}
 
@@ -388,8 +388,7 @@ type GitRepositry
     
     lru_counter::Cuint
     
-    #GIT_CVAR_CACHE_MAX = 9 (parrot bindings)
-    #git_cvar_value cvar_cache[GIT_CVAR_CACHE_MAX]
+    #GIT_CVAR_CACHE_MAX = 9 
     cvar_cache1::Cint
     cvar_cache2::Cint
     cvar_cache3::Cint
@@ -398,8 +397,9 @@ type GitRepositry
     cvar_cache6::Cint
     cvar_cache7::Cint
     cvar_cache8::Cint
+    cvar_cache9::Cint 
 
-    function GitRepositry()
+    function GitRepository()
         new(C_NULL, 
             C_NULL, 
             C_NULL, 
@@ -414,20 +414,21 @@ type GitRepositry
             zero(Uint32), 
             zero(Uint32), 
             zero(Uint32),
-            zero(Cuint), 
-            zero(Cuint), 
-            zero(Cuint),
+            one(Cuint), 
+            one(Cuint), 
+            one(Cuint),
             C_NULL, 
             C_NULL,
-            convert(Ptr{Cchar}, ""), 
-            convert(Ptr{Cchar}, ""),
+            C_NULL, #convert(Ptr{Cchar}, ""), 
+            C_NULL, #convert(Ptr{Cchar}, ""),
             C_NULL, 
             C_NULL,
-            convert(Ptr{Cchar}, ""), 
-            convert(Ptr{Cchar}, ""),
-            convert(Ptr{Cchar}, ""),
+            C_NULL, #convert(Ptr{Cchar}, ""), 
+            C_NULL, #convert(Ptr{Cchar}, ""),
+            C_NULL, #convert(Ptr{Cchar}, ""),
             one(Cuint),
             zero(Cuint),
+            zero(Cint),
             zero(Cint),
             zero(Cint),
             zero(Cint),
