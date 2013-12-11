@@ -343,7 +343,7 @@ type GitIndex
 end
 
 
-immutable GitRepository
+type GitRepository
     #git_odb* _odb
     _odb::Ptr{Void}
     #git_refdb* _refdb

@@ -1,17 +1,23 @@
 
 type Repository
-    #repo::GitRepository
-    repo::Ptr{Void}
+    repo::Ptr{GitRepository}
+end
+
+Base.show(io::IO, r::GitRepository) = begin
+    print(io, "Repository(\n")
+    for name in names(GitRepository)
+        print(io, "  $(name)=$(getfield(r, symbol(name))),\n")
+    end
+    print(io, ")\n")
 end
 
 Repository(path::String) = begin
-    #repo = GitRepository()
-    ptr C_NULL
+    repo_ptr = convert(Ptr{GitRepository}, [GitRepository()])
     @check ccall((:git_repository_open, :libgit2),
                  Cint,
-                 (Ptr{Void}, Ptr{Cchar}),
-                 ptr, bytestring(path))
-    Repository(ptr)
+                 (Ptr{Ptr{GitRepository}}, Ptr{Cchar}),
+                 &repo_ptr, bytestring(path))
+    Repository(repo_ptr)
 end
 
 
@@ -100,7 +106,7 @@ end
 
 function isbare(r::Repository)
     res = ccall((:git_repository_is_bare, :libgit2), Cint,
-                (Ptr{GitRepository},), &r.repo)
+                (Ptr{GitRepository},), r.repo)
     return res > 0 ? true : false
 end
 
@@ -113,7 +119,7 @@ end
 
 function Base.isempty(r::Repository)
     res = ccall((:git_repository_is_empty, :libgit2), Cint,
-                (Ptr{GitRepository},), &r.repo)
+                (Ptr{GitRepository},), r.repo)
     return res > 0 ? true : false
 end
 
@@ -134,7 +140,7 @@ end
 
 function repo_path(r::Repository)
     res = ccall((:git_repository_path, :libgit2), Ptr{Cchar},
-                (Ptr{GitRepository},), &r.repo)
+                (Ptr{GitRepository},), r.repo)
     @show res
     if res == C_NULL
         return nothing
