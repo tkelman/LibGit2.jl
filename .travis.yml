@@ -9,7 +9,18 @@ before_install:
   - sudo apt-get update -qq -y
   - sudo apt-get install libpcre3-dev julia -y
   - sudo apt-get install libgit2-0 libgit2-dev -y
+
+install:
+  - git clone https://github.com/libgit2/libgit2.git
+  - cd libgit2
+  - mkdir build && cd build
+  - cmake ..
+  - cmake --build .
+  - sudo cmake --build . --target install
+  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
 script:
+  - 
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`); Pkg.pin("LibGit2"); Pkg.resolve()'
   - julia -e 'Pkg.build("LibGit2")'
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
