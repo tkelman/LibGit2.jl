@@ -36,7 +36,7 @@ end
 
 
 Base.show(io::IO, oid::Oid) = begin
-    print(io, "Oid(\"$(hex(oid))\")")
+    print(io, "Oid($(hex(oid)))")
 end
 
 

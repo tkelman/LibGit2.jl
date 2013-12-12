@@ -30,4 +30,4 @@ push!(s, Oid("0000000000000000000000000000000000000001"))
 @test length(s) == 3
 
 #TODO: test show...
-#Base.show(oid) == 
+@show Base.show(oid1) 

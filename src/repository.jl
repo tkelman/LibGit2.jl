@@ -39,19 +39,19 @@ Repository(path::String) = begin
     return Repository(repo_ptr)
 end
 
-function isbare(r::Repository)
+function repo_isbare(r::Repository)
     res = ccall((:git_repository_is_bare, :libgit2), Cint,
                 (Ptr{Void},), r.ptr)
     return res > 0 ? true : false
 end
 
-function Base.isempty(r::Repository)
+function repo_isempty(r::Repository)
     res = ccall((:git_repository_is_empty, :libgit2), Cint,
                 (Ptr{Void},), r.ptr)
     return res > 0 ? true : false
 end
 
-function workdir(r::Repository)
+function repo_workdir(r::Repository)
     res = ccall((:git_repository_workdir, :libgit2), Ptr{Cchar},
                 (Ptr{Void},), r.ptr)
     if res == C_NULL
@@ -60,7 +60,7 @@ function workdir(r::Repository)
     return bytestring(res)
 end
 
-function path(r::Repository)
+function repo_path(r::Repository)
     cpath = ccall((:git_repository_path, :libgit2), Ptr{Cchar},
                   (Ptr{Void},), r.ptr)
     if cpath == C_NULL
@@ -69,18 +69,17 @@ function path(r::Repository)
     return bytestring(cpath)
 end
 
-function head_orphaned(r::Repository)
+function repo_head_orphaned(r::Repository)
 end
 
-function head_detached(r::Repository)
+function repo_head_detached(r::Repository)
 end
 
-
-function open_repo(path::String)
+function repo_open(path::String)
     Repository(path)
 end
 
-function init_repo(path::String; bare::Bool=false)
+function repo_init(path::String; bare::Bool=false)
     bpath = bytestring(path)
     err_code = Cint[-1]
     repo_ptr = ccall((:init_repo, libwrapgit), Ptr{Void},
@@ -99,22 +98,22 @@ function init_repo(path::String; bare::Bool=false)
     return Repository(repo_ptr)
 end
 
-function clone_repo(url::String; 
+function repo_clone(url::String; 
                     repobare::Bool=false,
                     ignore_cert_errors::Bool=false,
                     remote_name::String="origin",
                     checkout_branch=nothing)
 end
 
-function discover_repo(url::String)
+function repo_discover(url::String)
 end
 
 
-function config(r::Repository)
+function repo_config(r::Repository)
 end
 
 
-function index(r::Repository)
+function repo_index(r::Repository)
 end
 
 
@@ -122,31 +121,31 @@ end
 #end
 
 
-function lookup(r::Repository, oid::Oid)
+function repo_lookup(r::Repository, oid::Oid)
 end
 
 
-function lookup_commit(r::Repository, oid::Oid)
+function repo_lookup_commit(r::Repository, oid::Oid)
 end
 
 
-function lookup_blob(r::Repository, oid::Oid)
+function repo_lookup_blob(r::Repository, oid::Oid)
 end
 
 
-function lookup_ref(r::Repository, refname::String)
+function repo_lookup_ref(r::Repository, refname::String)
 end
 
 
-function create_ref(r::Repository, refname::String, oid::Oid, force::Bool)
+function repo_create_ref(r::Repository, refname::String, oid::Oid, force::Bool)
 end
 
 
-function create_sym_ref(r::Repository, refname::String, target::String, force::Bool)
+function repo_create_sym_ref(r::Repository, refname::String, target::String, force::Bool)
 end
 
 
-function walk(r::Repository)
+function repo_walk(r::Repository)
 end
 
 
@@ -159,26 +158,18 @@ end
 #end
 
 
-#function free(o::Odb)
-#end
-
-
-function path(r::Repository)
+function repo_set_workdir(r::Repository, dir::String, update::Bool)
 end
 
 
-function set_workdir(r::Repository, dir::String, update::Bool)
+function repo_tree_builder(r::Repository)
 end
 
-
-function tree_builder(r::Repository)
+function repo_revparse_single(r::Repository, spec::String)
 end
 
-function revparse_single(r::Repository, spec::String)
+function repo_read(r::Repository, oid::Oid)
 end
 
-function read(r::Repository, oid::Oid)
+function repo_write(r::Repository, gittype, data)
 end
-
-#function write(r::Repository, type, data)
-#end
