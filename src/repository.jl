@@ -21,16 +21,20 @@ function free!(r::Repository)
 end
 
 Repository(path::String) = begin
+    bpath = bytestring(path)
     err_code = Cint[-1]
     repo_ptr = ccall((:open_repo, libwrapgit), Ptr{Void}, 
                      (Ptr{Cchar}, Ptr{Cint}),
-                     bytestring(path), err_code)
+                     bpath, err_code)
     if err_code[1] < 0
         if repo_ptr != C_NULL
             ccall((:git_repository_free, :libgit2), Cint,
                   (Ptr{Void},), repo_ptr)
         end
         throw(GitError(err_code[1]))
+    end
+    if repo_ptr == C_NULL
+        error("repo pointer is NULL")
     end
     return Repository(repo_ptr)
 end
@@ -57,11 +61,26 @@ function workdir(r::Repository)
 end
 
 function open_repo(path::String)
+    Repository(path)
 end
 
-
-function init_repo(url::String;
-                   bare::Bool=false)
+function init_repo(path::String; bare::Bool=false)
+    bpath = bytestring(path)
+    err_code = Cint[-1]
+    repo_ptr = ccall((:init_repo, libwrapgit), Ptr{Void},
+                     (Ptr{Cchar}, Cint, Ptr{Cint}),
+                     bpath, bare ? 1 : 0, err_code)
+    if err_code[1] < 0
+        if repo_ptr != C_NULL
+            ccall((:git_repository_free, :libgit2), Cint,
+                  (Ptr{Void},), repo_ptr)
+        end
+        throw(GitError(err_code[1]))
+    end
+    if repo_ptr == C_NULL
+        error("repo pointer is NULL")
+    end
+    return Repository(repo_ptr)
 end
 
 function clone_repo(url::String; 
