@@ -1,0 +1,8 @@
+/deps/usr
+
+*.exe
+*.dll
+*.do
+*.o
+*.dylib
+*.dSYM
