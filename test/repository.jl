@@ -9,37 +9,42 @@ function cleanup_repo(path)
     end
 end
 
-cleanup_repo(test_repo_path)
+function tmp_repo(body, tmp_path)
+   cleanup_repo(tmp_path)
+   body()
+   cleanup_repo(tmp_path)
+end
 
 # test creating bare repository
-repo_init(test_repo_path; bare=true)
-let repo = Repository(test_repo_path)
-    @test isa(repo, Repository)
-    @test repo_isbare(repo)
-    @test repo_isempty(repo)
+tmp_repo(test_repo_path) do
+    repo_init(test_repo_path; bare=true)
+    let repo = Repository(test_repo_path)
+        @test isa(repo, Repository)
+        @test repo_isbare(repo)
+        @test repo_isempty(repo)
+    end
 end
-cleanup_repo(test_repo_path)
+
 
 # test creating repository
-#TODO: more tests for relative path repo creation
-repo_init(test_repo_path)
-let repo = Repository(test_repo_path)
-    @test isa(repo, Repository)
-    @test !(repo_isbare(repo))
-    @test repo_isempty(repo)
-    @test repo_workdir(repo) == abspath(test_repo_path)
-    @test repo_path(repo) == joinpath(test_repo_path, ".git")
+tmp_repo(test_repo_path) do
+    repo_init(test_repo_path)
+    let repo = Repository(test_repo_path)
+        @test isa(repo, Repository)
+        @test !(repo_isbare(repo))
+        @test repo_isempty(repo)
+        @test repo_workdir(repo) == abspath(test_repo_path)
+        @test repo_path(repo) == joinpath(test_repo_path, ".git")
 
-    # empty repo has no head
-    @test head(repo) == nothing
-    # empty repo has no tags
-    @test tags(repo) == nothing
-    # empty repo has no commits
-    @test commits(repo) == nothing
-    # empty repo has no references
-    @test references(repo) == nothing
+        # empty repo has no head
+        @test head(repo) == nothing
+        # empty repo has no tags
+        @test tags(repo) == nothing
+        # empty repo has no commits
+        @test commits(repo) == nothing
+        # empty repo has no references
+        @test references(repo) == nothing
+    end
 end
-cleanup_repo(test_repo_path)
 
-
-
+#TODO: more tests for relative path repo creation
