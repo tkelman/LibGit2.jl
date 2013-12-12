@@ -1,10 +1,8 @@
 module LibGit2
 
-export Oid, GitConfig,GitRepository, Repository,
-       isbare, isempty, workdir
-
 # inlcude wrapper libwrapgit
 include(joinpath("..", "deps", "ext.jl"))
+
 include("error.jl")
 
 function init_threads()

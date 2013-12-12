@@ -1,3 +1,5 @@
+export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
+       repo_open, repo_init
 
 type Repository
     ptr::Ptr{Void}
@@ -57,7 +59,8 @@ function repo_workdir(r::Repository)
     if res == C_NULL
         return nothing
     end
-    return bytestring(res)
+    # remove trailing slash
+    return bytestring(res)[1:end-1]
 end
 
 function repo_path(r::Repository)
@@ -66,7 +69,8 @@ function repo_path(r::Repository)
     if cpath == C_NULL
         return nothing
     end
-    return bytestring(cpath)
+    # remove trailing slash
+    return bytestring(cpath)[1:end-1]
 end
 
 function repo_head_orphaned(r::Repository)
