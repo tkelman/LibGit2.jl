@@ -60,7 +60,7 @@ function workdir(r::Repository)
     return bytestring(res)
 end
 
-function repo_path(r::Repository)
+function path(r::Repository)
     cpath = ccall((:git_repository_path, :libgit2), Ptr{Cchar},
                   (Ptr{Void},), r.ptr)
     if cpath == C_NULL
@@ -68,6 +68,13 @@ function repo_path(r::Repository)
     end
     return bytestring(cpath)
 end
+
+function head_orphaned(r::Repository)
+end
+
+function head_detached(r::Repository)
+end
+
 
 function open_repo(path::String)
     Repository(path)
@@ -93,7 +100,7 @@ function init_repo(path::String; bare::Bool=false)
 end
 
 function clone_repo(url::String; 
-                    bare::Bool=false,
+                    repobare::Bool=false,
                     ignore_cert_errors::Bool=false,
                     remote_name::String="origin",
                     checkout_branch=nothing)
@@ -101,6 +108,7 @@ end
 
 function discover_repo(url::String)
 end
+
 
 function config(r::Repository)
 end
