@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <git2.h>
 
-
 git_repository* open_repo(const char *repo_path, int *err_code) {
 	git_repository *repo;
 	*err_code = git_repository_open(&repo, repo_path);

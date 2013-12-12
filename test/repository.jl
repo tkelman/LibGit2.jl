@@ -21,17 +21,23 @@ end
 cleanup_repo(test_repo_path)
 
 # test creating repository
-#TODO: more tests for relative repo creation
+#TODO: more tests for relative path repo creation
 repo_init(test_repo_path)
 let repo = Repository(test_repo_path)
     @test isa(repo, Repository)
     @test !(repo_isbare(repo))
     @test repo_isempty(repo)
-    @show repo_workdir(repo)
-    @show repo_path(repo) 
-    @show test_repo_path
     @test repo_workdir(repo) == abspath(test_repo_path)
     @test repo_path(repo) == joinpath(test_repo_path, ".git")
+
+    # empty repo has no head
+    @test head(repo) == nothing
+    # empty repo has no tags
+    @test tags(repo) == nothing
+    # empty repo has no commits
+    @test commits(repo) == nothing
+    # empty repo has no references
+    @test references(repo) == nothing
 end
 cleanup_repo(test_repo_path)
 

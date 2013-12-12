@@ -1,5 +1,5 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
-       repo_open, repo_init
+       repo_open, repo_init, head, tags, commits, references
 
 type Repository
     ptr::Ptr{Void}
@@ -108,6 +108,27 @@ function repo_clone(url::String;
                     remote_name::String="origin",
                     checkout_branch=nothing)
 end
+
+function head(r::Repository)
+    return nothing
+end
+
+function commits(r::Repository)
+    return nothing 
+end
+
+function tags(r::Repository)
+    return nothing
+end
+
+function commits(r::Repository)
+    return nothing
+end 
+
+function references(r::Repository)
+    return nothing
+end
+
 
 function repo_discover(url::String)
 end
