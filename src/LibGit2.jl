@@ -3,6 +3,8 @@ module LibGit2
 export Oid, GitConfig,GitRepository, Repository,
        isbare, isempty, workdir
 
+# inlcude wrapper libwrapgit
+include(joinpath("..", "deps", "ext.jl"))
 include("error.jl")
 
 function init_threads()
@@ -10,12 +12,14 @@ function init_threads()
 end
 init_threads()
 
-function libgit2_version()
-    #TODO: version is not exported 
-    major = cglobal((:LIBGIT2_VERSION_MAJOR, :libgit2), Cint)
-    minor = cglobal((:LIBGIT2_VERSION_MINOR, :libgit2), Cint)
-    rev   = cglobal((:LIBGIT2_VERSION_REVISION, :libgit2), Cint)
-    @show (major, minor, rev)
+function libgit_version()
+    major = Cint[0]
+    minor = Cint[0]
+    patch = Cint[0]
+    ccall((:libgit2_version, libwrapgit), Cint,
+          (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}),
+          major, minor, patch)
+    return VersionNumber(major[1], minor[1], patch[1])
 end
 
 include("types.jl")

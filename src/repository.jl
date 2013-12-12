@@ -1,33 +1,60 @@
 
 type Repository
-    repo::Ptr{GitRepository}
+    repo::Ptr{Void}
+
+    function Repository(ptr::Ptr{Void})
+        if ptr == C_NULL
+            throw(ArgumentError("Repository initialized with NULL pointer"))
+        end
+        r = new(ptr)
+        finalizer(r, r -> free!(r))
+        return r
+    end
 end
 
-Base.show(io::IO, r::GitRepository) = begin
-    print(io, "Repository(\n")
-    for name in names(GitRepository)
-        print(io, "  $(name)=$(getfield(r, symbol(name))),\n")
+function free!(r::Repository)
+    if r.repo != C_NULL
+        @check ccall((:git_repository_free, :libgit2), Cint,
+                     (Ptr{Void},), r.repo)
+        r.repo = C_NULL
     end
-    print(io, ")\n")
 end
 
 Repository(path::String) = begin
-    repo_ptr = convert(Ptr{GitRepository}, [GitRepository()])
-    @check ccall((:git_repository_open, :libgit2),
-                 Cint,
-                 (Ptr{Ptr{GitRepository}}, Ptr{Cchar}),
-                 &repo_ptr, bytestring(path))
-    Repository(repo_ptr)
+    err_code = Cint[-1]
+    repo_ptr = ccall((:open_repo, libwrapgit), Ptr{Void}, 
+                     (Ptr{Cchar}, Ptr{Cint}),
+                     bytestring(path), err_code)
+    if err_code[1] < 0
+        if repo_ptr != C_NULL
+            ccall((:git_repository_free, :libgit2), Cint,
+                  (Ptr{Void},), repo_ptr)
+        end
+        throw(GitError(err_code[1]))
+    end
+    return Repository(repo_ptr)
 end
 
-
-function free(r::Repository)
-    @check ccall((:git_repository_free, :libgit2),
-                 Cint,
-                 (Ptr{GitRepository},),
-                 &r.repo)
+function isbare(r::Repository)
+    res = ccall((:git_repository_is_bare, :libgit2), Cint,
+                (Ptr{Void},), r.repo)
+    return res > 0 ? true : false
 end
 
+function Base.isempty(r::Repository)
+    res = ccall((:git_repository_is_empty, :libgit2), Cint,
+                (Ptr{Void},), r.repo)
+    return res > 0 ? true : false
+end
+
+function workdir(r::Repository)
+    res = ccall((:git_repository_workdir, :libgit2), Ptr{Cchar},
+                (Ptr{Void},), r.repo)
+    if res == C_NULL
+        return nothing
+    end
+    return bytestring(res)
+end
 
 function open_repo(path::String)
 end
@@ -103,50 +130,6 @@ end
 function path(r::Repository)
 end
 
-
-function isbare(r::Repository)
-    res = ccall((:git_repository_is_bare, :libgit2), Cint,
-                (Ptr{GitRepository},), r.repo)
-    return res > 0 ? true : false
-end
-
-function isbare(r::GitRepository)
-    res = ccall((:git_repository_is_bare, :libgit2), Cint,
-                (Ptr{GitRepository},), &r)
-    return res > 0 ? true : false
-end
-
-
-function Base.isempty(r::Repository)
-    res = ccall((:git_repository_is_empty, :libgit2), Cint,
-                (Ptr{GitRepository},), r.repo)
-    return res > 0 ? true : false
-end
-
-function Base.isempty(r::GitRepository)
-    res = ccall((:git_repository_is_empty, :libgit2), Cint,
-                (Ptr{GitRepository},), &r)
-    return res > 0 ? true : false
-end
-
-function workdir(r::Repository)
-    res = ccall((:git_repository_workdir, :libgit2), Ptr{Cchar},
-                (Ptr{GitRepository},), &r.repo)
-    if res == C_NULL
-        return nothing
-    end
-    return bytestring(res)
-end
-
-function repo_path(r::Repository)
-    res = ccall((:git_repository_path, :libgit2), Ptr{Cchar},
-                (Ptr{GitRepository},), r.repo)
-    @show res
-    if res == C_NULL
-        return nothing
-    end
-    return bytestring(res)
-end
 
 function set_workdir(r::Repository, dir::String, update::Bool)
 end

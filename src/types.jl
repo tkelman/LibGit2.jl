@@ -56,7 +56,7 @@ end
 
 #TODO: long int __align...
 #TODO: In threaded versions this it a pthread_mutex_t
-typealias GitMutex Cuint
+typealias GitMutex Clong
 
 #TODO: typealias khash_t(oid) git_oidmap
 typealias GitOidMap Ptr{Void}
