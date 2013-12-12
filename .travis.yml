@@ -8,6 +8,10 @@ before_install:
   - sudo add-apt-repository ppa:staticfloat/julianightlies -y
   - sudo apt-get update -qq -y
   - sudo apt-get install libpcre3-dev julia -y
+- sudo apt-get install libgit2-0 libgit2-dev -y
 script:
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`); Pkg.pin("LibGit2"); Pkg.resolve()'
+  - julia -e 'Pkg.build("LibGit2")'
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
+  - cd test/
+  - julia runtests.jl all
