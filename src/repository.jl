@@ -1,6 +1,6 @@
 
 type Repository
-    repo::Ptr{Void}
+    ptr::Ptr{Void}
 
     function Repository(ptr::Ptr{Void})
         if ptr == C_NULL
@@ -12,11 +12,11 @@ type Repository
     end
 end
 
-function free!(r::Repository)
-    if r.repo != C_NULL
+free!(r::Repository) = begin
+    if r.ptr != C_NULL
         @check ccall((:git_repository_free, :libgit2), Cint,
-                     (Ptr{Void},), r.repo)
-        r.repo = C_NULL
+                     (Ptr{Void},), r.ptr)
+        r.ptr = C_NULL
     end
 end
 
@@ -41,23 +41,32 @@ end
 
 function isbare(r::Repository)
     res = ccall((:git_repository_is_bare, :libgit2), Cint,
-                (Ptr{Void},), r.repo)
+                (Ptr{Void},), r.ptr)
     return res > 0 ? true : false
 end
 
 function Base.isempty(r::Repository)
     res = ccall((:git_repository_is_empty, :libgit2), Cint,
-                (Ptr{Void},), r.repo)
+                (Ptr{Void},), r.ptr)
     return res > 0 ? true : false
 end
 
 function workdir(r::Repository)
     res = ccall((:git_repository_workdir, :libgit2), Ptr{Cchar},
-                (Ptr{Void},), r.repo)
+                (Ptr{Void},), r.ptr)
     if res == C_NULL
         return nothing
     end
     return bytestring(res)
+end
+
+function repo_path(r::Repository)
+    cpath = ccall((:git_repository_path, :libgit2), Ptr{Cchar},
+                  (Ptr{Void},), r.ptr)
+    if cpath == C_NULL
+        return nothing
+    end
+    return bytestring(cpath)
 end
 
 function open_repo(path::String)
