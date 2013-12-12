@@ -1,5 +1,4 @@
 # create bare repo
-#TODO: relative repo paths..
 const test_repo_path = joinpath(pwd(), "repo")
 
 function cleanup_repo(path)
@@ -24,7 +23,6 @@ tmp_repo(test_repo_path) do
         @test repo_isempty(repo)
     end
 end
-
 
 # test creating repository
 tmp_repo(test_repo_path) do
