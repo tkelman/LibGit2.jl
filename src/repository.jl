@@ -1,5 +1,5 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
-       repo_open, repo_init, head, tags, commits, references
+       repo_open, repo_init, repo_index, head, tags, commits, references
 
 type Repository
     ptr::Ptr{Void}
@@ -9,7 +9,7 @@ type Repository
             throw(ArgumentError("Repository initialized with NULL pointer"))
         end
         r = new(ptr)
-        finalizer(r, r -> free!(r))
+        finalizer(r, free!)
         return r
     end
 end
@@ -137,8 +137,15 @@ end
 function repo_config(r::Repository)
 end
 
-
 function repo_index(r::Repository)
+    idx_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_repository_index, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}),
+                 idx_ptr, r.ptr)
+    if idx_ptr[1] == C_NULL
+        error("repo_index is NULL")
+    end
+    return Index(idx_ptr[1])
 end
 
 

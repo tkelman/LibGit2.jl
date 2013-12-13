@@ -3,6 +3,7 @@ module LibGit2
 # inlcude wrapper libwrapgit
 include(joinpath("..", "deps", "ext.jl"))
 
+include("api.jl")
 include("error.jl")
 
 function init_threads()
@@ -22,6 +23,7 @@ end
 
 include("types.jl")
 include("oid.jl")
+include("index.jl")
 include("repository.jl")
 include("signature.jl")
 

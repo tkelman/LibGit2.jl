@@ -77,5 +77,3 @@ iszero(oid::Oid) = begin
     end
     return true
 end
-
-
