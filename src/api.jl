@@ -16,6 +16,9 @@ macro libgit(func, ret_type, arg_types)
    end
 end
 
+# ----- libgit threads -----
+@libgit(git_threads_init, Cint, ())
+
 # ----- libgit repo ------
 @libgit(git_repository_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
 @libgit(git_repository_init, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}, Cint))
