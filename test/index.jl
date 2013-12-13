@@ -8,5 +8,5 @@ tree_id = write_tree!(idx)
 @test hex(tree_id) == "b7119b11e8ef7a1a5a34d3ac87f5b075228ac81e"
 if isdir(repo_workdir(repo))
     path = repo_workdir(repo)
-    run(`rm -R $path`)
+    run(`rm -f -R $path`)
 end

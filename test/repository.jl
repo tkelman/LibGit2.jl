@@ -4,7 +4,7 @@ test_repo_path = joinpath(pwd(), "TestLibGit2")
 function cleanup_repo(path)
     p = abspath(path)
     if isdir(p)
-        run(`rm -R $p`)
+        run(`rm -f -R $p`)
     end
 end
 
