@@ -16,6 +16,37 @@ macro libgit(func, ret_type, arg_types)
    end
 end
 
+cint(i) = convert(Cint, i)
+
+# ----- libgit constants -----
+const OBJ_ANY    = cint(-2)
+const OBJ_BAD    = cint(-1)
+const OBJ_COMMIT = cint(1)
+const OBJ_TREE   = cint(2)
+const OBJ_BLOB   = cint(3)
+const OBJ_TAG    = cint(4)
+
+const FILEMODE_NEW             = cint(0000000)
+const FILEMODE_TREE            = cint(0040000)
+const FILEMODE_BLOB            = cint(0100644)
+const FILEMODE_BLOB_EXECUTABLE = cint(0100755)
+const FILEMODE_LINK            = cint(0120000)
+const FILEMODE_COMMIT          = cint(0160000)
+
+const SUBMODULE_UPDATE_RESET    = cint(-1)
+const SUBMODULE_UPDATE_CHECKOUT = cint(1)
+const SUBMODULE_UPDATE_REBASE   = cint(2)
+const SUBMODULE_UPDATE_MERGE    = cint(3)
+const SUBMODULE_UPDATE_NONE     = cint(4)
+const SUBMODULE_UPDATE_DEFAULT  = cint(0)
+
+const SUBMODULE_IGNORE_RESET     = cint(-1)
+const SUBMODULE_IGNORE_NONE      = cint(1)  
+const SUBMODULE_IGNORE_UNTRACKED = cint(2)  
+const SUBMODULE_IGNORE_DIRTY     = cint(3)  
+const SUBMODULE_IGNORE_ALL       = cint(4) 
+const SUBMODULE_IGNORE_DEFAULT   = cint(0)
+
 # ----- libgit threads -----
 @libgit(git_threads_init, Cint, ())
 @libgit(git_threads_shutdown, Cint, ())
