@@ -1,4 +1,4 @@
-export Oid, hex, raw
+export Oid, hex, raw, iszero
 
 const GIT_OID_RAWSZ = 20
 const GIT_OID_HEXSZ = 40
@@ -64,3 +64,18 @@ Base.cmp(oid1::Oid, oid2::Oid) = begin
                     oid1.oid, oid2.oid)
     return git_cmp
 end
+
+Base.copy(oid::Oid) = begin
+    return Oid(copy(oid.oid))
+end
+
+iszero(oid::Oid) = begin
+    for i in GIT_OID_RAWSZ
+        if oid.oid[i] != zero(Uint8)
+            return false
+        end
+    end
+    return true
+end
+
+

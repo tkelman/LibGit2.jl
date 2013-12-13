@@ -25,3 +25,10 @@ s = Set(oid1, oid2)
 push!(s, Oid("0000000000000000000000000000000000000000"))
 push!(s, Oid("0000000000000000000000000000000000000001"))
 @test length(s) == 3
+
+# Test copy
+@test copy(oid1) == oid1
+
+# Test iszero
+@test iszero(oid1) == false
+@test iszero(Oid(zeros(Uint8, 20))) == true
