@@ -79,7 +79,7 @@ function repo_init(path::String; bare::Bool=false)
     err_code = api.git_repository_init(repo_ptr, bpath, bare? 1 : 0)
     if err_code < 0
         if repo_ptr[1] != C_NULL
-        api.git_repository_free(repo_ptr[1])
+            api.git_repository_free(repo_ptr[1])
         end
         throw(GitError(err_code))
     end
