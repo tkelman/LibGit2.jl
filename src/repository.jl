@@ -130,20 +130,23 @@ function repo_index(r::Repository)
     return Index(idx_ptr[1])
 end
 
-
-#function lookup_type(r::Repository, oid::Oid, t::ObjectType)
-#end
-
-
-function repo_lookup(r::Repository, oid::Oid)
+function repo_lookup{T<:GitObject}(::Type{T}, r::Repository, oid::Oid)
+    obj_ptr = Array(Ptr{Void}, 1)
+    @check api.git_object_lookup(obj_ptr, r.ptr, oid.oid, git_otype(T))
+    @check_null obj_ptr
+    return T(obj_ptr[1])
 end
 
+function repo_lookup_tree(r::Repository, oid::Oid)
+    repo_lookup(GitTree, r, oid)
+end
 
 function repo_lookup_commit(r::Repository, oid::Oid)
+    repo_lookup(GitCommit, r, oid)
 end
 
-
 function repo_lookup_blob(r::Repository, oid::Oid)
+    repo_lookup(GitBlob, r, oid)
 end
 
 

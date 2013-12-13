@@ -5,7 +5,9 @@ include("error.jl")
 include("types.jl")
 include("oid.jl")
 include("index.jl")
+include("object.jl")
 include("repository.jl")
+include("tree.jl")
 include("signature.jl")
 
 type GitThreadsHandle
