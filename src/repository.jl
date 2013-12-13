@@ -139,12 +139,8 @@ end
 
 function repo_index(r::Repository)
     idx_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_repository_index, :libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}),
-                 idx_ptr, r.ptr)
-    if idx_ptr[1] == C_NULL
-        error("repo_index is NULL")
-    end
+    @check api.git_repository_index(idx_ptr, r.ptr)
+    @check_null idx_ptr
     return Index(idx_ptr[1])
 end
 

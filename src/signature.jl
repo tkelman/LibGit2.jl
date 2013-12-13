@@ -1,11 +1,6 @@
 export Signature, name, email, time, time_offset
 
-type Signature
-    name::Ptr{Cchar}
-    email::Ptr{Cchar}
-    time::Int64
-    time_offset::Cint
-end
+const Signature = api.Signature
 
 Base.show(io::IO, s::Signature) = begin
     fmt = "%Y-%m-%d %H:%M:%S %Z"

@@ -79,3 +79,13 @@ macro check(git_func)
         err
     end
 end
+
+macro check_null(boxed_ptr)
+    local err_msg = "$boxed_ptr is NULL"
+    quote
+        if $boxed_ptr[1] == C_NULL
+            error($err_msg)
+        end
+    end
+end
+
