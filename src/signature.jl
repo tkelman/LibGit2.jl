@@ -24,12 +24,8 @@ function Signature(name::String, email::String, time::Int64, offset::Int)
     bname  = bytestring(name)
     bemail = bytestring(email)
     sig_ptr = Array(Ptr{Signature}, 1)
-    err_code  = ccall((:git_signature_new, :libgit2), Cint,
-                      (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint),
-                      sig_ptr, bname, bemail, time, offset)
-    if err_code < 0
-        throw(GitError(err_code))
-    end
+    @check api.git_signature_new(sig_ptr, bname, bemail, time, offset)
+    @check_null sig_ptr
     sig = unsafe_load(sig_ptr[1])
     finalizer(sig, free!)
     return sig
@@ -40,12 +36,8 @@ function Signature(name::String, email::String)
     bname = bytestring(name)
     bemail = bytestring(email)
     sig_ptr = Array(Ptr{Signature}, 1)
-    err_code = ccall((:git_signature_now, :libgit2), Cint,
-                     (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}),
-                     sig_ptr, bname, bemail)
-    if err_code < 0
-        throw(GitError(err_code))
-    end
+    @check api.git_signature_now(sig_ptr, bname, bemail)
+    @check_null sig_ptr
     sig = unsafe_load(sig_ptr[1])
     finalizer(sig, free!)
     return sig
