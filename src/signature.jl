@@ -1,3 +1,5 @@
+export Signature
+
 type Signature
     name::Ptr{Cchar}
     email::Ptr{Cchar}
@@ -5,7 +7,7 @@ type Signature
     time_offset::Cint
 
     function Signature()
-        s = new(C_NULL, C_NULL, 0, cint(0))
+        s = new(C_NULL, C_NULL, int64(0), convert(Cint, 0))
         finalizer(s, x -> free!(x))
         return s
     end
@@ -23,7 +25,7 @@ function Signature(name::String, email::String, time::Int64, offset::Int)
     boxsig = [Signature()]
     err_code  = ccall((:git_signature_new, :libgit2), Cint,
                       (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint),
-                      &boxsig, bname, bemail, time, cint(offset))
+                      &boxsig, bname, bemail, time, offset)
     if err_code < 0
         throw(GitError(err_code))
     end

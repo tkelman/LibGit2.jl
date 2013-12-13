@@ -10,7 +10,12 @@ end
 
 function tmp_repo(body, tmp_path)
    cleanup_repo(tmp_path)
-   body()
+   try
+        body()
+   catch err
+       cleanup_repo(tmp_path)
+       rethrow(err)
+   end
    cleanup_repo(tmp_path)
 end
 

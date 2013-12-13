@@ -23,5 +23,6 @@ end
 include("types.jl")
 include("oid.jl")
 include("repository.jl")
+include("signature.jl")
 
 end # module
