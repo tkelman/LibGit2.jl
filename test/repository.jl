@@ -1,5 +1,5 @@
 # create bare repo
-const test_repo_path = joinpath(pwd(), "repo")
+test_repo_path = joinpath(pwd(), "TestLibGit2")
 
 function cleanup_repo(path)
     p = abspath(path)

@@ -53,9 +53,12 @@ end
 
 
 Base.hash(oid::Oid) = begin
-    hash(oid.oid)
+    hash(hex(oid))
 end
 
+Base.string(oid::Oid) = begin
+    hex(oid)
+end
 
 Base.cmp(oid1::Oid, oid2::Oid) = begin
     git_cmp = ccall((:git_oid_cmp, :libgit2),

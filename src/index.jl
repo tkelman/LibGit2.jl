@@ -1,4 +1,4 @@
-export Index
+export Index, add_bypath!, write_tree!
 
 type Index
     ptr::Ptr{Void}

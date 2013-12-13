@@ -1,7 +1,9 @@
 using Base.Test
 using LibGit2
 
-testnames = ["oid", "repository", "signature"]
+include("util.jl")
+
+testnames = ["oid", "repository", "signature", "index"]
 
 tests = ARGS==["all"] ? testnames : ARGS
 
