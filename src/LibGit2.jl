@@ -17,7 +17,7 @@ type GitThreadsHandle
     end
 end
 
-const __threadhandle = begin
+const __threads_handle = begin
     api.git_threads_init()
     GitThreadsHandle()
 end
