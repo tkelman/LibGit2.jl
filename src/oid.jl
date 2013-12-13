@@ -1,3 +1,5 @@
+export Oid, hex, raw
+
 const GIT_OID_RAWSZ = 20
 const GIT_OID_HEXSZ = 40
 

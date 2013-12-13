@@ -1,6 +1,3 @@
-using Base.Test
-using LibGit2
-
 # Test constructor
 HEX1 = "15b648aec6ed045b5ca6f57f8b7831a8b4757298"
 HEX2 = "15b648aec6ed045b5ca6f57f8b7831a8b4757299"
@@ -28,6 +25,3 @@ s = Set(oid1, oid2)
 push!(s, Oid("0000000000000000000000000000000000000000"))
 push!(s, Oid("0000000000000000000000000000000000000001"))
 @test length(s) == 3
-
-#TODO: test show...
-@show Base.show(oid1) 

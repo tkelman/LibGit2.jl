@@ -1,3 +1,5 @@
+export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
+       repo_open, repo_init, head, tags, commits, references
 
 type Repository
     ptr::Ptr{Void}
@@ -57,7 +59,8 @@ function repo_workdir(r::Repository)
     if res == C_NULL
         return nothing
     end
-    return bytestring(res)
+    # remove trailing slash
+    return bytestring(res)[1:end-1]
 end
 
 function repo_path(r::Repository)
@@ -66,7 +69,8 @@ function repo_path(r::Repository)
     if cpath == C_NULL
         return nothing
     end
-    return bytestring(cpath)
+    # remove trailing slash
+    return bytestring(cpath)[1:end-1]
 end
 
 function repo_head_orphaned(r::Repository)
@@ -104,6 +108,27 @@ function repo_clone(url::String;
                     remote_name::String="origin",
                     checkout_branch=nothing)
 end
+
+function head(r::Repository)
+    return nothing
+end
+
+function commits(r::Repository)
+    return nothing 
+end
+
+function tags(r::Repository)
+    return nothing
+end
+
+function commits(r::Repository)
+    return nothing
+end 
+
+function references(r::Repository)
+    return nothing
+end
+
 
 function repo_discover(url::String)
 end
