@@ -8,6 +8,18 @@ include("index.jl")
 include("repository.jl")
 include("signature.jl")
 
-api.git_threads_init()
+type GitThreadsHandle
+    
+    function GitThreadsHandle()
+        h = new()
+        finalizer(h, x -> api.git_threads_shutdown())
+        return h
+    end
+end
+
+const __threadhandle = begin
+    api.git_threads_init()
+    GitThreadsHandle()
+end
 
 end # module

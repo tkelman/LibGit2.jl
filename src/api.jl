@@ -18,6 +18,7 @@ end
 
 # ----- libgit threads -----
 @libgit(git_threads_init, Cint, ())
+@libgit(git_threads_shutdown, Cint, ())
 
 # ----- libgit repo ------
 @libgit(git_repository_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
