@@ -7,6 +7,12 @@ type Signature
     time_offset::Cint
 end
 
+Base.show(io::IO, s::Signature) = begin
+    fmt = "%Y-%m-%d %H:%M:%S %Z"
+    time_str = strftime(fmt, s.time)
+    print(io, "Signature(\"$(name(s))\",\"$(email(s))\",\"$time_str\")")
+end
+
 free!(s::Signature) = begin
     if s.name != C_NULL
         c_free(s.name)
