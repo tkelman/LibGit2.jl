@@ -16,46 +16,37 @@ end
 
 free!(r::Repository) = begin
     if r.ptr != C_NULL
-        @check ccall((:git_repository_free, :libgit2), Cint,
-                     (Ptr{Void},), r.ptr)
+        @check api.git_repository_free(r.ptr)
         r.ptr = C_NULL
     end
 end
 
 Repository(path::String) = begin
     bpath = bytestring(path)
-    err_code = Cint[-1]
-    repo_ptr = ccall((:open_repo, libwrapgit), Ptr{Void}, 
-                     (Ptr{Cchar}, Ptr{Cint}),
-                     bpath, err_code)
-    if err_code[1] < 0
-        if repo_ptr != C_NULL
-            ccall((:git_repository_free, :libgit2), Cint,
-                  (Ptr{Void},), repo_ptr)
+    repo_ptr = Array(Ptr{Void}, 1)
+    err_code = api.git_repository_open(repo_ptr, bpath)
+    if err_code < 0
+        if repo_ptr[1] != C_NULL
+            api.git_repository_free(repo_ptr[1])
         end
-        throw(GitError(err_code[1]))
+        throw(GitError(err_code))
     end
-    if repo_ptr == C_NULL
-        error("repo pointer is NULL")
-    end
-    return Repository(repo_ptr)
+    @check_null repo_ptr
+    return Repository(repo_ptr[1])
 end
 
 function repo_isbare(r::Repository)
-    res = ccall((:git_repository_is_bare, :libgit2), Cint,
-                (Ptr{Void},), r.ptr)
+    res = api.git_repository_is_bare(r.ptr)
     return res > 0 ? true : false
 end
 
 function repo_isempty(r::Repository)
-    res = ccall((:git_repository_is_empty, :libgit2), Cint,
-                (Ptr{Void},), r.ptr)
+    res = api.git_repository_is_empty(r.ptr) 
     return res > 0 ? true : false
 end
 
 function repo_workdir(r::Repository)
-    res = ccall((:git_repository_workdir, :libgit2), Ptr{Cchar},
-                (Ptr{Void},), r.ptr)
+    res = api.git_repository_workdir(r.ptr)
     if res == C_NULL
         return nothing
     end
@@ -64,8 +55,7 @@ function repo_workdir(r::Repository)
 end
 
 function repo_path(r::Repository)
-    cpath = ccall((:git_repository_path, :libgit2), Ptr{Cchar},
-                  (Ptr{Void},), r.ptr)
+    cpath = api.git_repository_path(r.ptr)
     if cpath == C_NULL
         return nothing
     end
@@ -85,22 +75,18 @@ end
 
 function repo_init(path::String; bare::Bool=false)
     bpath = bytestring(path)
-    err_code = Cint[-1]
-    repo_ptr = ccall((:init_repo, libwrapgit), Ptr{Void},
-                     (Ptr{Cchar}, Cint, Ptr{Cint}),
-                     bpath, bare ? 1 : 0, err_code)
-    if err_code[1] < 0
-        if repo_ptr != C_NULL
-            ccall((:git_repository_free, :libgit2), Cint,
-                  (Ptr{Void},), repo_ptr)
+    repo_ptr = Array(Ptr{Void}, 1)
+    err_code = api.git_repository_init(repo_ptr, bpath, bare? 1 : 0)
+    if err_code < 0
+        if repo_ptr[1] != C_NULL
+        api.git_repository_free(repo_ptr[1])
         end
-        throw(GitError(err_code[1]))
+        throw(GitError(err_code))
     end
-    if repo_ptr == C_NULL
-        error("repo pointer is NULL")
-    end
-    return Repository(repo_ptr)
+    @check_null repo_ptr
+    return Repository(repo_ptr[1])
 end
+
 
 function repo_clone(url::String; 
                     repobare::Bool=false,

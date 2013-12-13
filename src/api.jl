@@ -2,13 +2,13 @@ module api
 
 const libgit2 = "libgit2"
 
-macro libgit(func, arg_types)
+macro libgit(func, ret_type, arg_types)
   local args_in = Symbol[symbol("arg$i::$T")
                          for (i, T) in enumerate(arg_types.args)]
   quote
       function $(esc(func))($(args_in...))
           err = ccall(($(string(func)), libgit2),
-                       Cint,
+                       $ret_type,
                        $arg_types,
                        $(args_in...))
           return err
@@ -17,10 +17,17 @@ macro libgit(func, arg_types)
 end
 
 # ----- libgit repo ------
-@libgit(git_repository_index, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_repository_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
+@libgit(git_repository_init, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}, Cint))
+@libgit(git_repository_free, Cint, (Ptr{Void},))
+@libgit(git_repository_index, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_repository_is_bare, Cint, (Ptr{Void},))
+@libgit(git_repository_is_empty, Cint, (Ptr{Void},))
+@libgit(git_repository_workdir, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_repository_path, Ptr{Cchar}, (Ptr{Void},))
 
 # ----- libgit index ------
-@libgit(git_index_free, (Ptr{Void},))
+@libgit(git_index_free, Cint, (Ptr{Void},))
 
 # ----- libgit signiture ------
 type Signature
@@ -30,7 +37,7 @@ type Signature
     time_offset::Cint
 end
 
-@libgit(git_signature_new, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint))
-@libgit(git_signature_now, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}))
+@libgit(git_signature_new, Cint, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint))
+@libgit(git_signature_now, Cint, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}))
 
 end # module api
