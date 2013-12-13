@@ -1,7 +1,7 @@
 using Base.Test
 using LibGit2
 
-testnames = ["oid", "repository"]
+testnames = ["oid", "repository", "signature"]
 
 tests = ARGS==["all"] ? testnames : ARGS
 
