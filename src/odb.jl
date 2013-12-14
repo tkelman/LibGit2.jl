@@ -56,7 +56,8 @@ Base.iswriteable(io::OdbWrite) = true
 
 Base.write(io::OdbWrite, b::Array{Uint8}) = begin
     @assert io.ptr != C_NULL
-    size = sizeof(
+end
+
 type OdbRead <: OdbIO
     ptr::Ptr{Void}
 end
