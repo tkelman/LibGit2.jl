@@ -71,7 +71,7 @@ const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 @libgit(git_repository_is_empty, Cint, (Ptr{Void},))
 @libgit(git_repository_workdir, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_repository_path, Ptr{Cchar}, (Ptr{Void},))
-
+@libgit(git_repository_odb, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_revparse_single, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
 
 # ----- libgit index ------
