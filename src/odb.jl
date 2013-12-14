@@ -1,3 +1,6 @@
+export Odb, OdbObject, OdbWrite, OdbRead,
+       exists, data, open_wstream, oid
+
 type Odb
     ptr::Ptr{Void}
 
@@ -11,7 +14,7 @@ end
 
 free!(o::Odb) = begin 
     if o.ptr != C_NULL 
-        @check api.git_odb_free(o.ptr)
+        api.git_odb_free(o.ptr)
         o.ptr = C_NULL
     end
 end
@@ -73,7 +76,9 @@ abstract OdbIO
 
 free!(os::OdbIO) = begin
     if os.ptr != C_NULL
-        @check api.odb_stream_free(os.ptr)
+        #TODO: close before gc?
+        #TODO: complains that this function does not exist??
+        api.git_odb_stream_free(os.ptr)
         os.ptr = C_NULL
     end
 end
@@ -81,21 +86,55 @@ end
 type OdbWrite <: OdbIO
     ptr::Ptr{Void}
     id::Oid
+
+    function OdbWrite(ptr::Ptr{Void})
+        @assert ptr != C_NULL
+        oid_ptr = api.git_odb_object_id(ptr)
+        if oid_ptr == C_NULL
+            error("oid pointer for write stream is NULL")
+        end
+        s = new(ptr, Oid(oid_ptr))
+        finalizer(s, free!)
+        return s
+    end
+end
+
+oid(os::OdbWrite) = os.id
+
+function open_wstream{T<:GitObject}(::Type{T}, odb::Odb, len::Int)
+    @assert odb.ptr != C_NULL
+    @assert len > 0
+    gtype = git_otype(T)
+    clen = convert(Csize_t, len)
+    stream_ptr = Array(Ptr{Void}, 1)
+    @check api.git_odb_open_wstream(stream_ptr, odb.ptr, clen, gtype)
+    @check_null stream_ptr
+    return OdbWrite(stream_ptr[1])
 end
 
 Base.isreadable(io::OdbWrite) = false 
 Base.iswriteable(io::OdbWrite) = true
 
-Base.write(io::OdbWrite, b::Array{Uint8}) = begin
+Base.write(io::OdbWrite, b::ByteString) = begin 
     @assert io.ptr != C_NULL
-    len = convert(Csize_t, length(b))
+    len = length(b)
+    @check api.git_odb_stream_write(io.ptr, b, len)
+    return len
+end
+
+#TODO: this is broken...
+Base.write{T}(io::OdbWrite, b::Array{T}) = begin
+    @assert io.ptr != C_NULL
+    @assert isbits(T)
+    ptr = convert(Ptr{Uint8}, b)
+    len = convert(Csize_t, div(length(b) * sizeof(T), sizeof(Uint8)))
     @check api.git_odb_stream_write(io.ptr, b, len)
     return len
 end
 
 Base.close(os::OdbWrite) = begin
     @assert os.ptr != C_NULL
-    @check api.git_odb_stream_finalize_write(os.id, os.ptr)
+    @check api.git_odb_stream_finalize_write(os.id.oid, os.ptr)
     return nothing
 end
 

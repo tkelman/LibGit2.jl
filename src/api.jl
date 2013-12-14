@@ -132,7 +132,7 @@ end
 
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
-@libgit(git_odb_free, Cint, (Ptr{Void},))
+@libgit(git_odb_free, Void, (Ptr{Void},))
 @libgit(git_odb_write, Cint, 
         (Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Csize_t))
 @libgit(git_odb_read, Cint,
@@ -144,11 +144,11 @@ end
 @libgit(git_odb_stream_read, Cint,
         (Ptr{Void}, Ptr{Uint8}, Csize_t))
 @libgit(git_odb_stream_write, Cint,
-        (Ptr{Void}, Ptr{Uint8}, Csize_t)) 
+        (Ptr{Void}, Ptr{Cchar}, Csize_t)) 
 @libgit(git_odb_stream_finalize_write, Cint,
         (Ptr{Uint8}, Ptr{Void}))
-@libgit(git_odb_stream_free, Cint, (Ptr{Void},))
-@libgit(git_odb_object_free, Cint, (Ptr{Void},))
+@libgit(git_odb_stream_free, Void, (Ptr{Void},))
+@libgit(git_odb_object_free, Void, (Ptr{Void},))
 @libgit(git_odb_object_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_odb_object_data, Ptr{Void}, (Ptr{Void},))
 @libgit(git_odb_object_size, Csize_t, (Ptr{Void},))

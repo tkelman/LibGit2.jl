@@ -12,15 +12,15 @@ try
 
     str = "hello, world!"
     odb = repo_odb(repo)
-    #stream = open_wstream(GitBlob, odb, len(str))
-    #@test iswriteable(stream)
-    #@test isreadable(stream) == false
-    #n = write(stream, str)
-    #@test n == length(str)
-    #close(stream)
+    stream = open_wstream(GitBlob, odb, length(str))
+    @test iswriteable(stream)
+    @test isreadable(stream) == false
+    n = write(stream, str)
+    @test n == length(str)
+    close(stream)
 
-    #eid = Oid("30f51a3fba5274d53522d0f19748456974647b4f")
-    #@test eid == oid(stream)
+    eid = Oid("30f51a3fba5274d53522d0f19748456974647b4f")
+    @test eid == oid(stream)
 
 catch err
     rethrow(err)
