@@ -48,11 +48,6 @@ tmp_repo(test_repo_path) do
         # empty repo has no references
         @test references(repo) == nothing
     end
-
-    # test if we can write to it...
-    fh = open(joinpath(test_repo_path, "README"), "w")
-    write(fh, "this is a test")
-    close(fh)
 end
 
 #TODO: more tests for relative path repo creation

@@ -1,5 +1,5 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
-       repo_open, repo_init, repo_index, head, tags, commits, references
+       repo_open, repo_init, repo_index, head, tags, commits, references, repo_lookup, repo_lookup_tree
 
 type Repository
     ptr::Ptr{Void}

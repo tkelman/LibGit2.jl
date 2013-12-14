@@ -69,7 +69,14 @@ const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 @libgit(git_index_add_bypath, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_index_write_tree, Cint, (Ptr{Uint8}, Ptr{Void}))
 
-# ----- libgit signiture ------
+# ----- libgit object ------
+@libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_object_free, Cint, (Ptr{Void},))
+@libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_oid_fmt, Cint, (Ptr{Cchar}, Ptr{Uint8}))
+@libgit(git_object_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint))
+
+# ----- libgit signature ------
 type Signature
     name::Ptr{Cchar}
     email::Ptr{Cchar}
