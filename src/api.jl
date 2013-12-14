@@ -29,8 +29,13 @@ const OBJ_TREE   = cint(2)
 const OBJ_BLOB   = cint(3)
 const OBJ_TAG    = cint(4)
 
+const REF_INVALID = cint(0)
 const REF_OID = cint(1)    
-const REF_SYMBOLIC = cint(0)
+const REF_SYMBOLIC = cint(2)
+const REF_LISTALL = REF_OID | REF_SYMBOLIC
+
+const BRANCH_LOCAL = cint(1)
+const BRANCH_REMOTE = cint(2)
 
 const FILEMODE_NEW             = cint(00000)
 const FILEMODE_TREE            = cint(16384)
@@ -133,8 +138,7 @@ end
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
 @libgit(git_reference_lookup, Cint, 
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
-@libgit(git_reference_symbolic_target, Cint, 
-        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_reference_symbolic_target, Ptr{Cchar}, (Ptr{Void},)) 
 @libgit(git_reference_set_target, Cint, 
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
 @libgit(git_reference_resolve, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))

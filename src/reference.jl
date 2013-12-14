@@ -17,7 +17,7 @@ end
 function GitReference(ptr::Ptr{Void})
     @assert ptr != C_NULL
     ty = api.git_reference_type(ptr)
-    RType = ty == 0 ? Sym : Oid 
+    RType = ty == 1 ? Oid : Sym 
     ref = GitReference{RType}(ptr)
     finalizer(ref, free!)
     return ref
@@ -68,7 +68,7 @@ function target(r::GitReference)
     @assert r.ptr != C_NULL
     oid_ptr = api.git_reference_target(r.ptr)
     if oid_ptr == C_NULL 
-        error("target oid pointer is NULL")
+        return nothing
     end
     return Oid(oid_ptr)
 end
