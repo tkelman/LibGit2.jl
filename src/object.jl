@@ -20,6 +20,7 @@ Base.isequal(o1::GitObject, o2::GitObject) = begin
 end
 
 function oid(o::GitObject)
+    @assert o.ptr != C_NULL
     oid_ptr::Ptr{Uint8} = api.git_object_id(o.ptr)
     if oid_ptr == C_NULL
         error("oid pointer is NULL")
@@ -28,6 +29,7 @@ function oid(o::GitObject)
 end
 
 function hex(o::GitObject)
+    @assert o.ptr != C_NULL
     oid_ptr::Ptr{Uint8} = api.git_object_id(o.ptr)
     if oid_ptr == C_NULL
         error("oid pointer is NULL")
@@ -40,3 +42,16 @@ end
 function raw(o::GitObject)
 end
 
+function gitobj_from_ptr(ptr::Ptr{Void})
+    @assert ptr != C_NULL
+    obj_type = api.git_object_type(ptr) 
+    if obj_type == api.OBJ_BLOB
+        return GitBlob(ptr)
+    elseif obj_type == api.OBJ_TREE
+        return GitTree(ptr)
+    elseif obj_type == api.OBJ_COMMIT
+        return GitCommit(ptr)
+    else
+        error("cannot convert gitobj $obj_type")
+    end
+end

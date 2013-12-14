@@ -27,7 +27,7 @@ type Oid
             throw(ArgumentError("pointer is NULL"))
         end
         oid = Array(Uint8, api.OID_RAWSZ)
-        for i in api.OID_RAWSZ
+        for i in 1:api.OID_RAWSZ
             oid[i] = unsafe_load(ptr, i)
         end
         return Oid(oid)

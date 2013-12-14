@@ -29,12 +29,12 @@ const OBJ_TREE   = cint(2)
 const OBJ_BLOB   = cint(3)
 const OBJ_TAG    = cint(4)
 
-const FILEMODE_NEW             = cint(0000000)
-const FILEMODE_TREE            = cint(0040000)
-const FILEMODE_BLOB            = cint(0100644)
-const FILEMODE_BLOB_EXECUTABLE = cint(0100755)
-const FILEMODE_LINK            = cint(0120000)
-const FILEMODE_COMMIT          = cint(0160000)
+const FILEMODE_NEW             = cint(00000)
+const FILEMODE_TREE            = cint(16384)
+const FILEMODE_BLOB            = cint(33188)
+const FILEMODE_BLOB_EXECUTABLE = cint(33261)
+const FILEMODE_LINK            = cint(40960)
+const FILEMODE_COMMIT          = cint(57344)
 
 const SUBMODULE_UPDATE_RESET    = cint(-1)
 const SUBMODULE_UPDATE_CHECKOUT = cint(1)
@@ -64,6 +64,8 @@ const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 @libgit(git_repository_workdir, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_repository_path, Ptr{Cchar}, (Ptr{Void},))
 
+@libgit(git_revparse_single, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+
 # ----- libgit index ------
 @libgit(git_index_free, Cint, (Ptr{Void},))
 @libgit(git_index_add_bypath, Cint, (Ptr{Void}, Ptr{Cchar}))
@@ -75,6 +77,7 @@ const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_oid_fmt, Cint, (Ptr{Cchar}, Ptr{Uint8}))
 @libgit(git_object_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint))
+@libgit(git_object_type, Cint, (Ptr{Void},))
 
 # ----- libgit signature ------
 type Signature
@@ -96,6 +99,8 @@ end
 @libgit(git_commit_author, Ptr{Signature}, (Ptr{Void},))
 @libgit(git_commit_parent, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cuint))
 @libgit(git_commit_parent_id, Ptr{Void}, (Ptr{Void}, Cuint))
+@libgit(git_commit_lookup_prefix, Cint,
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Csize_t))
 @libgit(git_commit_create, Cint,
         (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{Signature},
          Ptr{Signature}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
@@ -106,4 +111,14 @@ end
 @libgit(git_blob_owner, Ptr{Void}, (Ptr{Void},))
 @libgit(git_blob_rawcontent, Ptr{Void}, (Ptr{Void},))
 @libgit(git_blob_is_binary, Cint, (Ptr{Void},))
+
+# ------ libgit tree ------
+@libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
+@libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_tree_entry_free, Cint, (Ptr{Void},))
+@libgit(git_tree_entry_name, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_tree_entry_id, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_tree_entry_type, Cint, (Ptr{Void},))
+@libgit(git_tree_entry_filemode, Cint, (Ptr{Void},))
+@libgit(git_tree_entrycount, Csize_t, (Ptr{Void},))
 end # module api

@@ -12,12 +12,14 @@ free!(i::Index) = begin
 end
 
 function add_bypath!(i::Index, path::String)
+    @assert i.ptr != C_NULL
     bpath = bytestring(path)
     @check api.git_index_add_bypath(i.ptr, bpath)
     return nothing
 end
 
 function write_tree!(i::Index)
+    @assert i.ptr != C_NULL
     oid = Oid()
     @check api.git_index_write_tree(oid.oid, i.ptr)
     return oid

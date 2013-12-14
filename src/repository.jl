@@ -1,6 +1,7 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
-       repo_lookup, repo_lookup_tree, commit
+       repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
+       repo_revparse_single
 
 type Repository
     ptr::Ptr{Void}
@@ -37,16 +38,19 @@ Repository(path::String) = begin
 end
 
 function repo_isbare(r::Repository)
+    @assert r.ptr != C_NULL
     res = api.git_repository_is_bare(r.ptr)
     return res > 0 ? true : false
 end
 
 function repo_isempty(r::Repository)
+    @assert r.ptr != C_NULL
     res = api.git_repository_is_empty(r.ptr) 
     return res > 0 ? true : false
 end
 
 function repo_workdir(r::Repository)
+    @assert r.ptr != C_NULL
     res = api.git_repository_workdir(r.ptr)
     if res == C_NULL
         return nothing
@@ -56,6 +60,7 @@ function repo_workdir(r::Repository)
 end
 
 function repo_path(r::Repository)
+    @assert r.ptr != C_NULL
     cpath = api.git_repository_path(r.ptr)
     if cpath == C_NULL
         return nothing
@@ -125,37 +130,38 @@ function repo_config(r::Repository)
 end
 
 function repo_index(r::Repository)
+    @assert r.ptr != C_NULL
     idx_ptr = Array(Ptr{Void}, 1)
     @check api.git_repository_index(idx_ptr, r.ptr)
     @check_null idx_ptr
     return Index(idx_ptr[1])
 end
 
-function repo_lookup{T<:GitObject}(::Type{T}, r::Repository, oid::Oid)
+function repo_lookup{T<:GitObject}(::Type{T}, r::Repository, id::Oid)
+    @assert r.ptr != C_NULL
     obj_ptr = Array(Ptr{Void}, 1)
-    @check api.git_object_lookup(obj_ptr, r.ptr, oid.oid, git_otype(T))
+    @check api.git_object_lookup(obj_ptr, r.ptr, id.oid, git_otype(T))
     @check_null obj_ptr
     return T(obj_ptr[1])
 end
 
-function repo_lookup_tree(r::Repository, oid::Oid)
-    repo_lookup(GitTree, r, oid)
+function repo_lookup(r::Repository, id::Oid)
+    @assert r.ptr != C_NULL
+    obj_ptr = Array(Ptr{Void}, 1)
+    @check api.git_object_lookup(obj_ptr, r.ptr, id.oid, api.OBJ_ANY)
+    @check_null obj_ptr
+    return gitobj_from_ptr(obj_ptr[1]) 
 end
 
-function repo_lookup_commit(r::Repository, oid::Oid)
-    repo_lookup(GitCommit, r, oid)
-end
-
-function repo_lookup_blob(r::Repository, oid::Oid)
-    repo_lookup(GitBlob, r, oid)
-end
-
+repo_lookup_tree(r::Repository, id::Oid) = repo_lookup(GitTree, r, id)
+repo_lookup_blob(r::Repository, id::Oid) = repo_lookup(GitBlob, r, id)
+repo_lookup_commit(r::Repository, id::Oid) = repo_lookup(GitCommit, r, id)
 
 function repo_lookup_ref(r::Repository, refname::String)
 end
 
 
-function repo_create_ref(r::Repository, refname::String, oid::Oid, force::Bool)
+function repo_create_ref(r::Repository, refname::String, id::Oid, force::Bool)
 end
 
 
@@ -166,6 +172,7 @@ end
 function repo_walk(r::Repository)
 end
 
+#TODO: sporadic segfaults
 function commit(r::Repository,
                 refname::String,
                 author::Signature,
@@ -173,6 +180,8 @@ function commit(r::Repository,
                 msg::String,
                 tree::GitTree,
                 parents::GitCommit...)
+    @assert r.ptr != C_NULL
+    @assert tree.ptr != C_NULL
     commit_oid  = Oid()
     bref = bytestring(refname)
     bmsg = bytestring(msg)
@@ -181,16 +190,18 @@ function commit(r::Repository,
     cparents = Array(Ptr{Void}, nparents)
     if nparents > zero(Cint)
         for (i, commit) in enumerate(parents)
+            @assert commit.ptr != C_NULL
             cparents[i] = commit.ptr
+
         end
     end
-    author_ptr = convert(Ptr{Signature}, [author])
-    committer_ptr = convert(Ptr{Signature}, [committer])
+    boxed_author = [author]
+    boxed_committer = [committer]
     @check api.git_commit_create(commit_oid.oid, 
                                  r.ptr, 
                                  bref,
-                                 author_ptr,
-                                 committer_ptr,
+                                 boxed_author,
+                                 boxed_committer,
                                  C_NULL, 
                                  bmsg, 
                                  tree.ptr, 
@@ -198,15 +209,6 @@ function commit(r::Repository,
                                  nparents > 0 ? cparents : C_NULL)
     return commit_oid
 end
-
-#function create_commit(refname::String,
-#                       author::Signiture,
-#                       committer::Signiture,
-#                       message::String,
-#                       tree::Tree,
-#                       parents...)
-#end
-
 
 function repo_set_workdir(r::Repository, dir::String, update::Bool)
 end
@@ -216,9 +218,15 @@ function repo_tree_builder(r::Repository)
 end
 
 function repo_revparse_single(r::Repository, spec::String)
+    @assert r.ptr != C_NULL
+    bspec = bytestring(spec)
+    obj_ptr = Array(Ptr{Void}, 1)
+    @check api.git_revparse_single(obj_ptr, r.ptr, bspec)
+    @check_null obj_ptr
+    return gitobj_from_ptr(obj_ptr[1])
 end
 
-function repo_read(r::Repository, oid::Oid)
+function repo_read(r::Repository, id::Oid)
 end
 
 function repo_write(r::Repository, gittype, data)

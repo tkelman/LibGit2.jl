@@ -1,9 +1,11 @@
-export GitCommit
+export GitCommit, git_otype, message, tree, tree_id,
+       author, committer, parent, parent_id, parent_count
 
 type GitCommit <: GitObject
     ptr::Ptr{Void}
 
     function GitCommit(ptr::Ptr{Void})
+        @assert ptr != C_NULL
         c = new(ptr)
         finalizer(c, free!)
         return c
@@ -13,6 +15,7 @@ end
 git_otype(::Type{GitCommit}) = api.OBJ_COMMIT
 
 function message(c::GitCommit, raw::Bool=false)
+    @assert c.ptr != C_NULL
     local msg_ptr::Ptr{Cchar}
     if raw
         msg_ptr = api.git_commit_message_raw(c.ptr)
@@ -25,14 +28,21 @@ function message(c::GitCommit, raw::Bool=false)
     return bytestring(msg_ptr)
 end
 
-function tree(c::GitCommit)
+function GitTree(c::GitCommit)
+    @assert c.ptr != C_NULL
     tree_ptr = Array(Ptr{Void}, 1)
     @check api.git_commit_tree(tree_ptr, c.ptr)
     @check_null tree_ptr
     return GitTree(tree_ptr[1])
 end
 
-function tree_id(c::GitCommit)
+
+function git_tree(c::GitCommit)
+    GitTree(c)
+end
+
+function git_tree_id(c::GitCommit)
+    @assert c.ptr != C_NULL
     oid_ptr = api.get_commit_tree_id(c.ptr)
     if oid_ptr == C_NULL
         error("tree id pointer is NULL")
@@ -41,6 +51,7 @@ function tree_id(c::GitCommit)
 end
 
 function author(c::GitCommit)
+    @assert c.ptr != C_NULL
     ptr::Ptr{Signature} = api.git_commit_author(c.ptr)
     if ptr == C_NULL
         error("git commit author pointer is NULL")
@@ -49,6 +60,7 @@ function author(c::GitCommit)
 end
 
 function committer(c::GitCommit)
+    @assert c.ptr != C_NULL
     ptr::Ptr{Signature} = api.git_commit_committer(c.ptr)
     if ptr == C_NULL
         error("git committer pointer is NULL")
@@ -57,6 +69,7 @@ function committer(c::GitCommit)
 end
 
 function parent(c::GitCommit, n::Integer)
+    @assert c.ptr != C_NULL
     if n < 0
         throw(ArgumentError("n must be greater than or equal to 0"))
     end
@@ -68,6 +81,7 @@ function parent(c::GitCommit, n::Integer)
 end
 
 function parent_id(c::GitCommit, n::Integer)
+    @assert c.ptr != C_NULL
     if n < 0
         throw(ArgumentError("n must be greater than or equal to 0"))
     end
@@ -80,5 +94,6 @@ function parent_id(c::GitCommit, n::Integer)
 end
 
 function parent_count(c::GitCommit)
+    @assert c.ptr != C_NULL
     return int(api.git_commit_parent_count(c.ptr))
 end
