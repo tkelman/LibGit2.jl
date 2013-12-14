@@ -87,4 +87,19 @@ end
 @libgit(git_signature_new, Cint, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint))
 @libgit(git_signature_now, Cint, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}))
 
+# ----- libgit commit ------
+@libgit(git_commit_message, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_commit_message_raw, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_commit_tree, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_commit_tree_id, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_commit_committer, Ptr{Signature}, (Ptr{Void},))
+@libgit(git_commit_author, Ptr{Signature}, (Ptr{Void},))
+@libgit(git_commit_parent, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cuint))
+@libgit(git_commit_parent_id, Ptr{Void}, (Ptr{Void}, Cuint))
+
+# ------ libgit blob ------
+@libgit(git_blob_rawsize, Int64, (Ptr{Void},))
+@libgit(git_blob_owner, Ptr{Void}, (Ptr{Void},))
+@libgit(git_blob_rawcontent, Ptr{Void}, (Ptr{Void},))
+@libgit(git_blob_is_binary, Cint, (Ptr{Void},))
 end # module api

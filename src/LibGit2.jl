@@ -9,6 +9,8 @@ include("object.jl")
 include("repository.jl")
 include("tree.jl")
 include("signature.jl")
+include("commit.jl")
+include("blob.jl")
 
 type GitThreadsHandle
     
