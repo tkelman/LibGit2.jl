@@ -1,5 +1,6 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
-       repo_open, repo_init, repo_index, head, tags, commits, references, repo_lookup, repo_lookup_tree
+       repo_open, repo_init, repo_index, head, tags, commits, references,
+       repo_lookup, repo_lookup_tree, commit
 
 type Repository
     ptr::Ptr{Void}
@@ -165,6 +166,38 @@ end
 function repo_walk(r::Repository)
 end
 
+function commit(r::Repository,
+                refname::String,
+                author::Signature,
+                committer::Signature,
+                msg::String,
+                tree::GitTree,
+                parents::GitCommit...)
+    commit_oid  = Oid()
+    bref = bytestring(refname)
+    bmsg = bytestring(msg)
+
+    nparents = convert(Cint, length(parents))
+    cparents = Array(Ptr{Void}, nparents)
+    if nparents > zero(Cint)
+        for (i, commit) in enumerate(parents)
+            cparents[i] = commit.ptr
+        end
+    end
+    author_ptr = convert(Ptr{Signature}, [author])
+    committer_ptr = convert(Ptr{Signature}, [committer])
+    @check api.git_commit_create(commit_oid.oid, 
+                                 r.ptr, 
+                                 bref,
+                                 author_ptr,
+                                 committer_ptr,
+                                 C_NULL, 
+                                 bmsg, 
+                                 tree.ptr, 
+                                 nparents,
+                                 nparents > 0 ? cparents : C_NULL)
+    return commit_oid
+end
 
 #function create_commit(refname::String,
 #                       author::Signiture,

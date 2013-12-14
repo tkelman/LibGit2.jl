@@ -6,11 +6,11 @@ include("types.jl")
 include("oid.jl")
 include("index.jl")
 include("object.jl")
-include("repository.jl")
 include("tree.jl")
 include("signature.jl")
 include("commit.jl")
 include("blob.jl")
+include("repository.jl")
 
 type GitThreadsHandle
     

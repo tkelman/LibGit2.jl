@@ -15,8 +15,8 @@ function seed_test_repo(repo)
     add_bypath!(idx, "README")
     tree_id = write_tree!(idx)
 
-    msg = "test commit message"
-    tree = repo_lookup(GitTree, repo, treeid)
-    commit_id = create_commit("HEAD", sig, sig, msg, tree)
+    msg = "test commit message\n"
+    tree = repo_lookup(GitTree, repo, tree_id)
+    commit_id = commit(repo, "HEAD", sig, sig, msg, tree)
     return commit_id, tree_id
 end

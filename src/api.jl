@@ -96,7 +96,11 @@ end
 @libgit(git_commit_author, Ptr{Signature}, (Ptr{Void},))
 @libgit(git_commit_parent, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cuint))
 @libgit(git_commit_parent_id, Ptr{Void}, (Ptr{Void}, Cuint))
-
+@libgit(git_commit_create, Cint,
+        (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{Signature},
+         Ptr{Signature}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
+         Cint, Ptr{Ptr{Void}}))
+                               
 # ------ libgit blob ------
 @libgit(git_blob_rawsize, Int64, (Ptr{Void},))
 @libgit(git_blob_owner, Ptr{Void}, (Ptr{Void},))
