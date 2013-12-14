@@ -1,16 +1,24 @@
-abstract GitRefType
-type RefSym <: GitRefType end
-type RefOid <: GitRefType end
+export GitReference, Sym,
+       set_target, set_symbolic_target, resolve, 
+       rename, target, symbolic_target, name,
+       git_reftype
 
-type GitReference{T<:GitRefType}
+#TODO:
+#abstract GitRefType
+#type RefSym <: GitRefType end
+#type RefOid <: GitRefType end
+
+type Sym end 
+
+type GitReference{T}
     ptr::Ptr{Void}
 end
 
 function GitReference(ptr::Ptr{Void})
     @assert ptr != C_NULL
     ty = api.git_reference_type(ptr)
-    RType = ty == 0 ? RefSym : RefOid 
-    ref = GitRef{RType}(ptr)
+    RType = ty == 0 ? Sym : Oid 
+    ref = GitReference{RType}(ptr)
     finalizer(ref, free!)
     return ref
 end
@@ -79,10 +87,10 @@ function name(r::GitReference)
     return bytestring(api.git_reference_name(r.ptr))
 end
 
-git_reftype{T<:GitRefType}(r::GitReference{T}) = begin
-    if T <: RefSym
+git_reftype{T}(r::GitReference{T}) = begin
+    if T <: Sym
         return api.REF_SYMBOLIC
-    elseif T <: RefOid
+    elseif T <: Oid
         return api.REF_OID
     else
         error("Unknown reference type $T")

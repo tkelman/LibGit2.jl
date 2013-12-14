@@ -159,7 +159,7 @@ repo_lookup_commit(r::Repository, id::Oid) = repo_lookup(GitCommit, r, id)
 
 function lookup_ref(r::Repository, refname::String)
     @assert r.ptr != C_NULL
-    bname = bytestring(name)
+    bname = bytestring(refname)
     ref_ptr = Array(Ptr{Void}, 1)
     @check api.git_reference_lookup(ref_ptr, r.ptr, bname)
     @check_null ref_ptr
@@ -170,7 +170,7 @@ end
 function create_ref(r::Repository, refname::String,
                     id::Oid, force::Bool=false)
     @assert r.ptr != C_NULL
-    bname = bytestring(name)
+    bname = bytestring(refname)
     ref_ptr = Array(Ptr{Void}, 1)
     @check api.git_reference_create(ref_ptr, r.ptr, bname,
                                     id.oid, force? 1 : 0)

@@ -128,6 +128,7 @@ end
 # ------ libgit tree ------
 @libgit(git_reference_create, Cint, 
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
+@libgit(git_reference_free, Cint, (Ptr{Void},))
 @libgit(git_reference_symbolic_create, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
 @libgit(git_reference_lookup, Cint, 
