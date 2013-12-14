@@ -124,4 +124,20 @@ end
 @libgit(git_tree_entry_type, Cint, (Ptr{Void},))
 @libgit(git_tree_entry_filemode, Cint, (Ptr{Void},))
 @libgit(git_tree_entrycount, Csize_t, (Ptr{Void},))
+
+# ------ libgit tree ------
+@libgit(git_reference_symbolic_target, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_reference_set_target, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
+@libgit(git_reference_resolve, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_reference_rename, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_reference_target, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_reference_delete, Cint, (Ptr{Void},))
+@libgit(git_reference_name, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_reference_type, Cint, (Ptr{Void},))
+@libgit(git_reference_iterator_new, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_reference_iterator_glob_new, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_reference_next_name, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_reference_next, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_reference_iterator_free, Cint, (Ptr{Void},))
+
 end # module api
