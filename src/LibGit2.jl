@@ -6,6 +6,7 @@ export api
 include("error.jl")
 include("types.jl")
 include("oid.jl")
+include("config.jl")
 include("index.jl")
 include("object.jl")
 include("tree.jl")

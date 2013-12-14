@@ -177,4 +177,15 @@ end
 @libgit(git_reference_next_name, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_reference_next, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_reference_iterator_free, Cint, (Ptr{Void},))
+
+# ------ libgit config  ------
+@libgit(git_config_set_string, Cint, (Ptr{Void}, Ptr{Cchar}, Ptr{Cchar}))
+@libgit(git_config_get_string, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_config_set_int64,  Cint, (Ptr{Void}, Ptr{Cchar}, Int64))
+@libgit(git_config_get_int64,  Cint, (Ptr{Int64}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_config_set_int32,  Cint, (Ptr{Void}, Ptr{Cchar}, Int32))
+@libgit(git_config_get_int32,  Cint, (Ptr{Int32}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_config_set_bool,   Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_config_get_bool,   Cint, (Ptr{Cint}, Ptr{Void}l, Ptr{Cchar}))
+@libgit(git_config_free, Cint, (Ptr{Void},)) 
 end # module api
