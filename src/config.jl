@@ -19,11 +19,11 @@ end
 #TODO: getindex, setindex...
 typealias GitConfigType Union(Bool,Int32,Int64,String)
 
-function lookup(::Type{Bool}, c::Config, name::String)
+function lookup(::Type{Bool}, c::GitConfig, name::String)
     #TODO:
 end
 
-function lookup(::Type{Int32}, c::Config, name::String)
+function lookup(::Type{Int32}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     out = Int32[0]
     bname = bytestring(n)
@@ -31,7 +31,7 @@ function lookup(::Type{Int32}, c::Config, name::String)
     return out[1]
 end
 
-function lookup(::Type{Int64}, c::Config, name::String)
+function lookup(::Type{Int64}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     out = Int64[0]
     bname = bytestring(name)
@@ -39,7 +39,7 @@ function lookup(::Type{Int64}, c::Config, name::String)
     return out[1]
 end
 
-function lookup(::Type{String}, c::Config, name::String)
+function lookup(::Type{String}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     ptr = Array(Ptr{Cchar}, 1)
     bname = bytestring(name)
@@ -48,7 +48,8 @@ function lookup(::Type{String}, c::Config, name::String)
     return bytestring(ptr)
 end
 
-function set!(::Type{String}, c::Config, name::String, value::String)
+function set!(::Type{String}, c::GitConfig, 
+              name::String, value::String)
     @assert c.ptr != C_NULL
     bname  = bytestring(name)
     bvalue = bytestring(value)
