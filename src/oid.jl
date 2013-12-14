@@ -1,28 +1,36 @@
 export Oid, hex, raw, iszero
 
-const GIT_OID_RAWSZ = 20
-const GIT_OID_HEXSZ = 40
-
 type Oid
     oid::Array{Uint8,1}
 
     function Oid()
-        new(zeros(Uint8, GIT_OID_RAWSZ))
+        new(zeros(Uint8, api.OID_RAWSZ))
     end
 
     function Oid(b::Array{Uint8,1})
-        if length(b) != GIT_OID_RAWSZ
+        if length(b) != api.OID_RAWSZ
             throw(ArgumentError("invalid raw buffer size"))
         end
         new(b)
     end
     
     function Oid(h::String)
-        if length(h) != GIT_OID_HEXSZ
+        if length(h) != api.OID_HEXSZ
             throw(ArgumentError("invalid hex size"))
         end
         bytes = hex2bytes(bytestring(h))
         Oid(bytes)
+    end
+
+    function Oid(ptr::Ptr{Uint8})
+        if ptr == C_NULL
+            throw(ArgumentError("pointer is NULL"))
+        end
+        oid = Array(Uint8, api.OID_RAWSZ)
+        for i in api.OID_RAWSZ
+            oid[i] = unsafe_load(ptr, i)
+        end
+        return Oid(oid)
     end
 end
 
@@ -73,7 +81,7 @@ Base.copy(oid::Oid) = begin
 end
 
 iszero(oid::Oid) = begin
-    for i in GIT_OID_RAWSZ
+    for i in api.OID_RAWSZ
         if oid.oid[i] != zero(Uint8)
             return false
         end

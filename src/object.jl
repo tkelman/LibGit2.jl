@@ -11,6 +11,8 @@ git_otype(::Type{GitTag}) = api.OBJ_TAG
 git_otype{T<:GitObject}(o::T) = git_otype(T)
 
 function oid(o::GitObject)
+    @check api.git_commit_id(o.ptr)
+
 end
 
 function hex(o::GitObject)

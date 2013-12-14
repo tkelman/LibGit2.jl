@@ -19,6 +19,9 @@ end
 cint(i) = convert(Cint, i)
 
 # ----- libgit constants -----
+const OID_RAWSZ = 20
+const OID_HEXSZ = 40
+
 const OBJ_ANY    = cint(-2)
 const OBJ_BAD    = cint(-1)
 const OBJ_COMMIT = cint(1)
