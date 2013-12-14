@@ -29,6 +29,9 @@ const OBJ_TREE   = cint(2)
 const OBJ_BLOB   = cint(3)
 const OBJ_TAG    = cint(4)
 
+const REF_OID = cint(1)    
+const REF_SYMBOLIC = cint(0)
+
 const FILEMODE_NEW             = cint(00000)
 const FILEMODE_TREE            = cint(16384)
 const FILEMODE_BLOB            = cint(33188)
