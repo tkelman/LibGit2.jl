@@ -31,7 +31,8 @@ try
     @test isa(tag, GitReference{Oid})
 
 catch err
-    cleanup_dir(test_path)
     rethrow(err)
-end 
-cleanup_dir(test_path)
+finally 
+    cleanup_dir(test_path)
+end
+

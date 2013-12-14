@@ -1,8 +1,21 @@
 type Odb
     ptr::Ptr{Void}
+
+    function Odb(ptr::Ptr{Void})
+        @assert ptr != C_NULL
+        o = new(ptr)
+        finalizer(o, free!)
+        return o
+    end
 end
 
-#TODO: support oid in odb....
+free!(o::Odb) = begin 
+    if o.ptr != C_NULL 
+        @check api.git_odb_free(o.ptr)
+        o.ptr = C_NULL
+    end
+end
+
 function exists(o::Odb, id::Oid)
     @check o.ptr != C_NULL
     res = api.git_odb_exists(o.ptr, id.oid)
@@ -15,6 +28,13 @@ end
 
 type OdbObject
     ptr::Ptr{Void}
+
+    function OdbObject(ptr::Ptr{Void})
+        @assert ptr != C_NULL
+        o = new(ptr)
+        finalizer(o, free!)
+        return o
+    end
 end
 
 free!(o::OdbObject) = begin
@@ -24,9 +44,14 @@ free!(o::OdbObject) = begin
     end
 end
 
-Base.sizeof(o::OdbObject) = begin
+Base.length(o::OdbObject) = begin
     @assert o.ptr != C_NULL
     return int(api.git_odb_object_size(o.ptr))
+end
+
+Base.sizeof(o::OdbObject) = begin
+    @assert o.ptr != C_NULL
+    return length(o) * sizeof(Cchar)
 end
 
 function data(o::OdbObject)
@@ -46,6 +71,13 @@ end
 
 abstract OdbIO
 
+free!(os::OdbIO) = begin
+    if os.ptr != C_NULL
+        @check api.odb_stream_free(os.ptr)
+        os.ptr = C_NULL
+    end
+end
+
 type OdbWrite <: OdbIO
     ptr::Ptr{Void}
     id::Oid
@@ -56,6 +88,15 @@ Base.iswriteable(io::OdbWrite) = true
 
 Base.write(io::OdbWrite, b::Array{Uint8}) = begin
     @assert io.ptr != C_NULL
+    len = convert(Csize_t, length(b))
+    @check api.git_odb_stream_write(io.ptr, b, len)
+    return len
+end
+
+Base.close(os::OdbWrite) = begin
+    @assert os.ptr != C_NULL
+    @check api.git_odb_stream_finalize_write(os.id, os.ptr)
+    return nothing
 end
 
 type OdbRead <: OdbIO
@@ -65,21 +106,23 @@ end
 Base.isreadable(io::OdbRead) = true
 Base.iswriteable(io::OdbRead) = false
 
-free!(os::OdbIO) = begin
-    if os.ptr != C_NULL
-        @check api.odb_stream_free(os.ptr)
-        os.ptr = C_NULL
-    end
+#TODO: this is broken ...
+Base.readbytes(io::OdbRead, nb=typemax(Int)) = begin
+    b = (Uint8, min(nb, 65536))
+    nr = readbytes!(s, b, nb)
+    resize!(b, nr)
 end
-
-Base.close(os::OdbWrite) = begin
-    @assert os.ptr != C_NULL
-    @check api.git_odb_stream_finalize_write(os.id, os.ptr)
-    return nothing
+ 
+#TODO: this is broken ...
+Base.readbytes!(io::OdbRead, b::Vector{Uint8}, nb=length(b)) = begin
+    @assert io.ptr != C_NULL
+    len = convert(Csize_t, length(b))
+    ret = @check api.git_odb_stream_read(io.ptr, b, len)
+    @assert len > 0
+    return len
 end
 
 Base.close(os::OdbRead) = begin
     #no op
     return nothing
 end
-

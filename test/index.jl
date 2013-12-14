@@ -25,7 +25,8 @@ try
     @test isa(oid(tree), Oid)
     @test isa(hex(tree), ASCIIString)
 catch err
-    cleanup_dir(test_path)
     rethrow(err)
-end 
-cleanup_dir(test_path)
+finally 
+    cleanup_dir(test_path)
+end
+

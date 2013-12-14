@@ -38,7 +38,8 @@ try
     @test isa(obj, GitTree)
     @test oid(obj) == oid(t)
 catch err
-    cleanup_dir(test_path)
     rethrow(err)
-end 
-cleanup_dir(test_path)
+finally 
+    cleanup_dir(test_path)
+end
+
