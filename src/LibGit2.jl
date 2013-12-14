@@ -14,9 +14,9 @@ include("commit.jl")
 include("blob.jl")
 include("repository.jl")
 
-type GitThreadsHandle
+type __GitThreadsHandle
     
-    function GitThreadsHandle()
+    function __GitThreadsHandle()
         h = new()
         finalizer(h, x -> api.git_threads_shutdown())
         return h
@@ -25,7 +25,7 @@ end
 
 const __threads_handle = begin
     api.git_threads_init()
-    GitThreadsHandle()
+    __GitThreadsHandle()
 end
 
 end # module
