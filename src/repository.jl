@@ -195,18 +195,32 @@ function commit(r::Repository,
 
         end
     end
-    boxed_author = [author]
-    boxed_committer = [committer]
-    @check api.git_commit_create(commit_oid.oid, 
-                                 r.ptr, 
-                                 bref,
-                                 boxed_author,
-                                 boxed_committer,
-                                 C_NULL, 
-                                 bmsg, 
-                                 tree.ptr, 
-                                 nparents,
-                                 nparents > 0 ? cparents : C_NULL)
+    #TODO: redefine this in api call
+    #TODO: encoding?
+    err_code = ccall((:git_commit_create, api.libgit2), Cint,
+                     (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, 
+                      Ptr{api.Signature}, Ptr{api.Signature}, 
+                      Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
+                      Cint, Ptr{Ptr{Void}}),
+                      commit_oid.oid, r.ptr, bref,
+                      &author, &committer,
+                      C_NULL, bmsg, tree.ptr, 
+                      nparents, nparents > 0 ? cparents : C_NULL)
+    if err_code < 0
+        throw(GitError(err_code))
+    end
+    # the below segfaults, passing signature's by & in ccall gets
+    # rid of the problem (instead of boxing the args)
+    #@check api.git_commit_create(commit_oid.oid, 
+    #                             r.ptr, 
+    #                             bref,
+    #                             boxed_author,
+    #                             boxed_committer,
+    #                             C_NULL, 
+    #                             bmsg, 
+    #                             tree.ptr, 
+    #                             nparents,
+    #                             nparents > 0 ? cparents : C_NULL)
     return commit_oid
 end
 
