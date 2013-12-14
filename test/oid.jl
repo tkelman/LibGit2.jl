@@ -32,3 +32,5 @@ push!(s, Oid("0000000000000000000000000000000000000001"))
 # Test iszero
 @test iszero(oid1) == false
 @test iszero(Oid(zeros(Uint8, 20))) == true
+
+# TODO: test pointer constructor....
