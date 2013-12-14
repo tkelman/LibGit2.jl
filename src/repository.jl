@@ -1,7 +1,7 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
-       repo_revparse_single
+       repo_revparse_single, create_ref, create_sym_ref, lookup_ref
 
 type Repository
     ptr::Ptr{Void}
@@ -157,15 +157,37 @@ repo_lookup_tree(r::Repository, id::Oid) = repo_lookup(GitTree, r, id)
 repo_lookup_blob(r::Repository, id::Oid) = repo_lookup(GitBlob, r, id)
 repo_lookup_commit(r::Repository, id::Oid) = repo_lookup(GitCommit, r, id)
 
-function repo_lookup_ref(r::Repository, refname::String)
+function lookup_ref(r::Repository, refname::String)
+    @assert r.ptr != C_NULL
+    bname = bytestring(name)
+    ref_ptr = Array(Ptr{Void}, 1)
+    @check api.git_reference_lookup(ref_ptr, r.ptr, bname)
+    @check_null ref_ptr
+    return GitReference(ref_ptr[1])
 end
 
 
-function repo_create_ref(r::Repository, refname::String, id::Oid, force::Bool)
+function create_ref(r::Repository, refname::String,
+                    id::Oid, force::Bool=false)
+    @assert r.ptr != C_NULL
+    bname = bytestring(name)
+    ref_ptr = Array(Ptr{Void}, 1)
+    @check api.git_reference_create(ref_ptr, r.ptr, bname,
+                                    id.oid, force? 1 : 0)
+    @check_null ref_ptr
+    return GitReference(ref_ptr[1])
 end
 
 
-function repo_create_sym_ref(r::Repository, refname::String, target::String, force::Bool)
+function create_sym_ref(r::Repository, refname::String,
+                        target::String, force::Bool=false)
+    @assert r.ptr != C_NUL
+    bname = bytestring(refname)
+    ref_ptr = Array(Ptr{Void}, 1)
+    @check api.git_reference_symbolic_create(ref_ptr, r.ptr, bname,
+                                             id.oid, force? 1 : 0)
+    @check_null ref_ptr
+    return GitReference(ref_ptr[1])
 end
 
 
