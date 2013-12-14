@@ -13,6 +13,7 @@ include("signature.jl")
 include("commit.jl")
 include("blob.jl")
 include("reference.jl")
+include("odb.jl")
 include("repository.jl")
 
 type __GitThreadsHandle

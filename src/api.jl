@@ -130,7 +130,29 @@ end
 @libgit(git_tree_entry_filemode, Cint, (Ptr{Void},))
 @libgit(git_tree_entrycount, Csize_t, (Ptr{Void},))
 
-# ------ libgit tree ------
+# ------ libgit odb ------
+@libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
+@libgit(git_odb_write, Cint, 
+        (Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Csize_t))
+@libgit(git_odb_read, Cint,
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
+@libgit(git_odb_open_rstream, Cint,
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
+@libgit(git_odb_open_wstream, Cint,
+        (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t, Cint))
+@libgit(git_odb_stream_read, Cint,
+        (Ptr{Void}, Ptr{Uint8}, Csize_t))
+@libgit(git_odb_stream_write, Cint,
+        (Ptr{Void}, Ptr{Uint8}, Csize_t)) 
+@libgit(git_odb_stream_finalize_write, Cint,
+        (Ptr{Uint8}, Ptr{Void}))
+@libgit(git_odb_stream_free, Cint, (Ptr{Void},))
+@libgit(git_odb_object_free, Cint, (Ptr{Void},))
+@libgit(git_odb_object_id, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_odb_object_data, Ptr{Void}, (Ptr{Void},))
+@libgit(git_odb_object_size, Csize_t, (Ptr{Void},))
+
+# ------ libgit reference  ------
 @libgit(git_reference_create, Cint, 
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
 @libgit(git_reference_free, Cint, (Ptr{Void},))
