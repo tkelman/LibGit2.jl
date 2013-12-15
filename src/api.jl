@@ -17,10 +17,13 @@ macro libgit(func, ret_type, arg_types)
 end
 
 cint(i) = convert(Cint, i)
+cuint(i) = convert(Cuint, i)
 
 # ----- libgit constants -----
 const OID_RAWSZ = 20
 const OID_HEXSZ = 40
+
+const ITEROVER   = cint(-31)
 
 const OBJ_ANY    = cint(-2)
 const OBJ_BAD    = cint(-1)
@@ -43,6 +46,23 @@ const FILEMODE_BLOB            = cint(33188)
 const FILEMODE_BLOB_EXECUTABLE = cint(33261)
 const FILEMODE_LINK            = cint(40960)
 const FILEMODE_COMMIT          = cint(57344)
+
+const CHECKOUT_NONE                    = cint(0)
+const CHECKOUT_SAFE                    = cuint(1) << cint(0)
+const CHECKOUT_SAFE_CREATE             = cuint(1) << cint(1)
+const CHECKOUT_FORCE                   = cuint(1) << cint(2)
+const CHECKOUT_ALLOW_CONFLICTS         = cuint(1) << cint(4)
+const CHECKOUT_REMOVE_UNTRACKED        = cuint(1) << cint(5)
+const CHECKOUT_REMOVE_IGNORED          = cuint(1) << cint(6)
+const CHECKOUT_UPDATE_ONLY             = cuint(1) << cint(7)
+const CHECKOUT_DONT_UPDATE_INDEX       = cuint(1) << cint(8)
+const CHECKOUT_NO_REFRESH              = cuint(1) << cint(9)
+const CHECKOUT_SKIP_UNMERGED           = cuint(1) << cint(10)
+const CHECKOUT_USE_OURS                = cuint(1) << cint(11)
+const CHECKOUT_USE_THEIRS              = cuint(1) << cint(12)
+const CHECKOUT_DISABLE_PATHSPEC_MATCH  = cuint(1) << cint(13)
+const CHECKOUT_SKIP_LOCKED_DIRECTORIES = cuint(1) << cint(18)
+const CHECKOUT_DONT_OVERWRITE_IGNORED  = cuint(1) << cint(19)
 
 const SUBMODULE_UPDATE_RESET    = cint(-1)
 const SUBMODULE_UPDATE_CHECKOUT = cint(1)
@@ -178,6 +198,52 @@ end
 @libgit(git_reference_next, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_reference_iterator_free, Cint, (Ptr{Void},))
 
+# ------ libgit checkout  ------
+#TODO:...
+type GitCheckoutOpts
+    version::Cuint
+    checkout_strategy::Cuint
+    disable_filters::Cint
+    dir_mode::Cint
+    file_mode::Cint
+    file_open_flags::Cint
+    notify_flags::Cuint 
+    notify_cb::Ptr{Void}
+    notify_payload::Ptr{Void}
+    progress_cb::Ptr{Void}
+    progress_payload::Ptr{Void}
+    paths_strings::Ptr{Ptr{Void}}
+    paths_count::Csize_t
+    baseline::Ptr{Void}
+    target_directory::Ptr{Cchar}
+    our_label::Ptr{Cchar}
+    their_label::Ptr{Cchar}
+
+    function GitCheckoutOpts()
+        return new(cuint(0),
+                   cuint(0),
+                   cint(0),
+                   cint(0),
+                   cint(0),
+                   cint(0),
+                   cuint(0),
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   convert(Csize_t, 0),
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL)
+    end
+end
+
+@libgit(git_checkout_opts_init, Ptr{Void}, ())
+@libgit(git_checkout_head, Cint, (Ptr{Void}, Ptr{Void})) 
+@libgit(git_checkout_index, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void}))
+
 # ------ libgit config  ------
 @libgit(git_config_set_string, Cint, (Ptr{Void}, Ptr{Cchar}, Ptr{Cchar}))
 @libgit(git_config_get_string, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void}, Ptr{Cchar}))
@@ -188,4 +254,5 @@ end
 @libgit(git_config_set_bool,   Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_config_get_bool,   Cint, (Ptr{Cint}, Ptr{Void}l, Ptr{Cchar}))
 @libgit(git_config_free, Cint, (Ptr{Void},)) 
+
 end # module api
