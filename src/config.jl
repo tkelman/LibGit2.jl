@@ -1,9 +1,11 @@
+export GitConfig, lookup, set!
+
 type GitConfig 
     ptr::Ptr{Void}
 
     function GitConfig(ptr::Ptr{Void})
         @assert ptr != C_NULL
-        c = new(c)
+        c = new(ptr)
         finalizer(c, free!)
         return c
     end
@@ -20,12 +22,16 @@ end
 typealias GitConfigType Union(Bool,Int32,Int64,String)
 
 function lookup(::Type{Bool}, c::GitConfig, name::String)
-    #TODO:
+    @assert c.ptr != C_NULL
+    out = Int32[0]
+    bname = bytestring(name)
+    @check api.git_config_get_bool(out, c.ptr, name)
+    return out[1] > 0 ? true : false
 end
 
 function lookup(::Type{Int32}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
-    out = Int32[0]
+    out = Cint[0]
     bname = bytestring(n)
     @check api.git_config_get_int32(out, c.ptr, bname)
     return out[1]

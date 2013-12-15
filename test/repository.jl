@@ -47,6 +47,8 @@ tmp_repo(test_repo_path) do
         @test commits(repo) == nothing
         # empty repo has no references
         @test references(repo) == nothing
+        
+        @test isa(repo_config(repo), GitConfig)
     end
 end
 

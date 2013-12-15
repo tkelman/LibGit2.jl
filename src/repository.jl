@@ -2,7 +2,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
-       repo_odb, iter_refs
+       repo_odb, iter_refs, repo_config
 
 type Repository
     ptr::Ptr{Void}
@@ -124,6 +124,11 @@ end
 
 
 function repo_config(r::Repository)
+    @assert r.ptr != C_NULL
+    config_ptr = Array(Ptr{Void}, 1)
+    @check api.git_repository_config(config_ptr, r.ptr)
+    @check_null config_ptr
+    return GitConfig(config_ptr[1])
 end
 
 function repo_odb(r::Repository)
