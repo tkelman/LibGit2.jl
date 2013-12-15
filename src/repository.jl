@@ -2,7 +2,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
-       repo_odb
+       repo_odb, iter_refs
 
 type Repository
     ptr::Ptr{Void}
@@ -113,10 +113,6 @@ end
 function tags(r::Repository)
     return nothing
 end
-
-function commits(r::Repository)
-    return nothing
-end 
 
 function references(r::Repository)
     return nothing
@@ -271,8 +267,61 @@ function repo_revparse_single(r::Repository, spec::String)
     return gitobj_from_ptr(obj_ptr[1])
 end
 
-function repo_read(r::Repository, id::Oid)
+#-------- Reference Iterator --------
+type ReferenceIterator
+    ptr::Ptr{Void}
+    repo::Repository
+
+    function ReferenceIterator(ptr::Ptr{Void}, r::Repository)
+        @assert ptr != C_NULL
+        ri = new(ptr, r)
+        finalizer(ri, free!)
+        return ri
+    end
 end
 
-function repo_write(r::Repository, gittype, data)
+free!(r::ReferenceIterator) = begin
+    if r.ptr != C_NULL
+        api.git_reference_iterator_free(r.ptr)
+        r.ptr = C_NULL
+    end
+end
+
+function iter_refs(r::Repository; glob=nothing)
+    @assert r.ptr != C_NULL
+    iter_ptr = Array(Ptr{Void}, 1)
+    if glob == nothing
+        @check api.git_reference_iterator_new(iter_ptr, r.ptr)
+    else
+        bglob = bytestring(glob)
+        @check api.git_reference_iterator_glob_new(iter_ptr, r.ptr, bglob)
+    end
+    @check_null iter_ptr
+    return ReferenceIterator(iter_ptr[1], r)
+end
+
+Base.start(r::ReferenceIterator) = begin
+    @assert r != C_NULL
+    ref_ptr = Array(Ptr{Void}, 1)
+    ret = api.git_reference_next(ref_ptr, r.ptr)
+    if ret == api.ITEROVER
+        return nothing
+    end
+    @check_null ref_ptr
+    return GitReference(ref_ptr[1])
+end
+
+Base.done(r::ReferenceIterator, state) = begin
+    state == nothing
+end
+
+Base.next(r::ReferenceIterator, state) = begin
+    @assert r.ptr != C_NULL
+    ref_ptr = Array(Ptr{Void}, 1)
+    ret = api.git_reference_next(ref_ptr, r.ptr)
+    if ret == api.ITEROVER
+        return (state, nothing)
+    end
+    @check_null ref_ptr
+    return (state, GitReference(ref_ptr[1]))
 end

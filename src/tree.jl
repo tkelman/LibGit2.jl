@@ -105,7 +105,7 @@ function entry_bypath(t::GitTree, path::String)
     # tree entries returned are owned by the user
     # and must be explictly freed.  
     # since we make a copy, free here
-    #@check_null entry_ptr
-    #@check api.git_tree_entry_free(entry_ptr[1])
+    @check_null entry_ptr
+    @check api.git_tree_entry_free(entry_ptr[1])
     return te
 end

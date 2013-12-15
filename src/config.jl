@@ -11,7 +11,7 @@ end
 
 free!(c::GitConfig) = begin
     if c.ptr != C_NULL
-        
+        git_config_free(c.ptr)
         c.ptr == C_NULL
     end
 end

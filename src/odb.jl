@@ -77,7 +77,6 @@ abstract OdbIO
 free!(os::OdbIO) = begin
     if os.ptr != C_NULL
         #TODO: close before gc?
-        #TODO: complains that this function does not exist??
         api.git_odb_stream_free(os.ptr)
         os.ptr = C_NULL
     end
@@ -146,13 +145,12 @@ Base.isreadable(io::OdbRead) = true
 Base.iswriteable(io::OdbRead) = false
 
 #TODO: this is broken ...
-Base.readbytes(io::OdbRead, nb=typemax(Int)) = begin
-    b = (Uint8, min(nb, 65536))
-    nr = readbytes!(s, b, nb)
-    resize!(b, nr)
-end
+#Base.readbytes(io::OdbRead, nb=typemax(Int)) = begin
+#    b = (Uint8, min(nb, 65536))
+#    nr = readbytes!(s, b, nb)
+#    resize!(b, nr)
+#end
  
-#TODO: this is broken ...
 Base.readbytes!(io::OdbRead, b::Vector{Uint8}, nb=length(b)) = begin
     @assert io.ptr != C_NULL
     len = convert(Csize_t, length(b))

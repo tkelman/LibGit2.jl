@@ -5,6 +5,7 @@ cleanup_dir(p) = begin
     end
 end
 
+# TEST REF MODIFICATION
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -35,4 +36,55 @@ catch err
 finally 
     cleanup_dir(test_path)
 end
+
+
+# TEST REF ITERATION
+test_path = joinpath(pwd(), "testrepo")
+try
+    repo = create_test_repo(test_path)
+    cid, tid = seed_test_repo(repo)
+
+    sig = Signature("test", "test@test.com")
+    idx = repo_index(repo)
+    add_bypath!(idx, "README")
+    tid = write_tree!(idx)
+
+    message = "This is a commit\n"
+    tree = repo_lookup_tree(repo, tid)
+  
+    cid = commit(repo, "HEAD", sig, sig, message, tree)
+
+    _ = create_ref(repo, "refs/heads/one",   cid, true)
+    _ = create_ref(repo, "refs/heads/two",   cid, true)
+    _ = create_ref(repo, "refs/heads/three", cid, true)
+
+    expected = [join(["refs/heads", x], "/") 
+                for x in ["master","one","two","three"]]
+    test_names = String[]
+    for r in iter_refs(repo)
+        push!(test_names, name(r))
+    end
+    sort!(expected)
+    sort!(test_names)
+    for (exp, tst) in zip(expected, test_names)
+        @test exp == tst
+    end
+
+    # test glob
+    expected = ["refs/heads/two", "refs/heads/three"]
+    test_names = String[]
+    for r in iter_refs(repo, glob="refs/heads/t*")
+        push!(test_names, name(r))
+    end
+    sort!(expected)
+    sort!(test_names)
+    for (exp, tst) in zip(expected, test_names)
+        @test exp == tst
+    end
+catch err
+    rethrow(err)
+finally 
+    cleanup_dir(test_path)
+end
+
 
