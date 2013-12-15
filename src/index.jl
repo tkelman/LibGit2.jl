@@ -2,11 +2,18 @@ export Index, add_bypath!, write_tree!
 
 type Index
     ptr::Ptr{Void}
+
+    function Index(ptr::Ptr{Void})
+        @assert ptr != C_NULL
+        i = new(ptr)
+        finalizer(i, free!)
+        return i
+    end
 end
 
 free!(i::Index) = begin
     if i.ptr != C_NULL
-        @check api.git_index_free(i.ptr)
+        api.git_index_free(i.ptr)
         i.ptr = C_NULL
     end
 end

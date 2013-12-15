@@ -82,9 +82,8 @@ free!(te::GitTreeEntry) = begin
     end
 end
 
-#TODO: this tree entries become invalid after
-#tree is explictly free'd, move copy everything
-#instead?
+#TODO: entries become invalid after tree 
+#is explictly free'd, copy everything instead?
 function entry_byname(t::GitTree, filename::String)
     @assert t.ptr != C_NULL
     bname = bytestring(filename)

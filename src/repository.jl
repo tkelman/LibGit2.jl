@@ -19,7 +19,7 @@ end
 
 free!(r::Repository) = begin
     if r.ptr != C_NULL
-        @check api.git_repository_free(r.ptr)
+        api.git_repository_free(r.ptr)
         r.ptr = C_NULL
     end
 end
@@ -199,7 +199,7 @@ end
 function repo_walk(r::Repository)
 end
 
-#TODO: sporadic segfaults
+
 function commit(r::Repository,
                 refname::String,
                 author::Signature,
@@ -212,7 +212,6 @@ function commit(r::Repository,
     commit_oid  = Oid()
     bref = bytestring(refname)
     bmsg = bytestring(msg)
-
     nparents = convert(Cint, length(parents))
     cparents = Array(Ptr{Void}, nparents)
     if nparents > zero(Cint)
@@ -222,7 +221,6 @@ function commit(r::Repository,
 
         end
     end
-    #TODO: redefine this in api call
     #TODO: encoding?
     err_code = ccall((:git_commit_create, api.libgit2), Cint,
                      (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, 
@@ -236,18 +234,6 @@ function commit(r::Repository,
     if err_code < 0
         throw(GitError(err_code))
     end
-    # the below segfaults, passing signature's by & in ccall gets
-    # rid of the problem (instead of boxing the args)
-    #@check api.git_commit_create(commit_oid.oid, 
-    #                             r.ptr, 
-    #                             bref,
-    #                             boxed_author,
-    #                             boxed_committer,
-    #                             C_NULL, 
-    #                             bmsg, 
-    #                             tree.ptr, 
-    #                             nparents,
-    #                             nparents > 0 ? cparents : C_NULL)
     return commit_oid
 end
 
@@ -257,6 +243,7 @@ end
 
 function repo_tree_builder(r::Repository)
 end
+
 
 function repo_revparse_single(r::Repository, spec::String)
     @assert r.ptr != C_NULL

@@ -42,7 +42,7 @@ end
 
 free!(o::OdbObject) = begin
     if o.ptr != C_NULL
-        @check api.git_odb_object_free(o.ptr)
+        api.git_odb_object_free(o.ptr)
         o.ptr = C_NULL
     end
 end

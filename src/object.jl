@@ -10,7 +10,7 @@ git_otype{T<:GitObject}(o::T) = git_otype(T)
 
 free!(o::GitObject) = begin
     if o.ptr != C_NULL
-        @check api.git_object_free(o.ptr)
+        api.git_object_free(o.ptr)
         o.ptr = C_NULL
     end
 end
