@@ -29,7 +29,7 @@ module SandBoxedTest
     const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/test/resources")
     
     function setup()
-        tmp_dir = mktmpdir()
+        tmp_dir = mktempdir()
         tmp_repo = mkdir(joinpath(tmpdir, "LibGit2_jl_SandBox"))
         return tmp_repo
     end
@@ -89,7 +89,7 @@ module SandBoxedTest
         repo = nothing
         
         function setup()
-            tmpdir = mktmpdir()
+            tmpdir = mktempdir()
             repo_dir = joinpath(SandBoxedTest.TESTDIR,
                                 joinpath("fixtures", "testrepo.git", "."))
             TmpRepoAccess.path = repo_dir
