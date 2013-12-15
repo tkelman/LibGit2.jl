@@ -3,7 +3,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, repo_config, repo_treebuilder, TreeBuilder,
-       insert!, write!
+       insert!, write!, close
 
 type Repository
     ptr::Ptr{Void}
@@ -37,6 +37,11 @@ Repository(path::String) = begin
     end
     @check_null repo_ptr
     return Repository(repo_ptr[1])
+end
+
+Base.close(r::Repository) = begin
+    #TODO:
+    return r
 end
 
 function repo_isbare(r::Repository)
