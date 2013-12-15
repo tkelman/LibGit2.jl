@@ -108,3 +108,5 @@ function entry_bypath(t::GitTree, path::String)
     @check api.git_tree_entry_free(entry_ptr[1])
     return te
 end
+
+

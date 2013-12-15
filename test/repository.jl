@@ -49,6 +49,8 @@ tmp_repo(test_repo_path) do
         @test references(repo) == nothing
         
         @test isa(repo_config(repo), GitConfig)
+        @test isa(repo_treebuilder(repo), TreeBuilder)
+        
     end
 end
 

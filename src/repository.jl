@@ -2,7 +2,8 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
-       repo_odb, iter_refs, repo_config
+       repo_odb, iter_refs, repo_config, repo_treebuilder, TreeBuilder,
+       insert!, write!
 
 type Repository
     ptr::Ptr{Void}
@@ -204,6 +205,14 @@ end
 function repo_walk(r::Repository)
 end
 
+function repo_revparse_single(r::Repository, spec::String)
+    @assert r.ptr != C_NULL
+    bspec = bytestring(spec)
+    obj_ptr = Array(Ptr{Void}, 1)
+    @check api.git_revparse_single(obj_ptr, r.ptr, bspec)
+    @check_null obj_ptr
+    return gitobj_from_ptr(obj_ptr[1])
+end
 
 function commit(r::Repository,
                 refname::String,
@@ -245,18 +254,53 @@ end
 function repo_set_workdir(r::Repository, dir::String, update::Bool)
 end
 
-
-function repo_tree_builder(r::Repository)
+#------- Tree Builder -------
+type TreeBuilder
+    ptr::Ptr{Void}
+    repo::Repository
+    
+    function TreeBuilder(ptr::Ptr{Void}, r::Repository)
+        @assert ptr != C_NULL
+        bld = new(ptr, r)
+        finalizer(bld, free!)
+        return bld
+    end
 end
 
+free!(t::TreeBuilder) = begin
+    if t.ptr != C_NULL
+        api.git_treebuilder_free(t.ptr)
+        t.ptr = C_NULL
+    end
+end
 
-function repo_revparse_single(r::Repository, spec::String)
+function insert!(t::TreeBuilder, filename::String,
+                 id::Oid, filemode::Int)
+    @assert t.ptr != C_NULL
+    bfilename = bytstring(filename)
+    cfilemode = convert(Cint, filemode)
+    @check api.git_treebuilder_insert(C_NULL,
+                                      t.ptr,
+                                      bfilename, 
+                                      id, 
+                                      cfilemode)
+    return t
+end
+
+function write!(t::TreeBuilder)
+    @assert t.ptr != C_NULL
+    oid_ptr = Array(Ptr{Void}, 1)
+    @check api.git_treebuilder_write(oid, t.repo.ptr, t.ptr)
+    @check_null oid_ptr
+    return Oid(oid_ptr[1])
+end
+
+function repo_treebuilder(r::Repository)
     @assert r.ptr != C_NULL
-    bspec = bytestring(spec)
-    obj_ptr = Array(Ptr{Void}, 1)
-    @check api.git_revparse_single(obj_ptr, r.ptr, bspec)
-    @check_null obj_ptr
-    return gitobj_from_ptr(obj_ptr[1])
+    bld_ptr = Array(Ptr{Void}, 1)
+    @check api.git_treebuilder_create(bld_ptr, C_NULL)
+    @check_null bld_ptr
+    return TreeBuilder(bld_ptr[1], r)
 end
 
 #-------- Reference Iterator --------

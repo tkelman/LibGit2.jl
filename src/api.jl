@@ -151,6 +151,13 @@ end
 @libgit(git_tree_entry_filemode, Cint, (Ptr{Void},))
 @libgit(git_tree_entrycount, Csize_t, (Ptr{Void},))
 
+@libgit(git_treebuilder_create, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_treebuilder_free, Void, (Ptr{Void},))
+@libgit(git_treebuilder_write, Cint, (Ptr{Uint8}, Ptr{Void}, Ptr{Void}))
+@libgit(git_treebuilder_insert, Cint,
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint)) 
+                                        
+
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
 @libgit(git_odb_free, Void, (Ptr{Void},))
@@ -254,6 +261,6 @@ end
 @libgit(git_config_get_int32,  Cint, (Ptr{Int32}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_set_bool,   Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_config_get_bool,   Cint, (Ptr{Cint}, Ptr{Void}l, Ptr{Cchar}))
-@libgit(git_config_free, Cint, (Ptr{Void},)) 
+@libgit(git_config_free, Void, (Ptr{Void},)) 
 
 end # module api
