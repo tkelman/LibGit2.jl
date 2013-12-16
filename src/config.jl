@@ -1,4 +1,4 @@
-export GitConfig, lookup, set!
+export GitConfig, lookup, set!, global_config
 
 type GitConfig 
     ptr::Ptr{Void}
@@ -18,8 +18,86 @@ free!(c::GitConfig) = begin
     end
 end
 
-#TODO: getindex, setindex...
 typealias GitConfigType Union(Bool,Int32,Int64,String)
+
+Base.getindex(c::GitConfig, key::String) = begin
+    return lookup(String, c, key)
+end
+
+Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::String) = begin
+    set!(T, c, key)
+end
+
+Base.delete!(c::GitConfig, key::String) = begin
+    @assert c.ptr != C_NULL
+    err = api.git_config_delete_entry(c.ptr, bytestring(key))
+    return err == api.ENOTFOUND ? false : true
+end
+
+function cb_each_key(entry_ptr::Ptr{api.GitConfigEntry}, o::Ptr{Void})
+    entry = unsafe_load(entry_ptr) 
+    n = bytestring(entry.name)
+    produce(n)
+    return api.GIT_OK
+end
+
+function cb_each_val(entry_ptr::Ptr{api.GitConfigEntry}, o::Ptr{Void})
+    entry = unsafe_load(entry_ptr)
+    v = bytestring(entry.value)
+    produce(v)
+    return api.GIT_OK
+end
+
+function cb_each_pair(entry_ptr::Ptr{api.GitConfigEntry}, o::Ptr{Void})
+    entry = unsafe_load(entry_ptr)
+    n = bytestring(entry.name)
+    v = bytestring(entry.value)
+    produce((n, v))
+    return api.GIT_OK
+end
+
+const c_cb_each_key = cfunction(cb_each_key, Cint, 
+                               (Ptr{api.GitConfigEntry}, Ptr{Void}))
+const c_cb_each_val = cfunction(cb_each_val, Cint, 
+                               (Ptr{api.GitConfigEntry}, Ptr{Void}))
+const c_cb_each_kvpair = cfunction(cb_each_pair, Cint, 
+                                  (Ptr{api.GitConfigEntry}, Ptr{Void}))
+
+Base.keys(c::GitConfig) = begin
+    @assert c.ptr != C_NULL
+    @task api.git_config_foreach(c.ptr, c_cb_each_key, C_NULL)
+end
+
+Base.values(c::GitConfig) = begin
+    @assert c.ptr != C_NULL
+    @task api.git_config_foreach(c.ptr, c_cb_each_key, C_NULL)
+end
+
+Base.start(c::GitConfig) = begin
+    @assert c.ptr != C_NULL
+    t = @task api.git_config_foreach(c.ptr, c_cb_each_kvpair, C_NULL)
+    (consume(t), t)
+end
+
+Base.done(c::GitConfig, state) = begin
+    istaskdone(state[2])
+end
+
+Base.next(c::GitConfig, state) = begin
+    v = consume(last(state))
+    (state[1], (v, state[2]))
+end
+
+Base.Dict(c::GitConfig) = begin
+   Dict{String,String}(c)
+end
+
+function global_config()
+    cfg_ptr = Array(Ptr{Void}, 1)
+    @check api.git_config_open_default(cfg_ptr)
+    @check_null cfg_ptr
+    return GitConfig(cfg_ptr[1])
+end
 
 function lookup(::Type{Bool}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
@@ -27,6 +105,14 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
     bname = bytestring(name)
     @check api.git_config_get_bool(out, c.ptr, name)
     return out[1] > 0 ? true : false
+end
+
+function set!(::Type{Bool}, c::GitConfig, value::Bool)
+    @assert c.ptr != C_NULL
+    bname = bytestring(name)
+    cval  = value? convert(Cint, 1) : convert(Cint, 0)
+    @check api.git_config_get_bool(out, c.ptr, cval)
+    return nothing
 end
 
 function lookup(::Type{Int32}, c::GitConfig, name::String)
@@ -37,6 +123,13 @@ function lookup(::Type{Int32}, c::GitConfig, name::String)
     return out[1]
 end
 
+function set!(::Type{Int32}, c::GitConfig, name::String, value::Int32)
+    @assert c.ptr != C_NULL
+    bname = bytestring(name)
+    @check api.git_config_set_int32(c.ptr, bname, bvalue)
+    return nothing
+end
+
 function lookup(::Type{Int64}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     out = Int64[0]
@@ -45,17 +138,25 @@ function lookup(::Type{Int64}, c::GitConfig, name::String)
     return out[1]
 end
 
+function set!(::Type{Int64}, c::GitConfig, name::String, value::Int64)
+    @assert c.ptr != C_NULL
+    bname = bytestring(name)
+    @check api.git_config_set_int64(c.ptr, bname, bvalue)
+    return nothing
+end
+
 function lookup(::Type{String}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     ptr = Array(Ptr{Cchar}, 1)
     bname = bytestring(name)
     @check api.git_config_get_string(ptr, c.ptr, bname)
-    @check_null ptr
-    return bytestring(ptr)
+    if ptr == C_NULL
+        return nothing
+    end
+    return bytestring(ptr[1])
 end
 
-function set!(::Type{String}, c::GitConfig, 
-              name::String, value::String)
+function set!(::Type{String}, c::GitConfig, name::String, value::String)
     @assert c.ptr != C_NULL
     bname  = bytestring(name)
     bvalue = bytestring(value)

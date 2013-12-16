@@ -23,7 +23,22 @@ cuint(i) = convert(Cuint, i)
 const OID_RAWSZ = 20
 const OID_HEXSZ = 40
 
-const ITEROVER   = cint(-31)
+const GIT_OK     = cint(0)
+const ERROR      = cint(-01)  
+const ENOTFOUND  = cint(-03)  
+const EEXISTS    = cint(-04) 
+const EAMBIGUOUS = cint(-05) 
+const EBUFS      = cint(-06) 
+const EUSER      = cint(-07) 
+const EBAREREPO       = cint(-08) 
+const EUNBORNBRANCH   = cint(-09) 
+const EUNMERGED       = cint(-10) 
+const ENONFASTFORWARD = cint(-11) 
+const EINVALIDSPEC    = cint(-12) 
+const EMERGECONFLICT  = cint(-13) 
+const ELOCKED         = cint(-14) 
+const PASSTHROUGH     = cint(-30) 
+const ITEROVER        = cint(-31)
 
 const OBJ_ANY    = cint(-2)
 const OBJ_BAD    = cint(-1)
@@ -253,6 +268,13 @@ end
 @libgit(git_checkout_index, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void}))
 
 # ------ libgit config  ------
+type GitConfigEntry
+    name::Ptr{Cchar}
+    value::Ptr{Cchar}
+    level::Cint
+end
+
+@libgit(git_config_open_default, Cint, (Ptr{Ptr{Void}},))
 @libgit(git_config_set_string, Cint, (Ptr{Void}, Ptr{Cchar}, Ptr{Cchar}))
 @libgit(git_config_get_string, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_set_int64,  Cint, (Ptr{Void}, Ptr{Cchar}, Int64))
@@ -261,6 +283,8 @@ end
 @libgit(git_config_get_int32,  Cint, (Ptr{Int32}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_set_bool,   Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_config_get_bool,   Cint, (Ptr{Cint}, Ptr{Void}l, Ptr{Cchar}))
+@libgit(git_config_delete_entry, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_free, Void, (Ptr{Void},)) 
+@libgit(git_config_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void})) 
 
 end # module api
