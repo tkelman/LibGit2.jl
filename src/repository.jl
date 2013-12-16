@@ -3,7 +3,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
-       insert!, write!, close, lookup
+       insert!, write!, close, lookup, rev_parse, rev_parse_oid
 
 type Repository
     ptr::Ptr{Void}
@@ -131,6 +131,19 @@ end
 function repo_discover(url::String)
 end
 
+function rev_parse(r::Repository, rev::String)
+    @assert r.ptr != C_NULL
+    brev = bytestring(rev)
+    obj_ptr = Array(Ptr{Void}, 1)
+    @check api.git_revparse_single(obj_ptr, r.ptr, brev)
+    @check_null obj_ptr
+    obj = gitobj_from_ptr(obj_ptr[1]) 
+    return obj
+end
+
+function rev_parse_oid(r::Repository, rev::String)
+    oid(rev_parse(r::Repository, rev::String))
+end
 
 function config(r::Repository)
     @assert r.ptr != C_NULL
@@ -187,7 +200,6 @@ function lookup_ref(r::Repository, refname::String)
     return GitReference(ref_ptr[1])
 end
 
-
 function create_ref(r::Repository, refname::String,
                     id::Oid, force::Bool=false)
     @assert r.ptr != C_NULL
@@ -198,7 +210,6 @@ function create_ref(r::Repository, refname::String,
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
-
 
 function create_sym_ref(r::Repository, refname::String,
                         target::String, force::Bool=false)

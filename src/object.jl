@@ -2,10 +2,8 @@ export GitObject, GitAny, libgit_const, oid, hex
 
 abstract GitObject
 type GitAny <: GitObject end
-type GitTag <: GitObject end
 
 git_otype(::Type{GitAny}) = api.OBJ_ANY
-git_otype(::Type{GitTag}) = api.OBJ_TAG 
 git_otype{T<:GitObject}(o::T) = git_otype(T)
 
 free!(o::GitObject) = begin
@@ -40,8 +38,17 @@ function hex(o::GitObject)
 end
 
 function raw(o::GitObject)
-    #TODO:....
-    nothing
+    repo_ptr = api.git_object_owner(o.ptr)
+    oid_ptr  = api.git_object_id(o.ptr)
+    odb_ptr = Array(Ptr{Void}, 1)
+    obj_ptr = Array(Ptr{Void}, 1)
+    @check api.git_repository_odb(odb_ptr, repo_ptr)
+    err = api.git_odb_read(obj_ptr, odb_ptr[1], oid_ptr)
+    api.git_odb_free(odb_ptr[1])
+    if err < 0
+        throw(GitError(err))
+    end
+    return OdbObject(obj_ptr[1])
 end
 
 function gitobj_from_ptr(ptr::Ptr{Void})
@@ -53,6 +60,8 @@ function gitobj_from_ptr(ptr::Ptr{Void})
         return GitTree(ptr)
     elseif obj_type == api.OBJ_COMMIT
         return GitCommit(ptr)
+    elseif obj_type == api.OBJ_TAG
+        return GitTag(ptr)
     else
         error("cannot convert gitobj $obj_type")
     end

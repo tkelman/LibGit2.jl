@@ -59,9 +59,8 @@ end
        commit = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
        @test isa(commit, GitCommit)
         
-       #TODO
-       #tag = lookup(test_repo, Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
-       #@test isa(tag, GitTag)
+       tag = lookup(test_repo, Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
+       @test isa(tag, GitTag)
 
        tree = lookup(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
        @test isa(tree, GitTree)
@@ -83,25 +82,22 @@ end
         @test obj1 == obj2
    end
   
-   #TODO:
    begin # test_read_raw_data
-        #obj = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-        #@assert raw(obj)
+        obj = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+        @test isa(raw(obj), OdbObject)
    end
    
-   #TODO:
    begin # test_lookup_by_rev
-        #obj = @repo.rev_parse("v1.0")
-        #assert "0c37a5391bbff43c37f0d0371823a5509eed5b1d", obj.oid
-        #obj = @repo.rev_parse("v1.0^1")
-        #assert "8496071c1b46c854b31185ea97743be6a8774479", obj.oid
+        obj = rev_parse(test_repo, "v1.0")
+        @test oid(obj) == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+        obj = rev_parse(test_repo, "v1.0^1")
+        @test oid(obj) == Oid("8496071c1b46c854b31185ea97743be6a8774479")
    end 
    
-   #TODO:
    begin # test_lookup_oid_by_rev
-       #oid = @repo.rev_parse_oid("v1.0")
-       #assert "0c37a5391bbff43c37f0d0371823a5509eed5b1d", oid
-       #@repo.rev_parse_oid("v1.0^1")
-       #assert "8496071c1b46c854b31185ea97743be6a8774479", oid
+       o = rev_parse_oid(test_repo, "v1.0")
+       @test o == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+       o = rev_parse_oid(test_repo, "v1.0^1")
+       @test o == Oid("8496071c1b46c854b31185ea97743be6a8774479")
    end
 end

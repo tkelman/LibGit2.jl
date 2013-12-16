@@ -122,6 +122,7 @@ const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 @libgit(git_oid_fmt, Cint, (Ptr{Cchar}, Ptr{Uint8}))
 @libgit(git_object_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint))
 @libgit(git_object_type, Cint, (Ptr{Void},))
+@libgit(git_object_owner, Ptr{Void}, (Ptr{Void},))
 
 # ----- libgit signature ------
 type Signature
