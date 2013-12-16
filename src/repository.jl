@@ -1,8 +1,8 @@
-export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
+export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
-       repo_odb, iter_refs, repo_config, repo_treebuilder, TreeBuilder,
+       repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup
 
 type Repository
@@ -66,7 +66,10 @@ function repo_workdir(r::Repository)
     return bytestring(res)[1:end-1]
 end
 
-function repo_path(r::Repository)
+@deprecate repo_path path
+repo_path(r::Repository) = path(r)
+
+function path(r::Repository)
     @assert r.ptr != C_NULL
     cpath = api.git_repository_path(r.ptr)
     if cpath == C_NULL
@@ -129,7 +132,7 @@ function repo_discover(url::String)
 end
 
 
-function repo_config(r::Repository)
+function config(r::Repository)
     @assert r.ptr != C_NULL
     config_ptr = Array(Ptr{Void}, 1)
     @check api.git_repository_config(config_ptr, r.ptr)

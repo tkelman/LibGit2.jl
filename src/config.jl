@@ -11,6 +11,14 @@ type GitConfig
     end
 end
 
+GitConfig(path::String) = begin
+    bpath = bytestring(path)
+    cfg_ptr = Array(Ptr{Void}, 1)
+    @check api.git_config_open_ondisk(cfg_ptr, bpath)
+    @check_null cfg_ptr
+    return GitConfig(cfg_ptr[1])
+end
+
 free!(c::GitConfig) = begin
     if c.ptr != C_NULL
         api.git_config_free(c.ptr)
@@ -25,7 +33,7 @@ Base.getindex(c::GitConfig, key::String) = begin
 end
 
 Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::String) = begin
-    set!(T, c, key)
+    set!(T, c, key, v)
 end
 
 Base.delete!(c::GitConfig, key::String) = begin
@@ -104,7 +112,13 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
     out = Int32[0]
     bname = bytestring(name)
     @check api.git_config_get_bool(out, c.ptr, name)
-    return out[1] > 0 ? true : false
+    if err == api.GIT_OK
+        return out[1] > 0 ? true : false
+    elseif err == api.ENOTFOUND
+        return nothing
+    else
+        throw(GitError(err))
+    end
 end
 
 function set!(::Type{Bool}, c::GitConfig, value::Bool)
@@ -119,8 +133,14 @@ function lookup(::Type{Int32}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     out = Cint[0]
     bname = bytestring(n)
-    @check api.git_config_get_int32(out, c.ptr, bname)
-    return out[1]
+    err = api.git_config_get_int32(out, c.ptr, bname)
+    if err == api.GIT_OK
+        return out[1]
+    elseif err == api.ENOTFOUND
+        return nothing
+    else
+        throw(GitError(err))
+    end
 end
 
 function set!(::Type{Int32}, c::GitConfig, name::String, value::Int32)
@@ -134,8 +154,14 @@ function lookup(::Type{Int64}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     out = Int64[0]
     bname = bytestring(name)
-    @check api.git_config_get_int64(out, c.ptr, bname)
-    return out[1]
+    err = api.git_config_get_int64(out, c.ptr, bname)
+    if err == api.GIT_OK
+        return out[1]
+    elseif err == api.ENOTFOUND
+        return nothing
+    else
+        throw(GitError(err))
+    end
 end
 
 function set!(::Type{Int64}, c::GitConfig, name::String, value::Int64)
@@ -145,18 +171,21 @@ function set!(::Type{Int64}, c::GitConfig, name::String, value::Int64)
     return nothing
 end
 
-function lookup(::Type{String}, c::GitConfig, name::String)
+function lookup{T<:String}(::Type{T}, c::GitConfig, name::String)
     @assert c.ptr != C_NULL
     ptr = Array(Ptr{Cchar}, 1)
     bname = bytestring(name)
-    @check api.git_config_get_string(ptr, c.ptr, bname)
-    if ptr == C_NULL
+    err = api.git_config_get_string(ptr, c.ptr, bname)
+    if err == api.GIT_OK
+        return bytestring(ptr[1])
+    elseif err == api.ENOTFOUND
         return nothing
+    else
+        throw(GitError(err))
     end
-    return bytestring(ptr[1])
 end
 
-function set!(::Type{String}, c::GitConfig, name::String, value::String)
+function set!{T<:String}(::Type{T}, c::GitConfig, name::String, value::String)
     @assert c.ptr != C_NULL
     bname  = bytestring(name)
     bvalue = bytestring(value)

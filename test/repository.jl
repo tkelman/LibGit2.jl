@@ -52,9 +52,8 @@ tmp_repo(test_repo_path) do
         # empty repo has no references
         @test references(repo) == nothing
         
-        @test isa(repo_config(repo), GitConfig)
+        @test isa(config(repo), GitConfig)
         @test isa(repo_treebuilder(repo), TreeBuilder)
-        
     end
 end
 

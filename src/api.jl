@@ -275,6 +275,7 @@ type GitConfigEntry
 end
 
 @libgit(git_config_open_default, Cint, (Ptr{Ptr{Void}},))
+@libgit(git_config_open_ondisk,  Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
 @libgit(git_config_set_string, Cint, (Ptr{Void}, Ptr{Cchar}, Ptr{Cchar}))
 @libgit(git_config_get_string, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_set_int64,  Cint, (Ptr{Void}, Ptr{Cchar}, Int64))
