@@ -68,12 +68,14 @@ end
    
 # can check if objects exist 
 @sandboxed_test "testrepo.git" begin
-    #TODO: contains
-    #@test Oid("8496071c1b46c854b31185ea97743be6a8774479") in testrepo
-    #@test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") in testrepo
-    #@test !(Oid("ce08fe4884650f067bd5703b6a59a8b3b3c99a09") in testrepo)
-    #@test !(Oid("8496071c1c46c854b31185ea97743be6a8774479") in testrepo)
-    @test true == true
+    @test Oid("8496071c1b46c854b31185ea97743be6a8774479") in test_repo
+    @test exists(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") in test_repo
+    @test exists(test_repo, Oid("1385f264afb75a56a5bec74243be9b367ba4ca08"))
+    @test !(Oid("ce08fe4884650f067bd5703b6a59a8b3b3c99a09") in test_repo)
+    @test !(exists(test_repo, Oid("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")))
+    @test !(Oid("8496071c1c46c854b31185ea97743be6a8774479") in test_repo)
+    @test !(exists(test_repo, Oid("8496071c1c46c854b31185ea97743be6a8774479")))
 end
 
 # test lookup object
@@ -108,3 +110,5 @@ end
     end
     @test length(ref_names) == 21
 end
+
+

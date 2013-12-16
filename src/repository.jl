@@ -44,6 +44,14 @@ Base.close(r::Repository) = begin
     return r
 end
 
+Base.in(id::Oid, r::Repository) = begin
+    @assert r.ptr != C_NULL
+    odb = repo_odb(r)
+    return exists(odb, id)::Bool
+end
+
+exists(r::Repository, id::Oid) = id in r 
+
 function repo_isbare(r::Repository)
     @assert r.ptr != C_NULL
     res = api.git_repository_is_bare(r.ptr)

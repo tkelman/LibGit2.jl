@@ -22,7 +22,7 @@ end
 function exists(o::Odb, id::Oid)
     @check o.ptr != C_NULL
     res = api.git_odb_exists(o.ptr, id.oid)
-    return res? true : false
+    return bool(res)
 end
 
 Base.in(id::Oid, o::Odb) = begin
