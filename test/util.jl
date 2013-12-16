@@ -106,71 +106,69 @@ macro sandboxed_test(body)
     end
 end
 
-            
-module RepoAccess
-    import LibGit2
+const TESTDIR = joinpath(Pkg.dir("LibGit2"), "test")
 
-    const TESTDIR = joinpath(Pkg.dir("LibGit2"), "test")
-    path = nothing
-    repo = nothing
+type RepoAccess
+    path::String
+    repo::Repository
+end
 
-    function setup()
-        global path
-        global repo
-        repo_dir = joinpath(TESTDIR, "fixtures/testrepo.git")
-        path = repo_dir 
-        repo = LibGit2.Repository(repo_dir)
-    end
+setup(::Type{RepoAccess}) = begin
+    dir = joinpath(TESTDIR, "fixtures/testrepo.git")
+    return RepoAccess(dir, Repository(dir))
 end
 
 macro with_repo_access(body)
     quote
-        RepoAccess.setup()
-        let test_repo_path = RepoAccess.path, 
-            test_repo  = RepoAccess.repo
+        ra = setup(RepoAccess)
+        let test_repo_path = ra.path, 
+            test_repo  = ra.repo
             $body
         end
     end
 end
 
 
-module TmpRepoAccess
-    import LibGit2
-    
-    const TESTDIR = joinpath(Pkg.dir("LibGit2"), "test")
-    path = nothing
-    repo = nothing
-    
-    function setup()
-        global path
-        global repo
-        tmpdir = mktempdir()
-        repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
-        run(`git clone --quiet  -- $repo_dir $tmpdir`)
-        path = tmpdir
-        repo = LibGit2.Repository(tmpdir)
-    end
+type TmpRepoAccess
+    path::String
+    repo::Repository
+    torndown::Bool
+end
 
-    function teardown()
-        global path
-        global repo
-        close(repo)
-        Base.gc()
-        run(`rm -r -f $(path)`)
+setup(::Type{TmpRepoAccess}) = begin
+    tmpdir = mktempdir()
+    repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
+    run(`git clone --quiet  -- $repo_dir $tmpdir`)
+    ra = TmpRepoAccess(tmpdir, Repository(tmpdir), false)
+    finalizer(ra, teardown)
+    return ra
+end
+
+teardown(ra::TmpRepoAccess) = begin
+    if !ra.torndown
+        try
+            close(ra.repo)
+            Base.gc()
+            run(`rm -r -f $(ra.path)`)
+        catch err
+            rethrow(err)
+        finally
+            ra.torndown = true
+        end
     end
 end
 
 macro with_tmp_repo_access(body)
     quote
-        TmpRepoAccess.setup()
+        ra = setup(TmpRepoAccess)
         try
-            test_repo_path = TmpRepoAccess.path
-            test_repo = TmpRepoAccess.repo
+            test_repo = ra.repo
+            test_repo_path = ra.path
             $body
         catch err
             rethrow(err)
         finally
-            TmpRepoAccess.teardown()
+            teardown(ra)
         end
     end
 end
