@@ -97,4 +97,4 @@ git_reftype{T}(r::GitReference{T}) = begin
     end
 end
 
-
+#TODO: Base.delete! (delte reference from repository..

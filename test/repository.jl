@@ -55,3 +55,7 @@ tmp_repo(test_repo_path) do
 end
 
 #TODO: more tests for relative path repo creation
+
+#@sandboxed_test begin
+#    @test repo_path(test_repo) == test_repo_path
+#end

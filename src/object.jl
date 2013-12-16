@@ -40,6 +40,8 @@ function hex(o::GitObject)
 end
 
 function raw(o::GitObject)
+    #TODO:....
+    nothing
 end
 
 function gitobj_from_ptr(ptr::Ptr{Void})

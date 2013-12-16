@@ -3,7 +3,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path,
        repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, repo_config, repo_treebuilder, TreeBuilder,
-       insert!, write!, close
+       insert!, write!, close, lookup
 
 type Repository
     ptr::Ptr{Void}
@@ -168,6 +168,8 @@ function repo_lookup(r::Repository, id::Oid)
     @check_null obj_ptr
     return gitobj_from_ptr(obj_ptr[1]) 
 end
+#TODO: make this the default...
+lookup(r::Repository, id::Oid) = repo_lookup(r::Repository, id::Oid)
 
 repo_lookup_tree(r::Repository, id::Oid) = repo_lookup(GitTree, r, id)
 repo_lookup_blob(r::Repository, id::Oid) = repo_lookup(GitBlob, r, id)
