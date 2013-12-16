@@ -50,7 +50,7 @@ end
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
 @with_repo_access begin
-   @test repo_path(test_repo) == test_repo_path
+   #@test repo_path(test_repo) == test_repo_path
    
    begin # lookup any object type 
        blob = lookup(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
