@@ -1,7 +1,6 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-
 const test_name   = "test test"
 const test_email  = "test@test.com"
 const test_time   = 0
