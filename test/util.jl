@@ -128,7 +128,6 @@ macro with_repo_access(body)
     end
 end
 
-
 type TmpRepoAccess
     path::String
     repo::Repository

@@ -5,6 +5,10 @@ cleanup_dir(p) = begin
     end
 end
 
+# ------------------------------------
+# Tests adapted from Git2Go Library
+# ------------------------------------
+
 # TEST REF MODIFICATION
 test_path = joinpath(pwd(), "testrepo")
 try
@@ -87,7 +91,10 @@ finally
     cleanup_dir(test_path)
 end
 
+# -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
+# -----------------------------------------
+
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
    

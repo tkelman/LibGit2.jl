@@ -5,6 +5,9 @@ cleanup_dir(p) = begin
     end
 end
 
+# ------------------------------------
+# Tests adapted from Git2Go Library
+# ------------------------------------
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -28,3 +31,6 @@ finally
     cleanup_dir(test_path)
 end
 
+# -----------------------------------------
+# Tests adapted from Ruby's Rugged Library
+# -----------------------------------------

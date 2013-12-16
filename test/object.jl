@@ -46,9 +46,9 @@ finally
     cleanup_dir(test_path)
 end
 
-# ------------------------------------
+# -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
-# ------------------------------------
+# -----------------------------------------
 @with_repo_access begin
    @test repo_path(test_repo) == test_repo_path
    

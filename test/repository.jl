@@ -19,6 +19,10 @@ function tmp_repo(body, tmp_path)
    cleanup_repo(tmp_path)
 end
 
+# ------------------------------------
+# Tests adapted from Git2Go Library
+# ------------------------------------
+
 # test creating bare repository
 tmp_repo(test_repo_path) do
     repo_init(test_repo_path; bare=true)
@@ -54,7 +58,9 @@ tmp_repo(test_repo_path) do
     end
 end
 
-#TODO: more tests for relative path repo creation
+# -----------------------------------------
+# Tests adapted from Ruby's Rugged Library
+# -----------------------------------------
 
 #@sandboxed_test begin
 #    @test repo_path(test_repo) == test_repo_path

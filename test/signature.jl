@@ -1,3 +1,7 @@
+# ------------------------------------
+# Tests adapted from Git2Go Library
+# ------------------------------------
+
 const test_name   = "test test"
 const test_email  = "test@test.com"
 const test_time   = 0
@@ -19,3 +23,8 @@ end
 let now = ifloor(time()), sig = Signature(test_name, test_email)
     @test time(sig) == now
 end
+
+# -----------------------------------------
+# Tests adapted from Ruby's Rugged Library
+# -----------------------------------------
+
