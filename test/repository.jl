@@ -61,7 +61,51 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
+# test fails to open repos that don't exist
+@sandboxed_test "testrepo.git" begin
+    @test_throws Repository("fakepath/123")
+    @test_throws Repository("test")
+end
+   
+# can check if objects exist 
+@sandboxed_test "testrepo.git" begin
+    #TODO: contains
+    #@test Oid("8496071c1b46c854b31185ea97743be6a8774479") in testrepo
+    #@test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") in testrepo
+    #@test !(Oid("ce08fe4884650f067bd5703b6a59a8b3b3c99a09") in testrepo)
+    #@test !(Oid("8496071c1c46c854b31185ea97743be6a8774479") in testrepo)
+    @test true == true
+end
 
-#@sandboxed_test begin
-#    @test repo_path(test_repo) == test_repo_path
-#end
+# test lookup object
+@sandboxed_test "testrepo.git" begin
+    obj = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    @test isa(obj, GitCommit)
+end
+
+# test find reference
+@sandboxed_test "testrepo.git" begin
+    ref = lookup_ref(test_repo, "refs/heads/master")
+    @test isa(ref, GitReference)
+    @test name(ref) == "refs/heads/master"
+end
+
+# TODO: match all refs
+@sandboxed_test "testrepo.git" begin
+    refs = {}
+    for r in iter_refs(test_repo; glob="refs/heads/*")
+        push!(refs, r)
+    end
+    @test length(refs) == 12
+end
+
+# TODO: return all ref names
+@sandboxed_test "testrepo.git" begin
+    ref_names = {}
+    for r in iter_refs(test_repo)
+        n = name(r)
+        @test isa(n, String)
+        push!(ref_names, n)
+    end
+    @test length(ref_names) == 21
+end

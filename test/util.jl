@@ -1,5 +1,10 @@
 using LibGit2
 
+const PKGDIR = Pkg.dir("LibGit2")
+const TESTDIR = joinpath(PKGDIR, "test")
+const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
+
+
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
         run(`rm -f -r $test_path`)
@@ -25,88 +30,77 @@ end
 
 # Reuse the Rugged (Ruby Libgit2) Testing framework
 
-module SandBoxedTest
-    
-    const PKGDIR = Pkg.dir("LibGit2")
-    const TESTDIR = joinpath(PKGDIR, "test")
-    const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/test/resources")
-    
-    path = nothing
-    repo = nothing
-
-    function setup()
-        global path
-        tmp_dir = mktempdir()
-        tmp_repo = joinpath(tmp_dir, "LibGit2_jl_SandBoxTest")
-        run(`mkdir -v $tmp_repo`)
-        path = tmp_repo
-        return path
-    end
-
-    function teardown()
-        global path
-        if isdir(path)
-            run(`rm -v -f -r $path`)
-        end
-    end
-
-    function init(repo_name)
-        global path
-        global repo
-        fixture_repo_path = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
-        run(`cp -v -r $fixture_repo_path $path`)
-        sandbox_repo_path = joinpath(path, repo_name)
-        run(`cd $sandbox_repo_path`)
-        filename = joinpath(sandbox_repo_path, ".gitted")
-        if isfile(filename)
-            newfilename = joinpath(sandbox_repo_path, ".git")
-            run(`mv -v $filename $newfilename`)
-        end
-        filename = joinpath(sandbox_repo_path, "gitattributes")
-        if isfile(filename)
-            newfilename = joinpath(sandbox_repo_path, ".gitattributes")
-            run(`mv -v $filename $newfilename`)
-        end
-        filename = joinpath(sandbox_repo_path, "gitignore")
-        if isfile(filename)
-            newfilename = joinpath(sandbox_repo_path, ".gitignore")
-            run(`mv -v $filename $newfilename`)
-        end
-        repo = LibGit2.Repository(sandbox_repo_path)
-        return repo
-    end
-
-    function clone(repo_path, name)
-        global path
-        orig_dir = pwd()
-        cd(path)
-        #TODO: use reference?
-        #git clone --quiet -- 
-        run(`git clone -- $repo_path $new_name`)
-        cd(orig_dir)
-        return LibGit2.Repository(joinpath(path, name))
-    end
-
+type SandBoxedTest
+    path::String
+    repo::Repository
+    torndown::Bool
 end
 
-macro sandboxed_test(body)
+function clone(sbt::SandBoxedTest, repo_path, name)
+        orig_dir = pwd()
+        cd(sbt.path)
+        run(`git clone --quiet  -- $repo_path $new_name`)
+        cd(orig_dir)
+        return Repository(joinpath(sbt.path, name))
+end
+
+function setup(::Type{SandBoxedTest}, repo_name::String)
+    tmpdir = mktempdir()
+    repo_dir = joinpath(tmpdir, "LibGit2_jl_SandBoxTest")
+    run(`mkdir $repo_dir`)
+    
+    fixture_repo_path = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
+    run(`cp -r $fixture_repo_path $repo_dir`)
+    sandbox_repo_path = joinpath(repo_dir, repo_name)
+    cd(sandbox_repo_path)
+    filename = joinpath(sandbox_repo_path, ".gitted")
+    if isfile(filename)
+        newfilename = joinpath(sandbox_repo_path, ".git")
+        run(`mv $filename $newfilename`)
+    end
+    filename = joinpath(sandbox_repo_path, "gitattributes")
+    if isfile(filename)
+        newfilename = joinpath(sandbox_repo_path, ".gitattributes")
+        run(`mv $filename $newfilename`)
+    end
+    filename = joinpath(sandbox_repo_path, "gitignore")
+    if isfile(filename)
+        newfilename = joinpath(sandbox_repo_path, ".gitignore")
+        run(`mv $filename $newfilename`)
+    end
+    repo = Repository(sandbox_repo_path)
+    sbt = SandBoxedTest(repo_dir, repo, false)
+    finalizer(sbt, teardown)
+    return sbt
+end
+
+function teardown(sbt::SandBoxedTest)
+    if !sbt.torndown
+        try
+            run(`rm -r -f $(sbt.path)`)
+        catch err
+            rethrow(err)
+        finally
+            sbt.torndown = true
+        end
+    end
+end
+
+macro sandboxed_test(reponame, body)
     quote
-        SandBoxedTest.setup()
-        SandBoxedTest.init("testrepo.git")
-        test_repo = SandBoxedTest.repo
-        test_repo_path = SandBoxedTest.path
+        sbt = setup(SandBoxedTest, $reponame)
+        test_repo = sbt.repo
+        test_repo_path = sbt.path
         try
             $body
         catch err
             rethrow(err)
         finally
             close(test_repo)
-            SandBoxedTest.teardown()
+            teardown(sbt)
         end
     end
 end
-
-const TESTDIR = joinpath(Pkg.dir("LibGit2"), "test")
 
 type RepoAccess
     path::String
