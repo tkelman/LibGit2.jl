@@ -95,6 +95,9 @@ function walk(r::Repository, from::Oid, sorting=SortDate)
     end
 end
 
+# walk(repo, oid) do commit
+      # do something with commit
+# end
 function walk(f::Function, r::Repository, from::Oid, sorting=SortDate)
     walker = GitRevWalker(r)
     sortby!(walker, api.SORT_TIME)

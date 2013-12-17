@@ -1,5 +1,5 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
-       repo_open, repo_init, repo_index, head, tags, commits, references,
+       repo_open, repo_init, repo_index, head, set_head!, tags, commits, references,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
@@ -132,8 +132,24 @@ function repo_clone(url::String;
 end
 
 function head(r::Repository)
-    return nothing
+    @assert r.ptr != C_NULL
+    head_ptr = Array(Ptr{Void}, 1)
+    err = api.git_repository_head(head_ptr, r.ptr)
+    if err == api.ENOTFOUND || err == api.EUNBORNBRANCH
+        return nothing
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end 
+    @check_null head_ptr
+    return GitReference(head_ptr[1])
 end
+
+function set_head!(r::Repository, ref::String)
+    @assert r.ptr != C_NULL
+    @check api.git_repository_set_head(r.ptr, bytestring(ref))
+    return r
+end
+
 
 function commits(r::Repository)
     return nothing 

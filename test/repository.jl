@@ -158,9 +158,28 @@ end
     @test length(tags(test_repo, "*tag*")) == 4
 end
 
-# returen a list of all remotes
+# return a list of all remotes
 @sandboxed_test "testrepo.git" begin
     rs = remotes(test_repo)
     @test length(rs) == 5
 end
 
+# test_lookup_head
+@sandboxed_test "testrepo.git" begin
+    h = head(test_repo)
+    @test isa(h, GitReference)
+    @test name(h) == "refs/heads/master"
+    @test target(h) == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    #@test isa( :direct
+end
+
+# test_set_head_ref
+@sandboxed_test "testrepo.git" begin
+    set_head!(test_repo, "refs/heads/packed")
+    @test name(head(test_repo)) == "refs/heads/packed"
+end
+
+# test_set_head_invalid
+@sandboxed_test "testrepo.git" begin
+    @test_throws set_head!(test_repo, "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+end

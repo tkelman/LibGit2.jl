@@ -137,6 +137,8 @@ end
 @libgit(git_repository_odb, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_revparse_single, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_repository_config, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_repository_head, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_repository_set_head, Cint, (Ptr{Void}, Ptr{Cchar}))
 
 # ----- libgit index ------
 @libgit(git_index_free, Cint, (Ptr{Void},))
