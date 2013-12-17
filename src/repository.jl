@@ -1,6 +1,6 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
-       repo_lookup, lookup_tree, lookup_commit, commit,
+       repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid
@@ -357,6 +357,14 @@ free!(r::ReferenceIterator) = begin
         api.git_reference_iterator_free(r.ptr)
         r.ptr = C_NULL
     end
+end
+
+function ref_names(r::Repository; glob=nothing)
+    rnames = String[]
+    for r in iter_refs(r; glob=glob)
+        push!(rnames, name(r))
+    end
+    return rnames
 end
 
 function iter_refs(r::Repository; glob=nothing)

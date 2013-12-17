@@ -106,12 +106,19 @@ end
 # test walking with block
 @sandboxed_test "testrepo.git" begin
     oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
-    @test oid in test_repo
     list = {}
     walk(test_repo, oid) do c
        push!(list, c)
     end
     @test join(map(c -> hex(c)[1:5], list), ".") == "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
+end
+
+# test walking with block
+@sandboxed_test "testrepo.git" begin
+    oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
+    commits = walk(test_repo, oid)
+    @test isa(commits, Task)
+    @test istaskdone(commits) == false
 end
 
 # test lookup object
@@ -129,20 +136,12 @@ end
 
 # TODO: match all refs
 @sandboxed_test "testrepo.git" begin
-    refs = {}
-    for r in iter_refs(test_repo; glob="refs/heads/*")
-        push!(refs, r)
-    end
+    refs = collect(iter_refs(test_repo; glob="refs/heads/*"))
     @test length(refs) == 12
 end
 
 # TODO: return all ref names
 @sandboxed_test "testrepo.git" begin
-    ref_names = {}
-    for r in iter_refs(test_repo)
-        n = name(r)
-        @test isa(n, String)
-        push!(ref_names, n)
-    end
-    @test length(ref_names) == 21
+    rnames = ref_names(test_repo)
+    @test length(rnames) == 21
 end
