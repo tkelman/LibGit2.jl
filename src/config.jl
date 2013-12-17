@@ -1,5 +1,7 @@
 export GitConfig, lookup, set!, global_config
 
+#TODO: make sure returning git config entries is not leaking memory
+
 type GitConfig 
     ptr::Ptr{Void}
 
