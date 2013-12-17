@@ -173,6 +173,10 @@ end
 @libgit(git_treebuilder_insert, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint)) 
                                         
+# ------ libgit walker ------
+@libgit(git_revwalk_new, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_revwalk_free, Void, (Ptr{Void},))
+@libgit(git_revwalk_repository, Ptr{Void}, (Ptr{Void},))
 
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
@@ -291,5 +295,6 @@ end
 @libgit(git_config_delete_entry, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_free, Void, (Ptr{Void},)) 
 @libgit(git_config_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void})) 
+
 
 end # module api
