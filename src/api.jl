@@ -103,8 +103,22 @@ type GitStrArray
    count::Csize_t
 
    function GitStrArray()
-       new(C_NULL, 0)
+       sa = new(C_NULL, 0)
+       finalizer(sa, free!)
+       return sa
    end
+end
+
+free!(sa::GitStrArray) = begin
+    if sa.strings != C_NULL && sa.count > 0
+        for i in 1:sa.count
+            cptr = unsafe_load(sa.strings, i)
+            @assert cptr != C_NULL
+            c_free(cptr)
+        end
+        sa.strings = C_NULL
+        sa.count  = 0
+    end
 end
 
 # ----- libgit threads -----

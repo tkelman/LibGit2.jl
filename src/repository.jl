@@ -153,10 +153,6 @@ function remotes(r::Repository)
         cptr = unsafe_load(gitremotes.strings, i)
         out[i] = bytestring(cptr)
     end
-    for i in 1:gitremotes.count
-        cptr = unsafe_load(gitremotes.strings, i)
-        c_free(cptr)
-    end
     return out
 end
  
@@ -169,7 +165,6 @@ function tags(r::Repository, glob=nothing)
         cglob = bytestring("") 
     end
     gittags = api.GitStrArray()
-    #TODO: this might leak memory on exception being thrown
     @check ccall((:git_tag_list_match, api.libgit2), Cint,
                  (Ptr{api.GitStrArray}, Ptr{Cchar}, Ptr{Void}),
                  &gittags, cglob, r.ptr)
@@ -180,10 +175,6 @@ function tags(r::Repository, glob=nothing)
     for i in 1:gittags.count
         cptr = unsafe_load(gittags.strings, i)
         out[i] = bytestring(cptr)
-    end
-    for i in 1:gittags.count
-        cptr = unsafe_load(gittags.strings, i)
-        c_free(cptr)
     end
     return out
 end
