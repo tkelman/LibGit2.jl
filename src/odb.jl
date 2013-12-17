@@ -84,13 +84,6 @@ function data(o::OdbObject)
     end
     return bytestring(data_ptr)
 end
-    #len = div(sizeof(o), sizeof(Uint8))
-    #@assert len > 0
-    #blob_copy = Array(Uint8, len)
-    #for i in 1:len
-    #    blob_copy[i] = unsafe_load(blob_ptr, i)
-    #end
-    #return data_copy
 
 abstract OdbIO
 
