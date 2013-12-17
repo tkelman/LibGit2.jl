@@ -111,7 +111,7 @@ end
 #    walk(test_repo) do c
 #       push!(list, c)
 #    end
-#    @test join(map(c -> hex(oid(c))[0,5]), ".") == "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
+#    @test join(map(c -> hex(oid(c))[1:5]), ".") == "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
 #end
 
 # test lookup object
@@ -146,5 +146,3 @@ end
     end
     @test length(ref_names) == 21
 end
-
-

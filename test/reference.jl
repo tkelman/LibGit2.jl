@@ -54,7 +54,7 @@ try
     tid = write_tree!(idx)
 
     message = "This is a commit\n"
-    tree = repo_lookup_tree(repo, tid)
+    tree = lookup_tree(repo, tid)
   
     cid = commit(repo, "HEAD", sig, sig, message, tree)
 

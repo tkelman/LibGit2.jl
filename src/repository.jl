@@ -1,6 +1,6 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_open, repo_init, repo_index, head, tags, commits, references,
-       repo_lookup, repo_lookup_tree, repo_lookup_commit, commit,
+       repo_lookup, lookup_tree, lookup_commit, commit,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid
@@ -189,7 +189,7 @@ function repo_index(r::Repository)
     return Index(idx_ptr[1])
 end
 
-function repo_lookup{T<:GitObject}(::Type{T}, r::Repository, id::Oid)
+function lookup{T<:GitObject}(::Type{T}, r::Repository, id::Oid)
     @assert r.ptr != C_NULL
     obj_ptr = Array(Ptr{Void}, 1)
     @check api.git_object_lookup(obj_ptr, r.ptr, id.oid, git_otype(T))
@@ -197,19 +197,17 @@ function repo_lookup{T<:GitObject}(::Type{T}, r::Repository, id::Oid)
     return T(obj_ptr[1])
 end
 
-function repo_lookup(r::Repository, id::Oid)
+function lookup(r::Repository, id::Oid)
     @assert r.ptr != C_NULL
     obj_ptr = Array(Ptr{Void}, 1)
     @check api.git_object_lookup(obj_ptr, r.ptr, id.oid, api.OBJ_ANY)
     @check_null obj_ptr
     return gitobj_from_ptr(obj_ptr[1]) 
 end
-#TODO: make this the default...
-lookup(r::Repository, id::Oid) = repo_lookup(r::Repository, id::Oid)
 
-repo_lookup_tree(r::Repository, id::Oid) = repo_lookup(GitTree, r, id)
-repo_lookup_blob(r::Repository, id::Oid) = repo_lookup(GitBlob, r, id)
-repo_lookup_commit(r::Repository, id::Oid) = repo_lookup(GitCommit, r, id)
+lookup_tree(r::Repository, id::Oid) = lookup(GitTree, r, id)
+lookup_blob(r::Repository, id::Oid) = lookup(GitBlob, r, id)
+lookup_commit(r::Repository, id::Oid) = lookup(GitCommit, r, id)
 
 function lookup_ref(r::Repository, refname::String)
     @assert r.ptr != C_NULL
@@ -243,7 +241,7 @@ function create_sym_ref(r::Repository, refname::String,
 end
 
 
-function repo_walk(r::Repository)
+function walk(f::Function, r::Repository, sorting=SortDate)
 end
 
 function repo_revparse_single(r::Repository, spec::String)

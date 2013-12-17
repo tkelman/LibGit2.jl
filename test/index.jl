@@ -18,8 +18,8 @@ try
     tree_id = write_tree!(idx)
     @test isa(tree_id, Oid)
     @test isequal(hex(tree_id), "b7119b11e8ef7a1a5a34d3ac87f5b075228ac81e")
-    tree1 = repo_lookup(GitTree, repo, tree_id)
-    tree2 = repo_lookup_tree(repo, tree_id)
+    tree1 = lookup(GitTree, repo, tree_id)
+    tree2 = lookup_tree(repo, tree_id)
 
     @test tree1 == tree2
     tree = tree1
