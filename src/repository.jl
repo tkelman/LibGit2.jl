@@ -3,7 +3,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
-       insert!, write!, close, lookup, rev_parse, rev_parse_oid
+       insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes
 
 type Repository
     ptr::Ptr{Void}
@@ -139,6 +139,27 @@ function commits(r::Repository)
     return nothing 
 end
 
+function remotes(r::Repository)
+    @assert r.ptr != C_NULL
+    gitremotes = api.GitStrArray()
+    @check ccall((:git_remote_list, api.libgit2), Cint,
+                 (Ptr{api.GitStrArray}, Ptr{Void}),
+                 &gitremotes, r.ptr)
+    if gitremotes.count == 0 
+        return nothing 
+    end
+    out = Array(ASCIIString, gitremotes.count)
+    for i in 1:gitremotes.count
+        cptr = unsafe_load(gitremotes.strings, i)
+        out[i] = bytestring(cptr)
+    end
+    for i in 1:gitremotes.count
+        cptr = unsafe_load(gitremotes.strings, i)
+        c_free(cptr)
+    end
+    return out
+end
+ 
 function tags(r::Repository, glob=nothing)
     @assert r.ptr != C_NULL
     local cglob::ByteString
@@ -148,6 +169,7 @@ function tags(r::Repository, glob=nothing)
         cglob = bytestring("") 
     end
     gittags = api.GitStrArray()
+    #TODO: this might leak memory on exception being thrown
     @check ccall((:git_tag_list_match, api.libgit2), Cint,
                  (Ptr{api.GitStrArray}, Ptr{Cchar}, Ptr{Void}),
                  &gittags, cglob, r.ptr)

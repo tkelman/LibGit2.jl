@@ -198,6 +198,10 @@ end
 @libgit(git_revwalk_sorting, Void, (Ptr{Void}, Cint))
 @libgit(git_revwalk_reset, Void, (Ptr{Void},))
 
+# ------ libgit remote ------
+@libgit(git_remote_free, Void, (Ptr{Void},))
+@libgit(git_remote_list, Cint, (Ptr{GitStrArray}, Ptr{Void}))
+
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
 @libgit(git_odb_free, Void, (Ptr{Void},))

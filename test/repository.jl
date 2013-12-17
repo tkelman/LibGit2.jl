@@ -157,3 +157,10 @@ end
     @test length(tags(test_repo, "e90810b")) == 1
     @test length(tags(test_repo, "*tag*")) == 4
 end
+
+# returen a list of all remotes
+@sandboxed_test "testrepo.git" begin
+    rs = remotes(test_repo)
+    @test length(rs) == 5
+end
+
