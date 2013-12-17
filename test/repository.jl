@@ -46,7 +46,7 @@ tmp_repo(test_repo_path) do
         # empty repo has no head
         @test head(repo) == nothing
         # empty repo has no tags
-        @test tags(repo) == nothing
+        #@test tags(repo) == nothing
         # empty repo has no commits
         @test commits(repo) == nothing
         # empty repo has no references
@@ -147,13 +147,13 @@ end
 end
 
 # return all tags
-#@sandboxed_test "testrepo.git" begin
-#    ts = tags(repo)
-#    @test length(ts) == 7
-#end
+@sandboxed_test "testrepo.git" begin
+    ts = tags(test_repo)
+    @test length(ts) == 7
+end
 
 # return all matching tags
-#@sandboxed_test "testrepo.git" begin
-#    @test tags(test_repo, "e90810b") == 1
-#    @test length(tags(test_repo, "*tag*")) == 4
-#end
+@sandboxed_test "testrepo.git" begin
+    @test length(tags(test_repo, "e90810b")) == 1
+    @test length(tags(test_repo, "*tag*")) == 4
+end
