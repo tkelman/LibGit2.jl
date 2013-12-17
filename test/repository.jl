@@ -46,7 +46,7 @@ tmp_repo(test_repo_path) do
         # empty repo has no head
         @test head(repo) == nothing
         # empty repo has no tags
-        #@test tags(repo) == nothing
+        @test tags(repo) == nothing
         # empty repo has no commits
         @test commits(repo) == nothing
         # empty repo has no references
