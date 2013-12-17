@@ -241,9 +241,6 @@ function create_sym_ref(r::Repository, refname::String,
 end
 
 
-function walk(f::Function, r::Repository, sorting=SortDate)
-end
-
 function repo_revparse_single(r::Repository, spec::String)
     @assert r.ptr != C_NULL
     bspec = bytestring(spec)

@@ -103,16 +103,16 @@ end
     @test_throws read_header(Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
-#TODO:
 # test walking with block
-#@sandboxed_test "testrepo.git" begin
-#    oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
-#    list = {}
-#    walk(test_repo) do c
-#       push!(list, c)
-#    end
-#    @test join(map(c -> hex(oid(c))[1:5]), ".") == "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
-#end
+@sandboxed_test "testrepo.git" begin
+    oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
+    @test oid in test_repo
+    list = {}
+    walk(test_repo, oid) do c
+       push!(list, c)
+    end
+    @test join(map(c -> hex(c)[1:5], list), ".") == "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
+end
 
 # test lookup object
 @sandboxed_test "testrepo.git" begin

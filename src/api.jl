@@ -47,6 +47,11 @@ const OBJ_TREE   = cint(2)
 const OBJ_BLOB   = cint(3)
 const OBJ_TAG    = cint(4)
 
+const SORT_NONE = cint(0)
+const SORT_TOPOLOGICAL = cint(1) << cint(0)
+const SORT_TIME = cint(1) << cint(1)
+const SORT_REVERSE = cint(1) << cint(2)
+
 const REF_INVALID = cint(0)
 const REF_OID = cint(1)    
 const REF_SYMBOLIC = cint(2)
@@ -144,6 +149,7 @@ end
 @libgit(git_commit_author, Ptr{Signature}, (Ptr{Void},))
 @libgit(git_commit_parent, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cuint))
 @libgit(git_commit_parent_id, Ptr{Void}, (Ptr{Void}, Cuint))
+@libgit(git_commit_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
 @libgit(git_commit_lookup_prefix, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Csize_t))
 @libgit(git_commit_create, Cint,
@@ -175,8 +181,13 @@ end
                                         
 # ------ libgit walker ------
 @libgit(git_revwalk_new, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_revwalk_next, Cint, (Ptr{Uint8}, Ptr{Void}))
 @libgit(git_revwalk_free, Void, (Ptr{Void},))
 @libgit(git_revwalk_repository, Ptr{Void}, (Ptr{Void},))
+@libgit(git_revwalk_push, Cint, (Ptr{Void}, Ptr{Uint8}))
+@libgit(git_revwalk_hide, Cint, (Ptr{Void}, Ptr{Uint8}))
+@libgit(git_revwalk_sorting, Void, (Ptr{Void}, Cint))
+@libgit(git_revwalk_reset, Void, (Ptr{Void},))
 
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))

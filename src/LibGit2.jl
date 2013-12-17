@@ -17,6 +17,7 @@ include("blob.jl")
 include("reference.jl")
 include("odb.jl")
 include("repository.jl")
+include("walk.jl")
 
 type __GitThreadsHandle
     
@@ -27,9 +28,9 @@ type __GitThreadsHandle
     end
 end
 
-const __threads_handle = begin
-    api.git_threads_init()
-    __GitThreadsHandle()
-end
+#const __threads_handle = begin
+#    api.git_threads_init()
+#    __GitThreadsHandle()
+#end
 
 end # module
