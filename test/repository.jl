@@ -78,35 +78,30 @@ end
     @test !(exists(test_repo, Oid("8496071c1c46c854b31185ea97743be6a8774479")))
 end
 
-#TODO:
 # can read a raw object
 @sandboxed_test "testrepo.git" begin
     rawobj = read(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test match(r"tree 181037049a54a1eb5fab404658a3a250b44335d7", data(rawobj)) != nothing
     @test sizeof(rawobj) == 172
     @test isa(rawobj, OdbObject{GitCommit})
-    #@test isa(rawobj, OdbObject)
 end
 
-#TODO:
 # can read object headers
-#@sandboxed_test "testrepo.git" begin
-#    h = read_header(test_repo, "8496071c1b46c854b31185ea97743be6a8774479")
-#    @test h[:len] == 172
-#    @test h[:type] == GitCommit
-#end
+@sandboxed_test "testrepo.git" begin
+    h = read_header(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    @test h[:type] == GitCommit
+    @test h[:nbytes] == 172
+end
 
-#TODO:
 # test check reads fail on missing objects
-#@sandboxed_test "testrepo.git" begin
-#    @test_throws read(Oid("a496071c1b46c854b31185ea97743be6a8774471"))
-#end
+@sandboxed_test "testrepo.git" begin
+    @test_throws read(Oid("a496071c1b46c854b31185ea97743be6a8774471"))
+end
 
-#TODO:
 # test check read headers fail on missing objects
-#@sandboxed_test "testrepo.git" begin
-#    @test_throws read_header(Oid("a496071c1b46c854b31185ea97743be6a8774471"))
-#end
+@sandboxed_test "testrepo.git" begin
+    @test_throws read_header(Oid("a496071c1b46c854b31185ea97743be6a8774471"))
+end
 
 #TODO:
 # test walking with block

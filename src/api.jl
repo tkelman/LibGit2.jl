@@ -181,6 +181,8 @@ end
         (Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Csize_t))
 @libgit(git_odb_read, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
+@libgit(git_odb_read_header, Cint,
+        (Ptr{Csize_t}, Ptr{Cint}, Ptr{Void}, Ptr{Uint8}))
 @libgit(git_odb_open_rstream, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
 @libgit(git_odb_open_wstream, Cint,

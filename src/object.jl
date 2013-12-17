@@ -54,15 +54,20 @@ end
 function gitobj_from_ptr(ptr::Ptr{Void})
     @assert ptr != C_NULL
     obj_type = api.git_object_type(ptr) 
+    T = gitobj_const_type(obj_type)
+    return T(ptr)
+end
+
+function gitobj_const_type(obj_type::Integer)
     if obj_type == api.OBJ_BLOB
-        return GitBlob(ptr)
+        return GitBlob
     elseif obj_type == api.OBJ_TREE
-        return GitTree(ptr)
+        return GitTree
     elseif obj_type == api.OBJ_COMMIT
-        return GitCommit(ptr)
+        return GitCommit
     elseif obj_type == api.OBJ_TAG
-        return GitTag(ptr)
+        return GitTag
     else
-        error("cannot convert gitobj $obj_type")
+        error("unknown git const type $obj_type")
     end
 end

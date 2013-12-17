@@ -49,13 +49,17 @@ Base.in(id::Oid, r::Repository) = begin
     return exists(odb, id)::Bool
 end
 
-#TODO:
 Base.read(r::Repository, id::Oid) = begin
     odb = repo_odb(r)
     obj_ptr = Array(Ptr{Void}, 1)
     @check api.git_odb_read(obj_ptr, odb.ptr, id.oid)
     @check_null obj_ptr
     return OdbObject(obj_ptr[1])
+end
+
+function read_header(r::Repository, id::Oid)
+    odb = repo_odb(r)
+    return read_header(odb, id)
 end
 
 exists(r::Repository, id::Oid) = id in r 

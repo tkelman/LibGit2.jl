@@ -1,5 +1,5 @@
 export Odb, OdbObject, OdbWrite, OdbRead,
-       exists, data, open_wstream, oid
+       exists, data, open_wstream, oid, read_header
 
 type Odb
     ptr::Ptr{Void}
@@ -29,35 +29,26 @@ Base.in(id::Oid, o::Odb) = begin
     exists(o, id)
 end
 
+function read_header(odb::Odb, id::Oid)
+    nbytes = Csize_t[0]
+    otype  = Cint[0]
+    @check api.git_odb_read_header(nbytes, otype, odb.ptr, id.oid)
+    return {:type   => gitobj_const_type(otype[1]),
+            :nbytes => nbytes[1]}
+end
+
 type OdbObject{T<:GitObject}
     ptr::Ptr{Void}
 end
 
-let 
-    function odb_obj_type(ptr::Ptr{Void})
-        obj_type = api.git_odb_object_type(ptr)
-        if obj_type == api.OBJ_BLOB
-            return GitBlob
-        elseif obj_type == api.OBJ_TREE
-            return GitTree
-        elseif obj_type == api.OBJ_COMMIT
-            return GitCommit
-        elseif obj_type == api.OBJ_TAG
-            return GitTag
-        else
-            error("cannot convert gitobj $obj_type")
-        end
-    end
-
-    OdbObject(ptr::Ptr{Void}) = begin
-        @assert ptr != C_NULL
-        T = odb_obj_type(ptr) 
-        o = OdbObject{T}(ptr)
-        finalizer(o, free!)
-        return o
-    end
+OdbObject(ptr::Ptr{Void}) = begin
+    @assert ptr != C_NULL
+    obj_type = api.git_odb_object_type(ptr)
+    T = gitobj_const_type(obj_type)
+    o = OdbObject{T}(ptr)
+    finalizer(o, free!)
+    return o
 end
-
 
 free!(o::OdbObject) = begin
     if o.ptr != C_NULL
