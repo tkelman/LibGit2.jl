@@ -196,6 +196,7 @@ end
 @libgit(git_odb_object_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_odb_object_data, Ptr{Void}, (Ptr{Void},))
 @libgit(git_odb_object_size, Csize_t, (Ptr{Void},))
+@libgit(git_odb_object_type, Cint, (Ptr{Void},))
 
 # ------ libgit reference  ------
 @libgit(git_reference_create, Cint, 

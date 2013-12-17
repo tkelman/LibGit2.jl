@@ -29,16 +29,35 @@ Base.in(id::Oid, o::Odb) = begin
     exists(o, id)
 end
 
-type OdbObject
+type OdbObject{T<:GitObject}
     ptr::Ptr{Void}
+end
 
-    function OdbObject(ptr::Ptr{Void})
+let 
+    function odb_obj_type(ptr::Ptr{Void})
+        obj_type = api.git_odb_object_type(ptr)
+        if obj_type == api.OBJ_BLOB
+            return GitBlob
+        elseif obj_type == api.OBJ_TREE
+            return GitTree
+        elseif obj_type == api.OBJ_COMMIT
+            return GitCommit
+        elseif obj_type == api.OBJ_TAG
+            return GitTag
+        else
+            error("cannot convert gitobj $obj_type")
+        end
+    end
+
+    OdbObject(ptr::Ptr{Void}) = begin
         @assert ptr != C_NULL
-        o = new(ptr)
+        T = odb_obj_type(ptr) 
+        o = OdbObject{T}(ptr)
         finalizer(o, free!)
         return o
     end
 end
+
 
 free!(o::OdbObject) = begin
     if o.ptr != C_NULL
@@ -49,28 +68,29 @@ end
 
 Base.length(o::OdbObject) = begin
     @assert o.ptr != C_NULL
-    return int(api.git_odb_object_size(o.ptr))
+    return div(sizeof(o), sizeof(Cchar))
 end
 
 Base.sizeof(o::OdbObject) = begin
     @assert o.ptr != C_NULL
-    return length(o) * sizeof(Cchar)
+    return int(api.git_odb_object_size(o.ptr))
 end
 
 function data(o::OdbObject)
     @assert o.ptr != C_NULL
-    blob_ptr::Ptr{Uint8} = api.git_odb_object_data(o.ptr)
-    if blob_ptr == C_NULL
+    data_ptr::Ptr{Cchar} = api.git_odb_object_data(o.ptr)
+    if data_ptr == C_NULL
         error("odb object data pointer is NULL")
     end
-    len = div(sizeof(o), sizeof(Uint8))
-    @assert len > 0
-    blob_copy = Array(Uint8, len)
-    for i in 1:len
-        blob_copy[i] = unsafe_load(blob_ptr, i)
-    end
-    return data_copy
+    return bytestring(data_ptr)
 end
+    #len = div(sizeof(o), sizeof(Uint8))
+    #@assert len > 0
+    #blob_copy = Array(Uint8, len)
+    #for i in 1:len
+    #    blob_copy[i] = unsafe_load(blob_ptr, i)
+    #end
+    #return data_copy
 
 abstract OdbIO
 
