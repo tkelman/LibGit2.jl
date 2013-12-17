@@ -12,3 +12,5 @@ type GitTag <: GitObject
 end
 
 git_otype(::Type{GitTag}) = api.OBJ_TAG 
+
+

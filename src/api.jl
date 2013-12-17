@@ -98,6 +98,15 @@ const SUBMODULE_IGNORE_DIRTY     = cint(3)
 const SUBMODULE_IGNORE_ALL       = cint(4) 
 const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 
+type GitStrArray
+   strings::Ptr{Ptr{Cchar}}
+   count::Csize_t
+
+   function GitStrArray()
+       new(C_NULL, 0)
+   end
+end
+
 # ----- libgit threads -----
 @libgit(git_threads_init, Cint, ())
 @libgit(git_threads_shutdown, Cint, ())

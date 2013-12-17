@@ -113,7 +113,7 @@ end
     @test join(map(c -> hex(c)[1:5], list), ".") == "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
 end
 
-# test walking with block
+# test walking without block
 @sandboxed_test "testrepo.git" begin
     oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
     commits = walk(test_repo, oid)
@@ -134,14 +134,26 @@ end
     @test name(ref) == "refs/heads/master"
 end
 
-# TODO: match all refs
+# match all refs
 @sandboxed_test "testrepo.git" begin
     refs = collect(iter_refs(test_repo; glob="refs/heads/*"))
     @test length(refs) == 12
 end
 
-# TODO: return all ref names
+# return all ref names
 @sandboxed_test "testrepo.git" begin
     rnames = ref_names(test_repo)
     @test length(rnames) == 21
 end
+
+# return all tags
+#@sandboxed_test "testrepo.git" begin
+#    ts = tags(repo)
+#    @test length(ts) == 7
+#end
+
+# return all matching tags
+#@sandboxed_test "testrepo.git" begin
+#    @test tags(test_repo, "e90810b") == 1
+#    @test length(tags(test_repo, "*tag*")) == 4
+#end

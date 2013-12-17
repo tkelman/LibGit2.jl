@@ -139,8 +139,19 @@ function commits(r::Repository)
     return nothing 
 end
 
-function tags(r::Repository)
-    return nothing
+function tags(r::Repository; glob=nothing)
+    @assert r.ptr != C_NULL
+    local cglob::ByteString
+    if glob != nothing
+        cglob = bytestring(glob)
+    else
+        cglob = bytestring("") 
+    end
+    gittags = api.GitStrArray()
+    @check ccall((:git_tag_list_match, api.libgit2), Cint,
+                 (Ptr{api.GitStrArray}, Ptr{Cchar}, Ptr{Void}),
+                 &gittags, cglob, r.ptr)
+    @assert gittags.count > 0
 end
 
 function references(r::Repository)
