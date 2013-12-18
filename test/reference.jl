@@ -101,6 +101,11 @@ end
         @test isvalid_ref(valid) == true
         @test isvalid_ref(invalid) == false 
     end
+
+    # test can handle exceptions
+    # test list references
+    # test can filter refs with regex
+
 end
 
 @with_repo_access begin
@@ -139,7 +144,7 @@ end
    @test o == target(ref)
    @test isa(ref, GitReference{Oid})
    @test name(ref) == "refs/heads/unit_test"
-   #delete!(ref)
+   delete!(test_repo, ref)
 end
 
 @with_tmp_repo_access begin
@@ -150,6 +155,3 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
   end
 end
-
- 
-

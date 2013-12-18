@@ -101,6 +101,12 @@ Base.read(r::Repository, id::Oid) = begin
     return OdbObject(obj_ptr[1])
 end
 
+Base.delete!(r::Repository, ref::GitReference) = begin
+    @assert r.ptr != C_NULL && ref.ptr != C_NULL
+    @check api.git_reference_delete(ref.ptr)
+    return r
+end
+
 function read_header(r::Repository, id::Oid)
     odb = repo_odb(r)
     return read_header(odb, id)
