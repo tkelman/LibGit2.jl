@@ -50,6 +50,33 @@ Base.in(id::Oid, r::Repository) = begin
     return exists(odb, id)::Bool
 end
 
+function cb_iter_oids(idptr::Ptr{Uint8}, o::Ptr{Void})
+    try
+        produce(Oid(idptr))
+        return convert(Cint, api.GIT_OK)
+    catch err
+        @show err
+        return convert(Cint, api.ERROR)
+    end
+end
+
+const c_cb_iter_oids = cfunction(cb_iter_oids, Cint, (Ptr{Uint8}, Ptr{Void}))
+
+Base.start(r::Repository) = begin
+    odb = repo_odb(r)
+    t = @task api.git_odb_foreach(odb.ptr, c_cb_iter_oids, C_NULL)
+    (consume(t), t)
+end
+
+Base.done(r::Repository, state) = begin
+    istaskdone(state[2])
+end
+
+Base.next(r::Repository, state) = begin
+    v = consume(state[2])
+    (state[1], (v, state[2]))
+end
+
 Base.read(r::Repository, id::Oid) = begin
     odb = repo_odb(r)
     obj_ptr = Array(Ptr{Void}, 1)

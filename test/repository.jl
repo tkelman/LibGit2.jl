@@ -186,22 +186,21 @@ end
 
 # test_access_a_file
 @sandboxed_test "testrepo.git" begin
-#    id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
 #    blob = blob_at(test_repo, id, 'new.txt')
 #    @test "my new file\n" == content(blob)
 end
 
 # test_access_a_missing_file
 @sandboxed_test "testrepo.git" begin
-#    id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
 #    blob = blob_at(test_repo, id, 'file-not-found.txt')
 #    @test blob == nothing
 end
 
 # test_enumerate_all_objects
 @sandboxed_test "testrepo.git" begin
-#    @test count(x -> x, test_repo) == 1687
-#    assert_equal 1687, @repo.each_id.count
+    @test count(x -> true, test_repo) == 1687
 end
 
 # test_loading_alternates

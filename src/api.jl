@@ -229,6 +229,7 @@ end
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
 @libgit(git_odb_free, Void, (Ptr{Void},))
+@libgit(git_odb_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Cint})) 
 @libgit(git_odb_write, Cint, 
         (Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Csize_t))
 @libgit(git_odb_read, Cint,
