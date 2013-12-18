@@ -62,6 +62,7 @@ end
 
 const c_cb_iter_oids = cfunction(cb_iter_oids, Cint, (Ptr{Uint8}, Ptr{Void}))
 
+#TODO: better error handling
 Base.start(r::Repository) = begin
     odb = repo_odb(r)
     t = @task api.git_odb_foreach(odb.ptr, c_cb_iter_oids, C_NULL)
