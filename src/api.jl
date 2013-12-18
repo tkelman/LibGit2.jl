@@ -130,8 +130,6 @@ end
 @libgit(git_repository_init, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}, Cint))
 @libgit(git_repository_free, Cint, (Ptr{Void},))
 @libgit(git_repository_index, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
-@libgit(git_repository_is_bare, Cint, (Ptr{Void},))
-@libgit(git_repository_is_empty, Cint, (Ptr{Void},))
 @libgit(git_repository_workdir, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_repository_path, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_repository_odb, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
@@ -139,6 +137,10 @@ end
 @libgit(git_repository_config, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_repository_head, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_repository_set_head, Cint, (Ptr{Void}, Ptr{Cchar}))
+
+@libgit(git_repository_is_empty, Cint, (Ptr{Void},))
+@libgit(git_repository_is_shallow, Cint, (Ptr{Void},))
+@libgit(git_repository_is_bare, Cint, (Ptr{Void},))
 
 # ----- libgit index ------
 @libgit(git_index_free, Cint, (Ptr{Void},))
@@ -170,8 +172,12 @@ type Signature
     time_offset::Cint
 end
 
-@libgit(git_signature_new, Cint, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint))
-@libgit(git_signature_now, Cint, (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}))
+@libgit(git_signature_default, Cint,
+        (Ptr{Ptr{Signature}}, Ptr{Void}))
+@libgit(git_signature_new, Cint, 
+        (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint))
+@libgit(git_signature_now, Cint, 
+        (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}))
 
 # ----- libgit commit ------
 @libgit(git_commit_message, Ptr{Cchar}, (Ptr{Void},))
@@ -231,6 +237,7 @@ end
 @libgit(git_odb_free, Void, (Ptr{Void},))
 @libgit(git_odb_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Cint})) 
 @libgit(git_odb_add_disk_alternate, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_odb_hash, Cint, (Ptr{Uint8}, Ptr{Cchar}, Csize_t, Cint))
 
 @libgit(git_odb_write, Cint, 
         (Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Csize_t))

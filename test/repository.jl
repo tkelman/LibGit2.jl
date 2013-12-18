@@ -275,3 +275,57 @@ end
     @test ahead == 2 
     @test behind == 1
 end
+
+#---------------------------
+# Merge Commits Repo Test
+#---------------------------
+#@sandboxed_test "merge-resolve" begin
+#end
+
+#---------------------------
+# Shallow Repo Test
+#---------------------------
+@sandboxed_test "testrepo.git" begin
+    shallow_sbt = setup(SandBoxedTest, "shallow.git")
+    shallow = shallow_sbt.repo
+    @test is_shallow(test_repo) == false
+    @test is_shallow(shallow) == true
+    teardown(shallow_sbt)
+end
+
+#---------------------------
+# Repo Write Test
+#---------------------------
+@with_tmp_repo_access begin
+  TEST_CONTENT = "my test data\n"
+
+  begin # test_can_hash_data
+    id = hash_data(GitBlob, TEST_CONTENT)
+    @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
+  end
+
+  begin # test_write_to_odb
+    id = write!(GitBlob, test_repo, TEST_CONTENT)
+    @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
+    @test Oid("76b1b55ab653581d6f2c7230d34098e837197674") in test_repo
+  end
+
+  begin # test_no_merge_base_between_unrelated_branches
+    info = rev_parse(test_repo, "HEAD")
+    @test isa(info, GitCommit)
+    sig = Signature("test", "test@test.com")
+    #baseless = commit(test_repo, "null", sig, sig, "", 
+    #@test merge_base(test_repo, "HEAD", baseless) == nothing
+  end
+
+  begin # test_default_signature
+    testname = "Test User"
+    testemail = "test@example.com"
+    config(test_repo)["user.name"] = testname
+    config(test_repo)["user.email"] = testemail
+    @assert isa(default_signature(test_repo), Signature)
+    @test testname == (default_signature(test_repo) |> name)
+    @test testemail == (default_signature(test_repo) |> email)
+  end
+end
+

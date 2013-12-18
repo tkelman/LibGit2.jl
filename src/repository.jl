@@ -4,7 +4,8 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
-       ahead_behind, merge_base, oid, blob_at
+       ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
+       default_signature
 
 type Repository
     ptr::Ptr{Void}
@@ -110,13 +111,19 @@ exists(r::Repository, id::Oid) = id in r
 function repo_isbare(r::Repository)
     @assert r.ptr != C_NULL
     res = api.git_repository_is_bare(r.ptr)
-    return res > 0 ? true : false
+    return res > zero(Cint) ? true : false
 end
 
 function repo_isempty(r::Repository)
     @assert r.ptr != C_NULL
     res = api.git_repository_is_empty(r.ptr) 
-    return res > 0 ? true : false
+    return res > zero(Cint) ? true : false
+end
+
+function is_shallow(r::Repository)
+    @assert r.ptr != C_NULL
+    res = api.git_repository_is_shallow(r.ptr)
+    return res > zero(Cint) ? true : false
 end
 
 function repo_workdir(r::Repository)
@@ -140,6 +147,28 @@ function path(r::Repository)
     end
     # remove trailing slash
     return bytestring(cpath)[1:end-1]
+end
+
+function hash_data{T<:GitObject}(::Type{T}, content::String)
+    out = Oid()
+    bcontent = bytestring(content)
+    @check api.git_odb_hash(out.oid, bcontent, length(bcontent), git_otype(T))
+    return out
+end
+
+function default_signature(r::Repository)
+    @assert r.ptr != C_NULL
+    sig_ptr = Array(Ptr{Signature}, 1)
+    err = api.git_signature_default(sig_ptr, r.ptr)
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end
+    @check_null sig_ptr 
+    sig = unsafe_load(sig_ptr[1])
+    finalizer(sig, free!)
+    return sig
 end
 
 function repo_head_orphaned(r::Repository)
@@ -276,6 +305,25 @@ function blob_at(r::Repository, rev::Oid, p::String)
     end
     blob = lookup_blob(r, oid(blob_entry))
     return blob
+end
+
+#TODO: consolidate with odb
+function write!{T<:GitObject}(::Type{T}, r::Repository, buf::ByteString)
+    @assert r.ptr != C_NULL
+    odb = repo_odb(r)
+    gty = git_otype(T)
+    stream_ptr = Array(Ptr{Void}, 1) 
+    @check api.git_odb_open_wstream(stream_ptr, odb.ptr, length(buf), gty)
+    err = api.git_odb_stream_write(stream_ptr[1], buf, length(buf))
+    out = Oid()
+    if !(bool(err))
+        err = api.git_odb_stream_finalize_write(out.oid, stream_ptr[1])
+    end
+    api.git_odb_stream_free(stream_ptr[1])
+    if err != api.GIT_OK
+        throw(GitError(err))
+    end
+    return out
 end
 
 function references(r::Repository)
