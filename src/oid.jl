@@ -1,4 +1,4 @@
-export Oid, hex, raw, iszero
+export Oid, hex, oid, raw, iszero
 
 type Oid
     oid::Array{Uint8,1}
@@ -34,6 +34,9 @@ type Oid
     end
 end
 
+function oid(id::Oid)
+    return id
+end
 
 function hex(oid::Oid)
     bytes2hex(oid.oid)

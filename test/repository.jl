@@ -226,36 +226,36 @@ end
 
 # test_find_merge_base_between_oids
 @sandboxed_test "testrepo.git" begin
-#    commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
-#    commit2 = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
-#    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
-#    @test base == merge_base(test_repo, commit1, commit2)
+    commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
+    commit2 = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
+    @test base == merge_base(test_repo, commit1, commit2)
 end
 
 # test_find_merge_base_between_commits
 @sandboxed_test "testrepo.git" begin
-#    commit1 = lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"))
-#    commit2 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
-#    base    = Oid('c47800c7266a2be04c571c04d5a6614691ea99bd")
-#    @test base == merge_base(test_repo, commit1, commit2)
+    commit1 = lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"))
+    commit2 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
+    @test base == merge_base(test_repo, commit1, commit2)
 end
 
 # test_find_merge_base_between_ref_and_oid
 @sandboxed_test "testrepo.git" begin
-#    commit1 = "a4a7dce85cf63874e984719f4fdd239f5145052f"
-#    commit2 = "refs/heads/master"
-#    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
-#    @test base == merge_base(test_repo, commit1, commit2)
+    commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
+    commit2 = "refs/heads/master"
+    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
+    @test base == merge_base(test_repo, commit1, commit2)
 end
 
 # test_find_merge_base_between_many
 @sandboxed_test "testrepo.git" begin
-#    commit1 = Oid('a4a7dce85cf63874e984719f4fdd239f5145052f')
-#    commit2 = "refs/heads/packed"
-#    commit3 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
-#
-#    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
-#    @test base == merge_base(test_repo, commit1, commit2, commit3)
+    commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
+    commit2 = "refs/heads/packed"
+    commit3 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+
+    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
+    @test base == merge_base(test_repo, commit1, commit2, commit3)
 end
 
 # test_ahead_behind_with_oids

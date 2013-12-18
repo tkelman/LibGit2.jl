@@ -4,7 +4,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
-       ahead_behind
+       ahead_behind, merge_base, oid
 
 type Repository
     ptr::Ptr{Void}
@@ -145,6 +145,19 @@ function head(r::Repository)
     return GitReference(head_ptr[1])
 end
 
+oid(r::Repository, val::GitObject) = oid(val)
+oid(r::Repository, val::Oid) = val
+
+function oid(r::Repository, val::String)
+    if length(val) == api.OID_HEXSZ
+        try
+            return Oid(val)
+        catch
+        end
+    end
+    return oid(rev_parse(r, val))
+end
+        
 function set_head!(r::Repository, ref::String)
     @assert r.ptr != C_NULL
     @check api.git_repository_set_head(r.ptr, bytestring(ref))
@@ -229,6 +242,24 @@ function rev_parse(r::Repository, rev::String)
     return obj
 end
 
+function merge_base(r::Repository, args...)
+    @assert r.ptr != C_NULL
+    if length(args) < 2
+        throw(ArgumentError("merge_base needs 2+ commits"))
+    end
+    arg_oids = vcat([raw(oid(r, a)) for a in args]...)
+    @assert length(arg_oids) == length(args) * api.OID_RAWSZ
+    len = convert(Csize_t, length(args))
+    id = Oid()
+    err = api.git_merge_base_many(id.oid, r.ptr, len, arg_oids)
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end
+    return id
+end
+    
 function rev_parse_oid(r::Repository, rev::String)
     oid(rev_parse(r::Repository, rev::String))
 end

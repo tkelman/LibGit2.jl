@@ -158,6 +158,10 @@ end
 @libgit(git_graph_ahead_behind, Cint, 
         (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}))
 
+# ----- libgit merge ------
+@libgit(git_merge_base_many, Cint,
+        (Ptr{Uint8}, Ptr{Void}, Csize_t, Ptr{Void}))
+
 # ----- libgit signature ------
 type Signature
     name::Ptr{Cchar}
