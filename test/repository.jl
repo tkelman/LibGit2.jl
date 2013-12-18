@@ -462,3 +462,13 @@ end
     @test isempty(ref_names(test_repo)) 
 end
 
+#---------------------------
+# Repo Push Test
+#---------------------------
+# TODO: 
+
+#---------------------------
+# Repo Checkout Test
+#---------------------------
+# TODO: 
+
