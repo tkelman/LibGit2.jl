@@ -431,5 +431,34 @@ end
     end
 end
 
+#---------------------------
+# Repo Clone Test
+#---------------------------
+#TODO: 
 
+#---------------------------
+# Repo Namespace Test
+#---------------------------
+@sandboxed_test "testrepo.git" begin 
+    @test namespace(test_repo) == nothing
+end
+
+@sandboxed_test "testrepo.git" begin 
+    set_namespace!(test_repo, "foo")
+    @test namespace(test_repo) == "foo"
+
+    set_namespace!(test_repo, "bar")
+    @test namespace(test_repo) == "bar"
+
+    set_namespace!(test_repo, "foo/bar")
+    @test namespace(test_repo) == "foo/bar"
+
+    set_namespace!(test_repo, nothing)
+    @test namespace(test_repo) == nothing
+end
+
+@sandboxed_test "testrepo.git" begin 
+    set_namespace!(test_repo, "foo")
+    @test isempty(ref_names(test_repo)) 
+end
 

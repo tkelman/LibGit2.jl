@@ -5,7 +5,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
        ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
-       default_signature, repo_discover, is_bare, is_empty
+       default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!
 
 type Repository
     ptr::Ptr{Void}
@@ -207,6 +207,24 @@ function repo_clone(url::String;
                     ignore_cert_errors::Bool=false,
                     remote_name::String="origin",
                     checkout_branch=nothing)
+end
+
+
+function set_namespace!(r::Repository, ns)
+    if ns == nothing || isempty(ns)
+        @check api.git_repository_set_namespace(r.ptr, C_NULL)
+    else
+        @check api.git_repository_set_namespace(r.ptr, bytestring(ns))
+    end
+    return r
+end
+
+function namespace(r::Repository)
+    ns_ptr = api.git_repository_get_namespace(r.ptr)
+    if ns_ptr == C_NULL
+        return nothing
+    end
+    return bytestring(ns_ptr)
 end
 
 function head(r::Repository)

@@ -141,6 +141,8 @@ end
 @libgit(git_repository_config, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_repository_head, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_repository_set_head, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_repository_set_namespace, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_repository_get_namespace, Ptr{Cchar}, (Ptr{Void},))
 
 @libgit(git_repository_is_empty, Cint, (Ptr{Void},))
 @libgit(git_repository_is_shallow, Cint, (Ptr{Void},))
