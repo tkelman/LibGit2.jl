@@ -28,10 +28,11 @@ function raw_content(b::GitBlob)
     if ptr == C_NULL
         return nothing
     end
-    n = div(sizeof(b), sizeof(Uint8))
-    buf = Array(Uint8, n)
-    for i in 1:n
-        buf[i] = uint8(unsafe_load(ptr, i))
-    end
-    return buf
+    return bytestring(convert(Ptr{Cchar}, ptr))
+    #n = div(sizeof(b), sizeof(Cchar))
+    #buf = Array(Cchar, n)
+    #for i in 1:n
+    #    buf[i] = unsafe_load(ptr, i)::Cchar
+    #end
+    #return buf
 end

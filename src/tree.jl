@@ -23,6 +23,8 @@ type GitTreeEntry{T<:GitObject}
     filemode::Cint
 end
 
+oid(te::GitTreeEntry) = te.oid
+
 Base.filemode(te::GitTreeEntry) = begin
     convert(Cint, te.filemode)
 end

@@ -4,7 +4,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
-       ahead_behind, merge_base, oid
+       ahead_behind, merge_base, oid, blob_at
 
 type Repository
     ptr::Ptr{Void}
@@ -192,7 +192,6 @@ function set_head!(r::Repository, ref::String)
     return r
 end
 
-
 function commits(r::Repository)
     return nothing 
 end
@@ -250,6 +249,19 @@ function ahead_behind(r::Repository, lid::Oid, uid::Oid)
     @check api.git_graph_ahead_behind(
                 ahead, behind, r.ptr, lid.oid, uid.oid)
     return (int(ahead[1]), int(behind[1]))
+end
+
+function blob_at(r::Repository, rev::Oid, p::String)
+    tree = git_tree(lookup_commit(r, rev))
+    local blob_entry::GitTreeEntry
+    try
+        blob_entry = entry_bypath(tree, p)
+        @assert isa(blob_entry, GitTreeEntry{GitBlob})
+    catch
+        return nothing
+    end
+    blob = lookup_blob(r, oid(blob_entry))
+    return blob
 end
 
 function references(r::Repository)

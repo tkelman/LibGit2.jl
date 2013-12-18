@@ -170,7 +170,7 @@ end
     @test isa(h, GitReference)
     @test name(h) == "refs/heads/master"
     @test target(h) == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
-    #@test isa( :direct
+    #@test isa
 end
 
 # test_set_head_ref
@@ -187,15 +187,15 @@ end
 # test_access_a_file
 @sandboxed_test "testrepo.git" begin
     id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
-#    blob = blob_at(test_repo, id, 'new.txt')
-#    @test "my new file\n" == content(blob)
+    blob = blob_at(test_repo, id, "new.txt")
+    @test "my new file\n" == raw_content(blob)
 end
 
 # test_access_a_missing_file
 @sandboxed_test "testrepo.git" begin
     id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
-#    blob = blob_at(test_repo, id, 'file-not-found.txt')
-#    @test blob == nothing
+    blob = blob_at(test_repo, id, "file-not-found.txt")
+    @test blob == nothing
 end
 
 # test_enumerate_all_objects
