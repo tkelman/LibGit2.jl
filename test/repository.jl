@@ -329,3 +329,57 @@ end
   end
 end
 
+#---------------------------
+# Repo Discover Test
+#---------------------------
+teardown_dir(p::String) = run(`rm -r -f $p`)
+
+macro discover_test(body)
+    quote
+        tmpdir = mktempdir()
+        mkdir(joinpath(tmpdir, "foo"))
+        try
+            $body
+        catch err
+            rethrow(err)
+        finally
+            teardown_dir(tmpdir)
+        end
+    end
+end
+
+# test discover false
+@discover_test begin
+    @test_throws repo_discover(tmpdir)
+end
+
+# test discover nested false
+@discover_test begin
+    @test_throws repo_disover(joinpath(tmpdir, "foo"))
+end
+
+# test discover true
+@discover_test begin
+    repo = repo_init(tmpdir; bare=true)
+    root = repo_discover(tmpdir)
+    try 
+        @test is_bare(root) == true
+        @test path(root) == path(repo)
+    finally
+        close(root)
+        close(repo)
+    end
+end
+
+# test discover nested true
+@discover_test begin
+    repo = repo_init(tmpdir; bare=true)
+    root = repo_discover(joinpath(tmpdir, "foo"))
+    try 
+        @test is_bare(root) == true
+        @test path(root) == path(repo)
+    finally
+        close(root)
+        close(repo)
+    end
+end

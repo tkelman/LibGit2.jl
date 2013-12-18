@@ -98,6 +98,8 @@ const SUBMODULE_IGNORE_DIRTY     = cint(3)
 const SUBMODULE_IGNORE_ALL       = cint(4) 
 const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 
+const GIT_PATH_MAX = cint(4096)
+
 type GitStrArray
    strings::Ptr{Ptr{Cchar}}
    count::Csize_t
@@ -126,6 +128,8 @@ end
 @libgit(git_threads_shutdown, Cint, ())
 
 # ----- libgit repo ------
+@libgit(git_repository_discover, Cint, 
+        (Ptr{Cchar}, Csize_t, Ptr{Cchar}, Cint, Ptr{Void}))  
 @libgit(git_repository_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
 @libgit(git_repository_init, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}, Cint))
 @libgit(git_repository_free, Cint, (Ptr{Void},))

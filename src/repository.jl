@@ -5,7 +5,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
        ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
-       default_signature
+       default_signature, repo_discover, is_bare, is_empty
 
 type Repository
     ptr::Ptr{Void}
@@ -108,13 +108,19 @@ end
 
 exists(r::Repository, id::Oid) = id in r 
 
-function repo_isbare(r::Repository)
+@deprecate repo_isbare is_bare
+repo_isbare(r::Repository) = is_bare(r)
+
+function is_bare(r::Repository)
     @assert r.ptr != C_NULL
     res = api.git_repository_is_bare(r.ptr)
     return res > zero(Cint) ? true : false
 end
 
-function repo_isempty(r::Repository)
+@deprecate repo_isbare is_bare
+repo_isempty(r) = is_empty(r)
+
+function is_empty(r::Repository)
     @assert r.ptr != C_NULL
     res = api.git_repository_is_empty(r.ptr) 
     return res > zero(Cint) ? true : false
@@ -331,7 +337,13 @@ function references(r::Repository)
 end
 
 
-function repo_discover(url::String)
+function repo_discover(p::String="", acrossfs::Bool=true)
+    if isempty(p); p = pwd(); end
+    brepo = Array(Cchar, api.GIT_PATH_MAX)
+    bp = bytestring(p)
+    @check api.git_repository_discover(brepo, api.GIT_PATH_MAX, 
+                                       bp, acrossfs? 1 : 0, C_NULL)
+    return Repository(bytestring(convert(Ptr{Cchar}, brepo)))
 end
 
 function rev_parse(r::Repository, rev::String)
