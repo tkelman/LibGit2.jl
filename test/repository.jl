@@ -186,32 +186,28 @@ end
 
 # test_access_a_file
 @sandboxed_test "testrepo.git" begin
-#    sha = 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
-#    blob = @repo.blob_at(sha, 'new.txt')
-#    assert_equal "my new file\n", blob.content
+#    id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+#    blob = blob_at(test_repo, id, 'new.txt')
+#    @test "my new file\n" == content(blob)
 end
 
 # test_access_a_missing_file
 @sandboxed_test "testrepo.git" begin
-#    sha = 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
-#    blob = @repo.blob_at(sha, 'file-not-found.txt')
-#    assert_nil blob
-end
-
-# test_garbage_collection
-@sandboxed_test "testrepo.git" begin
-#    Rugged::Repository.new(@repo.path)
-#    ObjectSpace.garbage_collect
+#    id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+#    blob = blob_at(test_repo, id, 'file-not-found.txt')
+#    @test blob == nothing
 end
 
 # test_enumerate_all_objects
 @sandboxed_test "testrepo.git" begin
+#    @test count(x -> x, test_repo) == 1687
 #    assert_equal 1687, @repo.each_id.count
 end
 
 # test_loading_alternates
 @sandboxed_test "testrepo.git" begin
-#    alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
+#    alt_path = joinpath(pwd(), 'fixtures/alternate/objects')
+#    @assert isdir(alt_path)
 #    repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
 #    begin
 #      assert_equal 1690, repo.each_id.count
@@ -230,55 +226,54 @@ end
 
 # test_find_merge_base_between_oids
 @sandboxed_test "testrepo.git" begin
-#    commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
-#    commit2 = 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
-#    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
-#    assert_equal base, @repo.merge_base(commit1, commit2)
+#    commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
+#    commit2 = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+#    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
+#    @test base == merge_base(test_repo, commit1, commit2)
 end
 
 # test_find_merge_base_between_commits
 @sandboxed_test "testrepo.git" begin
-#    commit1 = @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f')
-#    commit2 = @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
-#    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
-#    assert_equal base, @repo.merge_base(commit1, commit2)
+#    commit1 = lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"))
+#    commit2 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+#    base    = Oid('c47800c7266a2be04c571c04d5a6614691ea99bd")
+#    @test base == merge_base(test_repo, commit1, commit2)
 end
 
 # test_find_merge_base_between_ref_and_oid
 @sandboxed_test "testrepo.git" begin
-#    commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
+#    commit1 = "a4a7dce85cf63874e984719f4fdd239f5145052f"
 #    commit2 = "refs/heads/master"
-#    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
-#    assert_equal base, @repo.merge_base(commit1, commit2)
+#    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
+#    @test base == merge_base(test_repo, commit1, commit2)
 end
 
 # test_find_merge_base_between_many
 @sandboxed_test "testrepo.git" begin
-#    commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
+#    commit1 = Oid('a4a7dce85cf63874e984719f4fdd239f5145052f')
 #    commit2 = "refs/heads/packed"
-#    commit3 = @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
+#    commit3 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
 #
-#    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
-#    assert_equal base, @repo.merge_base(commit1, commit2, commit3)
+#    base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
+#    @test base == merge_base(test_repo, commit1, commit2, commit3)
 end
 
 # test_ahead_behind_with_oids
 @sandboxed_test "testrepo.git" begin
-#    ahead, behind = @repo.ahead_behind(
-#      'a4a7dce85cf63874e984719f4fdd239f5145052f',
-#      'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
+#    ahead, behind = ahead_behind(test_repo,
+#      Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"),
+#      Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
 #    )
-#    assert_equal 2, ahead
-#    assert_equal 1, behind
+#    @test ahead == 2 
+#    @test behind == 1
 end
 
 # test_ahead_behind_with_commits
 @sandboxed_test "testrepo.git" begin
-#    ahead, behind = @repo.ahead_behind(
-#      @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f'),
-#      @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
+#    ahead, behind = ahead_behind(test_repo, 
+#      lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")),
+#      lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
 #    )
-#    assert_equal 2, ahead
-#    assert_equal 1, behind
-#  end
+#    @test ahead == 2 
+#    @test behind == 1
 end
