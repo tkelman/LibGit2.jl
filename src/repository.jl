@@ -444,7 +444,12 @@ function lookup_ref(r::Repository, refname::String)
     @assert r.ptr != C_NULL
     bname = bytestring(refname)
     ref_ptr = Array(Ptr{Void}, 1)
-    @check api.git_reference_lookup(ref_ptr, r.ptr, bname)
+    err = api.git_reference_lookup(ref_ptr, r.ptr, bname)
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        return GitError(err)
+    end
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end

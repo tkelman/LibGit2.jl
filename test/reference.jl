@@ -103,6 +103,30 @@ end
     end
 end
 
+@with_repo_access begin
+  begin # test_can_open_reference
+    ref = lookup_ref(test_repo, "refs/heads/master")
+    @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test isa(ref, GitReference{Oid})
+    @test name(ref) ==  "refs/heads/master"
+  end
+
+  begin # test_can_open_a_symbolic_reference
+    ref = lookup_ref(test_repo, "HEAD")
+    @test symbolic_target(ref) == "refs/heads/master"
+    @test isa(ref, GitReference{Sym})
+
+    resolved = resolve(ref)
+    @test isa(resolved, GitReference{Oid})
+    @test target(resolved) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+  end
+
+  begin # test_looking_up_missing_ref_returns_nil
+    ref = lookup_ref(test_repo, "lol/wut")
+    @test ref == nothing
+  end
+end
+
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
    
