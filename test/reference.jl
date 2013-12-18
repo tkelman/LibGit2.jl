@@ -94,6 +94,14 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
+@with_repo_access begin
+    begin # test_reference validity
+        valid = "refs/foobar"
+        invalid = "refs/nope^*"
+        @test isvalid_ref(valid) == true
+        @test isvalid_ref(invalid) == false 
+    end
+end
 
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
@@ -109,3 +117,4 @@ end
    @test name(ref) == "refs/heads/unit_test"
    #delete!(ref)
 end
+

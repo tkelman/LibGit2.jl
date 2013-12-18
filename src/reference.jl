@@ -1,7 +1,7 @@
 export GitReference, Sym,
        set_target, set_symbolic_target, resolve, 
        rename, target, symbolic_target, name,
-       git_reftype
+       git_reftype, isvalid_ref
 
 #TODO:
 #abstract GitRefType
@@ -28,6 +28,10 @@ free!(r::GitReference) = begin
         api.git_reference_free(r.ptr)
         r.ptr = C_NULL
     end
+end
+
+function isvalid_ref(ref::String)
+    return api.git_reference_is_valid_name(bytestring(ref))
 end
 
 function set_symbolic_target(r::GitReference, target::String)

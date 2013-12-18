@@ -269,6 +269,7 @@ end
 @libgit(git_odb_object_type, Cint, (Ptr{Void},))
 
 # ------ libgit reference  ------
+@libgit(git_reference_is_valid_name, Cint, (Ptr{Cchar},))
 @libgit(git_reference_create, Cint, 
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
 @libgit(git_reference_free, Cint, (Ptr{Void},))
