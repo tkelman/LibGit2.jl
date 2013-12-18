@@ -260,20 +260,20 @@ end
 
 # test_ahead_behind_with_oids
 @sandboxed_test "testrepo.git" begin
-#    ahead, behind = ahead_behind(test_repo,
-#      Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"),
-#      Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
-#    )
-#    @test ahead == 2 
-#    @test behind == 1
+    ahead, behind = ahead_behind(test_repo,
+      Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"),
+      Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    )
+    @test ahead == 2 
+    @test behind == 1
 end
 
 # test_ahead_behind_with_commits
 @sandboxed_test "testrepo.git" begin
-#    ahead, behind = ahead_behind(test_repo, 
-#      lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")),
-#      lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
-#    )
-#    @test ahead == 2 
-#    @test behind == 1
+    ahead, behind = ahead_behind(test_repo, 
+      lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")),
+      lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+    )
+    @test ahead == 2 
+    @test behind == 1
 end

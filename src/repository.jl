@@ -3,7 +3,8 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
-       insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes
+       insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
+       ahead_behind
 
 type Repository
     ptr::Ptr{Void}
@@ -193,6 +194,21 @@ function tags(r::Repository, glob=nothing)
         out[i] = bytestring(cptr)
     end
     return out
+end
+
+function ahead_behind(r::Repository,
+                      lcommit::GitCommit,
+                      ucommit::GitCommit)
+    ahead_behind(r, oid(lcommit), oid(ucommit))
+end
+
+function ahead_behind(r::Repository, lid::Oid, uid::Oid)
+    @assert r.ptr != C_NULL
+    ahead = Csize_t[0]
+    behind = Csize_t[0]
+    @check api.git_graph_ahead_behind(
+                ahead, behind, r.ptr, lid.oid, uid.oid)
+    return (int(ahead[1]), int(behind[1]))
 end
 
 function references(r::Repository)

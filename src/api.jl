@@ -154,6 +154,10 @@ end
 @libgit(git_object_type, Cint, (Ptr{Void},))
 @libgit(git_object_owner, Ptr{Void}, (Ptr{Void},))
 
+# ----- libgit graph ------
+@libgit(git_graph_ahead_behind, Cint, 
+        (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}))
+
 # ----- libgit signature ------
 type Signature
     name::Ptr{Cchar}
