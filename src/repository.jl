@@ -460,13 +460,19 @@ function create_ref(r::Repository, refname::String,
     return GitReference(ref_ptr[1])
 end
 
+function create_ref(r::Repository, refname::String, 
+                    target::String, force::Bool=false)
+    create_sym_ref(r, refname, target, force)
+end
+
 function create_sym_ref(r::Repository, refname::String,
                         target::String, force::Bool=false)
-    @assert r.ptr != C_NUL
+    @assert r.ptr != C_NULL
     bname = bytestring(refname)
+    btarget = bytestring(target)
     ref_ptr = Array(Ptr{Void}, 1)
     @check api.git_reference_symbolic_create(ref_ptr, r.ptr, bname,
-                                             id.oid, force? 1 : 0)
+                                             btarget, force? 1 : 0)
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end

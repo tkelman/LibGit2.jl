@@ -118,3 +118,14 @@ end
    #delete!(ref)
 end
 
+@with_tmp_repo_access begin
+    begin # test_write_and_read_unicode_refs
+    ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
+    ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
+    @test name(ref1) == "refs/heads/Ångström"
+    @test symbolic_target(ref2) ==  "refs/heads/Ångström"
+  end
+end
+
+ 
+
