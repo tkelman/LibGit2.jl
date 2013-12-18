@@ -26,7 +26,7 @@ free!(r::Repository) = begin
     end
 end
 
-Repository(path::String) = begin
+Repository(path::String; alternates=nothing) = begin
     bpath = bytestring(path)
     repo_ptr = Array(Ptr{Void}, 1)
     err_code = api.git_repository_open(repo_ptr, bpath)
@@ -37,7 +37,21 @@ Repository(path::String) = begin
         throw(GitError(err_code))
     end
     @check_null repo_ptr
-    return Repository(repo_ptr[1])
+    repo = Repository(repo_ptr[1])
+    if alternates != nothing && length(alternates) > 0
+        odb = repo_odb(repo)
+        for path in alternates
+            if !isdir(path)
+                throw(ArgumentError("alternate $path is not a valid dir"))
+            end
+            bpath = bytestring(path)
+            err = api.git_odb_add_disk_alternate(odb.ptr, bpath)
+            if err != api.GIT_OK
+                throw(GitError(err))
+            end
+        end
+    end
+    return repo
 end
 
 Base.close(r::Repository) = begin

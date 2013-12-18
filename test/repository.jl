@@ -205,22 +205,21 @@ end
 
 # test_loading_alternates
 @sandboxed_test "testrepo.git" begin
-#    alt_path = joinpath(pwd(), 'fixtures/alternate/objects')
-#    @assert isdir(alt_path)
-#    repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
-#    begin
-#      assert_equal 1690, repo.each_id.count
-#      assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
-#    ensure
-#      repo.close
-#    end
+    alt_path = joinpath(pwd(), "fixtures/alternate/objects")
+    repo = Repository(repo_path(test_repo); alternates=[alt_path])
+    try 
+      @test count(x->true, repo) == 1690
+      @test read(repo, Oid("146ae76773c91e3b1d00cf7a338ec55ae58297e2")) != nothing
+    catch
+        rethrow(err)
+    finally 
+      close(repo)
+    end
 end
 
 # test_alternates_with_invalid_path_type
 @sandboxed_test "testrepo.git" begin
-#    assert_raises TypeError do
-#      Rugged::Repository.new(@repo.path, :alternates => [:invalid_input])
-#    end
+    @test_throws Repository(repo_path(test_repo), alternates=["error"])
 end
 
 # test_find_merge_base_between_oids
