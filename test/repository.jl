@@ -383,3 +383,53 @@ end
         close(repo)
     end
 end
+
+
+#---------------------------
+# Repo Init Test
+#---------------------------
+macro repo_init_test(body)
+    quote
+        tmpdir = mktempdir()
+        try
+            $body
+        catch err
+            rethrow(err)
+        finally
+            teardown_dir(tmpdir)
+        end
+    end
+end
+
+# test init bare false
+@repo_init_test begin
+    repo = repo_init(tmpdir; bare=false)
+    try
+        @test is_bare(repo) == false
+    finally
+        close(repo)
+    end
+end
+
+# test init bare true
+@repo_init_test begin
+    repo = repo_init(tmpdir; bare=true)
+    try 
+        @test is_bare(repo) == true
+    finally
+        close
+    end
+end
+
+# test init non bare default
+@repo_init_test begin 
+    repo = repo_init(tmpdir)
+    try
+        @test is_bare(repo) == false
+    finally
+        close(repo)
+    end
+end
+
+
+
