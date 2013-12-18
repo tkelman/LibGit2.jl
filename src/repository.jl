@@ -607,15 +607,15 @@ free!(r::ReferenceIterator) = begin
     end
 end
 
-function ref_names(r::Repository; glob=nothing)
+function ref_names(r::Repository, glob=nothing)
     rnames = String[]
-    for r in iter_refs(r; glob=glob)
+    for r in iter_refs(r, glob)
         push!(rnames, name(r))
     end
     return rnames
 end
 
-function iter_refs(r::Repository; glob=nothing)
+function iter_refs(r::Repository, glob=nothing)
     @assert r.ptr != C_NULL
     iter_ptr = Array(Ptr{Void}, 1)
     if glob == nothing

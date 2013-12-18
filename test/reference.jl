@@ -77,7 +77,7 @@ try
     # test glob
     expected = ["refs/heads/two", "refs/heads/three"]
     test_names = String[]
-    for r in iter_refs(repo, glob="refs/heads/t*")
+    for r in iter_refs(repo, "refs/heads/t*")
         push!(test_names, name(r))
     end
     sort!(expected)
@@ -103,9 +103,23 @@ end
     end
 
     # test can handle exceptions
-    # test list references
-    # test can filter refs with regex
 
+    begin # test list references
+        tmp = map((r) -> replace(name(r), "/refs", ""), iter_refs(test_repo))
+        @test join(sort(tmp) ":") == "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0"
+    end
+
+    begin # test can filter refs with regex
+        tmp = map((r) -> replace(name(r), "/refs", ""), iter_refs(test_repo, "/refs/tags/*"))
+        refs = join(sort(tmp), ":")
+        assert_equal "tags/v0.9:tags/v1.0", refs
+    end
+
+    begin #test_can_filter_refs_with_string
+        tmp = map((r) -> replace(name(r), "/refs", ""), iter_refs(test_repo))
+        refs = join(sort(tmp), ":")
+        @test refs == "tags/v0.9"
+    end
 end
 
 @with_repo_access begin

@@ -136,7 +136,7 @@ end
 
 # match all refs
 @sandboxed_test "testrepo.git" begin
-    refs = collect(iter_refs(test_repo; glob="refs/heads/*"))
+    refs = collect(iter_refs(test_repo, "refs/heads/*"))
     @test length(refs) == 12
 end
 
