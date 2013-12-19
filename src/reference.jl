@@ -91,6 +91,45 @@ function name(r::GitReference)
     return bytestring(api.git_reference_name(r.ptr))
 end
 
+type ReflogEntry
+    id_old::Oid
+    id_new::Oid
+    committer::Signature
+    message::String
+end
+
+function new_reflog_entry(entry_ptr::Ptr{Void})
+    @assert entry_ptr != C_NULL
+    id_old  = Oid(api.git_reflog_entry_id_old(entry_ptr))
+    id_new  = Oid(api.git_reflog_entry_id_new(entry_ptr))
+    sig_ptr = api.git_reflog_entry_signature(entry_ptr)
+    msg_ptr = git_reflog_entry_message(entry_ptr)
+    return ReflogEntry(id_old,
+                       id_new,
+                       unsafe_load(sig_ptr),
+                       msg_ptr == C_NULL : "" : bytestring(msg_ptr))
+end
+
+function reflog(r::GitReference)
+    @assert r.ptr != C_NULL
+    reflog_ptr = Array(Ptr{Void}, 1)
+    @check api.git_reflog_read(reflog_ptr, api.git_reference_owner(r.ptr), name(r))
+    @check_null reflog_ptr
+    refcount = api.git_reflog_entrycount(reflog_ptr[1])
+    entries = {}
+    for i in 1:refcount
+        entry_ptr = api.git_reflog_entry_byindex(reflog_ptr[1], ref_count - i - 1)
+        push!(entries, new_reflog_entry(entry_ptr))
+    end
+    api.git_reflog_free(reflog_ptr[1])
+    return entries
+end
+
+function has_reflog(r::GitReference)
+    @assert r.ptr != C_NULL
+    return bool(api.git_reference_has_log(r.ptr))
+end
+
 git_reftype{T}(r::GitReference{T}) = begin
     if T <: Sym
         return api.REF_SYMBOLIC
@@ -101,4 +140,3 @@ git_reftype{T}(r::GitReference{T}) = begin
     end
 end
 
-#TODO: Base.delete! (delte reference from repository..

@@ -293,7 +293,17 @@ end
 @libgit(git_reference_next_name, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_reference_next, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_reference_iterator_free, Cint, (Ptr{Void},))
+@libgit(git_reference_has_log, Cint, (Ptr{Void},))
+@libgit(git_reference_owner, Ptr{Void}, (Ptr{Void},))
 
+@libgit(git_reflog_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_reflog_entrycount, Cint, (Ptr{Void},))
+@libgit(git_reflog_entry_byindex, Ptr{Void}, (Ptr{Void}, Csize_t))
+@libgit(git_reflog_free, Void, (Ptr{Void},))
+@libgit(git_reflog_entry_id_old, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_reflog_entry_id_new, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_reflog_entry_signature, Ptr{Signature}, (Ptr{Void},))
+@libgit(git_reflog_entry_message, Ptr{Cchar}, (Ptr{Void},))
 # ------ libgit checkout  ------
 #TODO:...
 type GitCheckoutOpts

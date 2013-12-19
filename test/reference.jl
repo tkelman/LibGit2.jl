@@ -105,18 +105,18 @@ end
     # test can handle exceptions
 
     begin # test list references
-        tmp = map((r) -> replace(name(r), "/refs", ""), iter_refs(test_repo))
-        @test join(sort(tmp) ":") == "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0"
+        tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo))
+        @test join(sort(tmp), ":") == "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0"
     end
-
+    
     begin # test can filter refs with regex
-        tmp = map((r) -> replace(name(r), "/refs", ""), iter_refs(test_repo, "/refs/tags/*"))
+        tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo, "refs/tags/*"))
         refs = join(sort(tmp), ":")
-        assert_equal "tags/v0.9:tags/v1.0", refs
+        @test refs == "tags/v0.9:tags/v1.0"
     end
 
     begin #test_can_filter_refs_with_string
-        tmp = map((r) -> replace(name(r), "/refs", ""), iter_refs(test_repo))
+        tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo, "*0.9*"))
         refs = join(sort(tmp), ":")
         @test refs == "tags/v0.9"
     end
