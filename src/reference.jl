@@ -183,7 +183,10 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
     @check api.git_reflog_read(reflog_ptr,
                                api.git_reference_owner(r.ptr),
                                api.git_reference_name(r.ptr))
+    
+    @show :git_reflog_read_ok
     repo_ptr = api.git_reference_owner(r.ptr)
+    @show :git_ref_owner_ok
     #TODO: memory leak with signature?
     local gsig::api.GitSignature
     if committer == nothing
@@ -197,11 +200,13 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
     err = ccall((:git_reflog_append, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
                  reflog_ptr[1], api.git_reference_target(r.ptr), &gsig, bmsg)
+    
+    @show :relog_append_ok
     if err == api.GIT_OK
         err = api.git_reflog_write(reflog_ptr[1])
+        @show :relog_write_ok
     end
-    #XXX this may be where travis is segfaulting
-    #api.git_reflog_free(reflog_ptr[1])
+    api.git_reflog_free(reflog_ptr[1])
     if err != api.GIT_OK
         throw(GitError(err))
     end
