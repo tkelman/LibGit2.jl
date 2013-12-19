@@ -182,6 +182,7 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
                                api.git_reference_owner(r.ptr),
                                api.git_reference_name(r.ptr))
     repo_ptr = api.git_reference_owner(r.ptr)
+    #TODO: memory leak with signature?
     local sig::Signature
     if committer == nothing
         sig = default_signature()
