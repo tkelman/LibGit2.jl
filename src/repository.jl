@@ -70,7 +70,6 @@ function cb_iter_oids(idptr::Ptr{Uint8}, o::Ptr{Void})
         produce(Oid(idptr))
         return convert(Cint, api.GIT_OK)
     catch err
-        @show err
         return convert(Cint, api.ERROR)
     end
 end

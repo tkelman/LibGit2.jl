@@ -332,4 +332,3 @@ end
     @test name(rlog[2].committer) == "Julia User"
     @test email(rlog[2].committer) == "user@julia.com"
 end
-

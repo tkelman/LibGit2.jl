@@ -55,6 +55,7 @@ function gitobj_from_ptr(ptr::Ptr{Void})
     @assert ptr != C_NULL
     obj_type = api.git_object_type(ptr) 
     T = gitobj_const_type(obj_type)
+    #@show "calling constructor"
     return T(ptr)
 end
 
