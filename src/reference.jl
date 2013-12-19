@@ -164,7 +164,7 @@ function reflog(r::GitReference)
         @assert entry_ptr != C_NULL
         push!(entries, new_reflog_entry(entry_ptr))
     end
-    api.git_reflog_free(reflog_ptr[1])
+    #api.git_reflog_free(reflog_ptr[1])
     return entries
 end
 
@@ -184,9 +184,7 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
                                api.git_reference_owner(r.ptr),
                                api.git_reference_name(r.ptr))
     
-    @show :git_reflog_read_ok
     repo_ptr = api.git_reference_owner(r.ptr)
-    @show :git_ref_owner_ok
     #TODO: memory leak with signature?
     local gsig::api.GitSignature
     if committer == nothing
@@ -201,10 +199,8 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
                  reflog_ptr[1], api.git_reference_target(r.ptr), &gsig, bmsg)
     
-    @show :relog_append_ok
     if err == api.GIT_OK
         err = api.git_reflog_write(reflog_ptr[1])
-        @show :relog_write_ok
     end
     api.git_reflog_free(reflog_ptr[1])
     if err != api.GIT_OK
@@ -212,7 +208,6 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
     end
     return nothing
 end
-
 
 git_reftype{T}(r::GitReference{T}) = begin
     if T <: Sym

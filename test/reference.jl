@@ -150,8 +150,11 @@ end
 
   begin @show :test_load_reflog
       ref = lookup_ref(test_repo, "refs/heads/master")
+      @show :lookup_ok
       @test has_reflog(ref) == true
+      @show :has_reflog_ok
       rlog = reflog(ref)
+      @show :reflog_ok
       entry = rlog[2]
       @test isa(entry, ReflogEntry)
       @test entry.id_old == Oid("8496071c1b46c854b31185ea97743be6a8774479")
