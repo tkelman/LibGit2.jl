@@ -9,7 +9,7 @@ end
 # Tests adapted from Git2Go Library
 # ------------------------------------
 
-# TEST REF MODIFICATION
+@show :TEST_REF_MODIFICATION
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -42,7 +42,7 @@ finally
 end
 
 
-# TEST REF ITERATION
+@show :TEST_REF_ITERATION
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -94,6 +94,7 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
+@show :testblock1
 @with_repo_access begin
     begin # test_reference validity
         valid = "refs/foobar"
@@ -122,6 +123,7 @@ end
     end
 end
 
+@show :testblock2
 @with_repo_access begin
   begin # test_can_open_reference
     ref = lookup_ref(test_repo, "refs/heads/master")
