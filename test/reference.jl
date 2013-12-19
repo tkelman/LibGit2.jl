@@ -150,9 +150,9 @@ end
 
   begin @show :test_load_reflog
       ref = lookup_ref(test_repo, "refs/heads/master")
-      @show :lookup_ok
-      @test has_reflog(ref) == true
-      @show :has_reflog_ok
+      #@show :lookup_ok
+      #@test has_reflog(ref) == true
+      #@show :has_reflog_ok
       rlog = reflog(ref)
       @show :reflog_ok
       entry = rlog[2]

@@ -164,7 +164,7 @@ function reflog(r::GitReference)
         @assert entry_ptr != C_NULL
         push!(entries, new_reflog_entry(entry_ptr))
     end
-    #api.git_reflog_free(reflog_ptr[1])
+    api.git_reflog_free(reflog_ptr[1])
     return entries
 end
 
