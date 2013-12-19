@@ -9,7 +9,7 @@ end
 # Tests adapted from Git2Go Library
 # ------------------------------------
 
-@show :TEST_REF_MODIFICATION
+:TEST_REF_MODIFICATION
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -42,7 +42,7 @@ finally
 end
 
 
-@show :TEST_REF_ITERATION
+:TEST_REF_ITERATION
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -94,7 +94,6 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
-@show :testblock1
 @with_repo_access begin
     begin # test_reference validity
         valid = "refs/foobar"
@@ -123,7 +122,7 @@ end
     end
 end
 
-@show :testblock2
+
 @with_repo_access begin
   begin @show :test_can_open_reference
     ref = lookup_ref(test_repo, "refs/heads/master")
@@ -192,7 +191,7 @@ end
   end
 end
 
-@show :test_create_force
+:test_create_force
 @with_tmp_repo_access begin
     create_ref(test_repo, 
                "refs/heads/unit_test",
@@ -204,7 +203,7 @@ end
                true)
 end
 
-@show :test_list_unicode_refs
+:test_list_unicode_refs
 @with_tmp_repo_access begin
     UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
     create_ref(test_repo,
@@ -225,13 +224,13 @@ end
     @test target(resolved) == peel(ref)
 end
 
-@show :test_looking_up_missing_ref_returns_nil
+:test_looking_up_missing_ref_returns_nil
 @with_tmp_repo_access begin
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
 end
 
-@show :test_create_ref_from_oid
+:test_create_ref_from_oid
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
    
@@ -244,7 +243,7 @@ end
    delete!(test_repo, ref)
 end
 
-@show :test_rename_ref
+:test_rename_ref
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
       "refs/heads/unit_test",
@@ -259,7 +258,7 @@ end
     delete!(test_repo, new_ref)
 end
 
-@show :test_set_ref_target
+:test_set_ref_target
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/unit_test",
@@ -274,7 +273,6 @@ end
     delete!(test_repo, new_ref)
 end
 
-@show :test_write_and_read_unicode_refs
 @with_tmp_repo_access begin
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
     ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
@@ -282,7 +280,6 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
-@show :one
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
@@ -305,7 +302,6 @@ end
     @test email(rlog[2].committer) == "foo@bar"
 end
 
-@show :two
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",

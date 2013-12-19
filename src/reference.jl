@@ -200,7 +200,8 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
     if err == api.GIT_OK
         err = api.git_reflog_write(reflog_ptr[1])
     end
-    api.git_reflog_free(reflog_ptr[1])
+    #XXX this may be where travis is segfaulting
+    #api.git_reflog_free(reflog_ptr[1])
     if err != api.GIT_OK
         throw(GitError(err))
     end
