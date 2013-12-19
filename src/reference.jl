@@ -46,7 +46,7 @@ end
 function set_target(r::GitReference, id::Oid)
     @assert r.ptr != C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
-    @check api.git_reference_target(ref_ptr, id.oid)
+    @check api.git_reference_set_target(ref_ptr, r.ptr, id.oid)
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end

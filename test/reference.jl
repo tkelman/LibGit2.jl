@@ -243,6 +243,36 @@ end
    delete!(test_repo, ref)
 end
 
+# test_rename_ref
+@with_tmp_repo_access begin
+    ref = create_ref(test_repo,
+      "refs/heads/unit_test",
+      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+
+    @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test isa(ref, GitReference{Oid})
+    @test name(ref) == "refs/heads/unit_test"
+
+    new_ref = rename(ref, "refs/heads/rug_new_name")
+    @test name(new_ref) == "refs/heads/rug_new_name"
+    delete!(test_repo, new_ref)
+end
+
+# test_set_ref_target
+@with_tmp_repo_access begin
+    ref = create_ref(test_repo,
+                     "refs/heads/unit_test",
+                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+
+    @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test isa(ref, GitReference{Oid})
+    @test name(ref) == "refs/heads/unit_test"
+
+    new_ref = set_target(ref, Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
+    @test target(new_ref) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    delete!(test_repo, new_ref)
+end
+
 # test_write_and_read_unicode_refs
 @with_tmp_repo_access begin
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
