@@ -190,8 +190,7 @@ end
   end
 end
 
-
-# test_create_force
+@show :test_create_force
 @with_tmp_repo_access begin
     create_ref(test_repo, 
                "refs/heads/unit_test",
@@ -203,7 +202,7 @@ end
                true)
 end
 
-# test_list_unicode_refs
+@show :test_list_unicode_refs
 @with_tmp_repo_access begin
     UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
     create_ref(test_repo,
@@ -213,7 +212,7 @@ end
     @test "heads/$UNICODE_REF_NAME" in refs
 end
 
-# test_can_open_a_symbolic_reference
+@show :test_can_open_a_symbolic_reference
 @with_tmp_repo_access begin
     ref = lookup_ref(test_repo, "HEAD")
     @test symbolic_target(ref) == "refs/heads/master"
@@ -224,13 +223,13 @@ end
     @test target(resolved) == peel(ref)
 end
 
-# test_looking_up_missing_ref_returns_nil
+@show :test_looking_up_missing_ref_returns_nil
 @with_tmp_repo_access begin
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
 end
 
-# test create ref from oid
+@show :test_create_ref_from_oid
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
    
@@ -243,7 +242,7 @@ end
    delete!(test_repo, ref)
 end
 
-# test_rename_ref
+@show :test_rename_ref
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
       "refs/heads/unit_test",
@@ -258,7 +257,7 @@ end
     delete!(test_repo, new_ref)
 end
 
-# test_set_ref_target
+@show :test_set_ref_target
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/unit_test",
@@ -281,7 +280,7 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
-@show :1
+@show :one
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
@@ -304,7 +303,7 @@ end
     @test email(rlog[2].committer) == "foo@bar"
 end
 
-@show :2
+@show :two
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
