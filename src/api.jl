@@ -310,7 +310,9 @@ end
 @libgit(git_reference_has_log, Cint, (Ptr{Void},))
 @libgit(git_reference_owner, Ptr{Void}, (Ptr{Void},))
 
+@libgit(git_reflog_write, Cint, (Ptr{Void},))
 @libgit(git_reflog_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_reflog_append, Cint, (Ptr{Void}, Ptr{Void}, Ptr{GitSignature}, Ptr{Cchar}))
 @libgit(git_reflog_entrycount, Cint, (Ptr{Void},))
 @libgit(git_reflog_entry_byindex, Ptr{Void}, (Ptr{Void}, Csize_t))
 @libgit(git_reflog_free, Void, (Ptr{Void},))
@@ -318,6 +320,7 @@ end
 @libgit(git_reflog_entry_id_new, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_reflog_entry_committer, Ptr{GitSignature}, (Ptr{Void},))
 @libgit(git_reflog_entry_message, Ptr{Cchar}, (Ptr{Void},))
+
 # ------ libgit checkout  ------
 #TODO:...
 type GitCheckoutOpts

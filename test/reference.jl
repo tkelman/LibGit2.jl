@@ -280,3 +280,10 @@ end
     @test name(ref1) == "refs/heads/Ångström"
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
+
+@with_tmp_repo_access begin
+    ref = create_ref(test_repo,
+                     "refs/heads/test-reflog",
+                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+    log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
+end

@@ -1,7 +1,7 @@
 export GitReference, ReflogEntry, Sym,
        set_target, set_symbolic_target, resolve, 
        rename, target, symbolic_target, name,
-       git_reftype, isvalid_ref, reflog, has_reflog, peel
+       git_reftype, isvalid_ref, reflog, has_reflog, peel, log!
 
 #TODO:
 #abstract GitRefType
@@ -172,6 +172,38 @@ function has_reflog(r::GitReference)
     @assert r.ptr != C_NULL
     return bool(api.git_reference_has_log(r.ptr))
 end
+
+function log!(r::GitReference, msg=nothing, committer=nothing)
+    if msg != nothing
+        msg = bytestring(msg)
+    end
+    reflog_ptr = Array(Ptr{Void}, 1) 
+    @check api.git_reflog_read(reflog_ptr,
+                               api.git_reference_owner(r.ptr),
+                               api.git_reference_name(r.ptr))
+    repo_ptr = api.git_reference_owner(r.ptr)
+    local sig::Signature
+    if committer == nothing
+        sig = default_signature()
+    else
+        sig = committer
+    end
+    gsig = git_signature(sig)
+    err = ccall((:git_reflog_append, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
+                 reflog_ptr[1], api.git_reference_target(r.ptr), &gsig,
+                 msg != nothing ? msg : C_NULL)
+    if err == api.GIT_OK
+        err = api.git_reflog_write(reflog_ptr[1])
+    end
+    #api.free!(gsig)
+    api.git_reflog_free(reflog_ptr[1])
+    if err != api.GIT_OK
+        throw(GitError(err))
+    end
+    return nothing
+end
+
 
 git_reftype{T}(r::GitReference{T}) = begin
     if T <: Sym
