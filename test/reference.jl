@@ -125,7 +125,7 @@ end
 
 @show :testblock2
 @with_repo_access begin
-  begin # test_can_open_reference
+  begin @show :test_can_open_reference
     ref = lookup_ref(test_repo, "refs/heads/master")
     @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test isa(ref, GitReference{Oid})
@@ -133,7 +133,7 @@ end
     @test peel(ref) == nothing
   end
 
-  begin # test_can_open_a_symbolic_reference
+  begin @show :test_can_open_a_symbolic_reference
     ref = lookup_ref(test_repo, "HEAD")
     @test symbolic_target(ref) == "refs/heads/master"
     @test isa(ref, GitReference{Sym})
@@ -144,12 +144,12 @@ end
     @test target(resolved) == peel(ref)
   end
 
-  begin # test_looking_up_missing_ref_returns_nil
+  begin @show :test_looking_up_missing_ref_returns_nil
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
   end
 
-  begin # test load reflog
+  begin @show :test_load_reflog
       ref = lookup_ref(test_repo, "refs/heads/master")
       @test has_reflog(ref) == true
       rlog = reflog(ref)
@@ -162,19 +162,19 @@ end
       @test email(entry.committer) == "schacon@gmail.com"
   end
   
-  begin # test_reference_exists
+  begin @show :test_reference_exists
     @test exists(test_repo, "refs/heads/master") == true
     @test exists(test_repo, "lol/wut") == false
   end
 
-  begin # test_load_packed_ref
+  begin @show :test_load_packed_ref
     ref = lookup_ref(test_repo, "refs/heads/packed")
     @test target(ref) == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")
     @test isa(ref, GitReference{Oid})
     @test name(ref) == "refs/heads/packed"
   end
 
-  begin # test_resolve_head
+  begin @show :test_resolve_head
     ref = lookup_ref(test_repo, "HEAD")
     #TODO: make target work for both direct and symboloic
     @test symbolic_target(ref) == "refs/heads/master"
@@ -185,7 +185,7 @@ end
     @test isa(head, GitReference{Oid})
   end
 
-  begin # test_reference_to_tag
+  begin @show :test_reference_to_tag
     ref = lookup_ref(test_repo, "refs/tags/v1.0")
     @test target(ref) == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
     @test peel(ref) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
