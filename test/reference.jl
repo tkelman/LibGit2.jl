@@ -190,12 +190,50 @@ end
   end
 end
 
+
+# test_create_force
+@with_tmp_repo_access begin
+    create_ref(test_repo, 
+               "refs/heads/unit_test",
+              "refs/heads/master")
+
+    create_ref(test_repo,
+               "refs/heads/unit_test",
+               "refs/heads/master",
+               true)
+end
+
+# test_list_unicode_refs
+@with_tmp_repo_access begin
+    UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
+    create_ref(test_repo,
+               "refs/heads/$UNICODE_REF_NAME",
+               "refs/heads/master")
+    refs = map(r -> replace(name(r), "refs/", ""), iter_refs(test_repo))
+    @test "heads/$UNICODE_REF_NAME" in refs
+end
+
+# test_can_open_a_symbolic_reference
+@with_tmp_repo_access begin
+    ref = lookup_ref(test_repo, "HEAD")
+    @test symbolic_target(ref) == "refs/heads/master"
+    @test isa(ref, GitReference{Sym})
+    resolved = resolve(ref)
+    @test isa(resolved, GitReference{Oid})
+    @test target(resolved) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test target(resolved) == peel(ref)
+end
+
+# test_looking_up_missing_ref_returns_nil
+@with_tmp_repo_access begin
+    ref = lookup_ref(test_repo, "lol/wut")
+    @test ref == nothing
+end
+
+# test create ref from oid
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
    
-   # ---------------------------
-   # test create ref from oid
-   # ---------------------------
    o = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
    ref = create_ref(test_repo, "refs/heads/unit_test", o)
    
@@ -205,11 +243,10 @@ end
    delete!(test_repo, ref)
 end
 
+# test_write_and_read_unicode_refs
 @with_tmp_repo_access begin
-    begin # test_write_and_read_unicode_refs
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
     ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
     @test name(ref1) == "refs/heads/Ångström"
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
-  end
 end
