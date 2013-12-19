@@ -174,30 +174,32 @@ function has_reflog(r::GitReference)
 end
 
 function log!(r::GitReference, msg=nothing, committer=nothing)
-    if msg != nothing
-        msg = bytestring(msg)
+    @assert r.ptr != C_NULL
+    if msg == nothing
+        msg = ""
     end
+    bmsg = bytestring(msg)
     reflog_ptr = Array(Ptr{Void}, 1) 
     @check api.git_reflog_read(reflog_ptr,
                                api.git_reference_owner(r.ptr),
                                api.git_reference_name(r.ptr))
     repo_ptr = api.git_reference_owner(r.ptr)
     #TODO: memory leak with signature?
-    local sig::Signature
+    local gsig::api.GitSignature
     if committer == nothing
-        sig = default_signature()
+        sig_ptr = Array(Ptr{api.GitSignature}, 1)
+        @check api.git_signature_default(sig_ptr, repo_ptr)
+        @check_null sig_ptr 
+        gsig = unsafe_load(sig_ptr[1])
     else
-        sig = committer
+        gsig = git_signature(committer)
     end
-    gsig = git_signature(sig)
     err = ccall((:git_reflog_append, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
-                 reflog_ptr[1], api.git_reference_target(r.ptr), &gsig,
-                 msg != nothing ? msg : C_NULL)
+                 reflog_ptr[1], api.git_reference_target(r.ptr), &gsig, bmsg)
     if err == api.GIT_OK
         err = api.git_reflog_write(reflog_ptr[1])
     end
-    #api.free!(gsig)
     api.git_reflog_free(reflog_ptr[1])
     if err != api.GIT_OK
         throw(GitError(err))
