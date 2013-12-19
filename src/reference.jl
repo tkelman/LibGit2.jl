@@ -161,6 +161,7 @@ function reflog(r::GitReference)
     entries = {}
     for i in 0:refcount-1
         entry_ptr = api.git_reflog_entry_byindex(reflog_ptr[1], refcount - i - 1)
+        @assert entry_ptr != C_NULL
         push!(entries, new_reflog_entry(entry_ptr))
     end
     api.git_reflog_free(reflog_ptr[1])
