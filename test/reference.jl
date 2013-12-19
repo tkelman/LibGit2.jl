@@ -144,6 +144,19 @@ end
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
   end
+
+  begin # test load reflog
+      ref = lookup_ref(test_repo, "refs/heads/master")
+      @test has_reflog(ref) == true
+      rlog = reflog(ref)
+      entry = rlog[2]
+      @test isa(entry, ReflogEntry)
+      @test entry.id_old == Oid("8496071c1b46c854b31185ea97743be6a8774479")
+      @test entry.id_new == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+      @test entry.message == "commit: another commit"
+      @test isa(entry.committer, Signature)
+      @test email(entry.committer) == "schacon@gmail.com"
+  end
 end
 
 @with_tmp_repo_access begin

@@ -1,6 +1,11 @@
 export Signature, name, email, time, time_offset
 
-const Signature = api.Signature
+type Signature
+    name::String
+    email::String
+    time::Int64
+    time_offset::Cint
+end
 
 Base.show(io::IO, s::Signature) = begin
     fmt = "%Y-%m-%d %H:%M:%S %Z"
@@ -8,26 +13,19 @@ Base.show(io::IO, s::Signature) = begin
     print(io, "Signature(\"$(name(s))\",\"$(email(s))\",\"$time_str\")")
 end
 
-free!(s::Signature) = begin
-    if s.name != C_NULL
-        c_free(s.name)
-    end
-    s.name = C_NULL
-    if s.email != C_NULL
-        c_free(s.email)
-    end
-    s.email = C_NULL
-end
-
 # Get signature at time...
 function Signature(name::String, email::String, time::Int64, offset::Int)
     bname  = bytestring(name)
     bemail = bytestring(email)
-    sig_ptr = Array(Ptr{Signature}, 1)
+    sig_ptr = Array(Ptr{api.GitSignature}, 1)
     @check api.git_signature_new(sig_ptr, bname, bemail, time, offset)
     @check_null sig_ptr
-    sig = unsafe_load(sig_ptr[1])
-    finalizer(sig, free!)
+    gsig = unsafe_load(sig_ptr[1])
+    sig = Signature(bytestring(gsig.name),
+                    bytestring(gsig.email),
+                    gsig.time,
+                    gsig.time_offset)
+    api.free!(gsig)
     return sig
 end
 
@@ -35,26 +33,37 @@ end
 function Signature(name::String, email::String)
     bname = bytestring(name)
     bemail = bytestring(email)
-    sig_ptr = Array(Ptr{Signature}, 1)
+    sig_ptr = Array(Ptr{api.GitSignature}, 1)
     @check api.git_signature_now(sig_ptr, bname, bemail)
     @check_null sig_ptr
-    sig = unsafe_load(sig_ptr[1])
-    finalizer(sig, free!)
+    gsig = unsafe_load(sig_ptr[1])
+    sig = Signature(bytestring(gsig.name),
+                    bytestring(gsig.email),
+                    gsig.time,
+                    gsig.time_offset)
+    api.free!(gsig)
     return sig
 end
 
+function Signature(gsig::api.GitSignature)
+    return Signature(bytestring(gsig.name),
+                     bytestring(gsig.email),
+                     gsig.time,
+                     gsig.time_offset)
+end
+
+git_signature(sig::Signature) = begin 
+    return api.GitSignature(convert(Ptr{Cchar}, sig.name),
+                            convert(Ptr{Cchar}, sig.email),
+                            sig.time, sig.time_offset)
+end
+
 function name(s::Signature)
-    if s.name != C_NULL
-        return bytestring(s.name)
-    end
-    return nothing
+    return s.name
 end
 
 function email(s::Signature)
-    if s.email != C_NULL
-        return bytestring(s.email)
-    end
-    return nothing
+    return s.email
 end
 
 function Base.time(s::Signature)

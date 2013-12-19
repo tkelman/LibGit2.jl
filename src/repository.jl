@@ -170,7 +170,7 @@ end
 
 function default_signature(r::Repository)
     @assert r.ptr != C_NULL
-    sig_ptr = Array(Ptr{Signature}, 1)
+    sig_ptr = Array(Ptr{api.GitSignature}, 1)
     err = api.git_signature_default(sig_ptr, r.ptr)
     if err == api.ENOTFOUND
         return nothing
@@ -178,8 +178,9 @@ function default_signature(r::Repository)
         throw(GitError(err))
     end
     @check_null sig_ptr 
-    sig = unsafe_load(sig_ptr[1])
-    finalizer(sig, free!)
+    gsig = unsafe_load(sig_ptr[1])
+    sig = Signature(gsig)
+    api.free!(gsig)
     return sig
 end
 
@@ -519,14 +520,16 @@ function commit(r::Repository,
 
         end
     end
+    gauthor = git_signature(author)
+    gcommitter = git_signature(committer)
     #TODO: encoding?
     err_code = ccall((:git_commit_create, api.libgit2), Cint,
                      (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, 
-                      Ptr{api.Signature}, Ptr{api.Signature}, 
+                      Ptr{api.GitSignature}, Ptr{api.GitSignature}, 
                       Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
                       Cint, Ptr{Ptr{Void}}),
                       commit_oid.oid, r.ptr, bref,
-                      &author, &committer,
+                      &gauthor, &gcommitter,
                       C_NULL, bmsg, tree.ptr, 
                       nparents, nparents > 0 ? cparents : C_NULL)
     if err_code < 0

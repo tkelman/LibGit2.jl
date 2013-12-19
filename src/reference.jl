@@ -1,7 +1,7 @@
-export GitReference, Sym,
+export GitReference, ReflogEntry, Sym,
        set_target, set_symbolic_target, resolve, 
        rename, target, symbolic_target, name,
-       git_reftype, isvalid_ref
+       git_reftype, isvalid_ref, reflog, has_reflog
 
 #TODO:
 #abstract GitRefType
@@ -91,6 +91,24 @@ function name(r::GitReference)
     return bytestring(api.git_reference_name(r.ptr))
 end
 
+type Reflog
+    ptr::Ptr{Void}
+
+    function Reflog(ptr::Ptr{Void})
+        @assert ptr != C_NULL
+        rl = new(ptr)
+        finalizer(fl, free!)
+        return rl
+    end
+end
+
+free!(r::Reflog) = begin
+    if r.ptr != C_NULL
+        api.git_reflog_free(r.ptr)
+        r.ptr = C_NULL
+    end
+end
+
 type ReflogEntry
     id_old::Oid
     id_new::Oid
@@ -102,12 +120,16 @@ function new_reflog_entry(entry_ptr::Ptr{Void})
     @assert entry_ptr != C_NULL
     id_old  = Oid(api.git_reflog_entry_id_old(entry_ptr))
     id_new  = Oid(api.git_reflog_entry_id_new(entry_ptr))
-    sig_ptr = api.git_reflog_entry_signature(entry_ptr)
-    msg_ptr = git_reflog_entry_message(entry_ptr)
+    sig_ptr = api.git_reflog_entry_committer(entry_ptr)
+    msg_ptr = api.git_reflog_entry_message(entry_ptr)
+    gsig = unsafe_load(sig_ptr)
+    sig = Signature(gsig)
+    # don't free gsig as its data is cleaned up
+    # when git_reflog is free'd
     return ReflogEntry(id_old,
                        id_new,
-                       unsafe_load(sig_ptr),
-                       msg_ptr == C_NULL : "" : bytestring(msg_ptr))
+                       sig,  
+                       msg_ptr == C_NULL ? "" : bytestring(msg_ptr))
 end
 
 function reflog(r::GitReference)
@@ -117,8 +139,8 @@ function reflog(r::GitReference)
     @check_null reflog_ptr
     refcount = api.git_reflog_entrycount(reflog_ptr[1])
     entries = {}
-    for i in 1:refcount
-        entry_ptr = api.git_reflog_entry_byindex(reflog_ptr[1], ref_count - i - 1)
+    for i in 0:refcount-1
+        entry_ptr = api.git_reflog_entry_byindex(reflog_ptr[1], refcount - i - 1)
         push!(entries, new_reflog_entry(entry_ptr))
     end
     api.git_reflog_free(reflog_ptr[1])

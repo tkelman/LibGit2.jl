@@ -52,20 +52,26 @@ end
 
 function author(c::GitCommit)
     @assert c.ptr != C_NULL
-    ptr::Ptr{Signature} = api.git_commit_author(c.ptr)
+    ptr::Ptr{api.GitSignature} = api.git_commit_author(c.ptr)
     if ptr == C_NULL
         error("git commit author pointer is NULL")
     end
-    return unsafe_load(ptr)
+    gsig = unsafe_load(ptr)
+    sig = Signature(gsig)
+    api.free!(gsig)
+    return sig
 end
 
 function committer(c::GitCommit)
     @assert c.ptr != C_NULL
-    ptr::Ptr{Signature} = api.git_commit_committer(c.ptr)
+    ptr::Ptr{api.GitSignature} = api.git_commit_committer(c.ptr)
     if ptr == C_NULL
         error("git committer pointer is NULL")
     end
-    return unsafe_load(ptr)
+    gsig = unsafe_load(ptr)
+    sig = Signature(gsig)
+    api.free!(gsig)
+    return sig
 end
 
 function parent(c::GitCommit, n::Integer)

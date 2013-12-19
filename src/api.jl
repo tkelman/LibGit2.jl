@@ -171,35 +171,47 @@ end
         (Ptr{Uint8}, Ptr{Void}, Csize_t, Ptr{Void}))
 
 # ----- libgit signature ------
-type Signature
+type GitSignature
     name::Ptr{Cchar}
     email::Ptr{Cchar}
     time::Int64
     time_offset::Cint
 end
 
+free!(s::GitSignature) = begin
+    if s.name != C_NULL
+        c_free(s.name)
+    end
+    s.name = C_NULL
+    if s.email != C_NULL
+        c_free(s.email)
+    end
+    s.email = C_NULL
+end
+
+
 @libgit(git_signature_default, Cint,
-        (Ptr{Ptr{Signature}}, Ptr{Void}))
+        (Ptr{Ptr{GitSignature}}, Ptr{Void}))
 @libgit(git_signature_new, Cint, 
-        (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint))
+        (Ptr{Ptr{GitSignature}}, Ptr{Cchar}, Ptr{Cchar}, Int64, Cint))
 @libgit(git_signature_now, Cint, 
-        (Ptr{Ptr{Signature}}, Ptr{Cchar}, Ptr{Cchar}))
+        (Ptr{Ptr{GitSignature}}, Ptr{Cchar}, Ptr{Cchar}))
 
 # ----- libgit commit ------
 @libgit(git_commit_message, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_commit_message_raw, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_commit_tree, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_commit_tree_id, Ptr{Uint8}, (Ptr{Void},))
-@libgit(git_commit_committer, Ptr{Signature}, (Ptr{Void},))
-@libgit(git_commit_author, Ptr{Signature}, (Ptr{Void},))
+@libgit(git_commit_committer, Ptr{GitSignature}, (Ptr{Void},))
+@libgit(git_commit_author, Ptr{GitSignature}, (Ptr{Void},))
 @libgit(git_commit_parent, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cuint))
 @libgit(git_commit_parent_id, Ptr{Void}, (Ptr{Void}, Cuint))
 @libgit(git_commit_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
 @libgit(git_commit_lookup_prefix, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Csize_t))
 @libgit(git_commit_create, Cint,
-        (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{Signature},
-         Ptr{Signature}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
+        (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{GitSignature},
+         Ptr{GitSignature}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
          Cint, Ptr{Ptr{Void}}))
                                         
 # ------ libgit blob ------
@@ -302,7 +314,7 @@ end
 @libgit(git_reflog_free, Void, (Ptr{Void},))
 @libgit(git_reflog_entry_id_old, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_reflog_entry_id_new, Ptr{Uint8}, (Ptr{Void},))
-@libgit(git_reflog_entry_signature, Ptr{Signature}, (Ptr{Void},))
+@libgit(git_reflog_entry_committer, Ptr{GitSignature}, (Ptr{Void},))
 @libgit(git_reflog_entry_message, Ptr{Cchar}, (Ptr{Void},))
 # ------ libgit checkout  ------
 #TODO:...
