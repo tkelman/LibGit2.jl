@@ -280,27 +280,27 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
-@with_tmp_repo_access begin
-    ref = create_ref(test_repo,
-                     "refs/heads/test-reflog",
-                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-    log!(ref, nothing, Signature("foo", "foo@bar"))
-    log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
-    rlog = reflog(ref)
-    @test length(rlog) == 2 
-
-    @test rlog[1].id_old == Oid("0000000000000000000000000000000000000000")
-    @test rlog[1].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    @test rlog[1].message == ""
-    @test name(rlog[1].committer) == "foo"
-    @test email(rlog[1].committer) == "foo@bar"
-
-    @test rlog[2].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    @test rlog[2].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    @test rlog[2].message == "commit: bla bla"
-    @test name(rlog[2].committer) == "foo"
-    @test email(rlog[2].committer) == "foo@bar"
-end
+#@with_tmp_repo_access begin
+#    ref = create_ref(test_repo,
+#                     "refs/heads/test-reflog",
+#                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+#    log!(ref, nothing, Signature("foo", "foo@bar"))
+#    log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
+#    rlog = reflog(ref)
+#    @test length(rlog) == 2 
+#
+#    @test rlog[1].id_old == Oid("0000000000000000000000000000000000000000")
+#    @test rlog[1].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+#    @test rlog[1].message == ""
+#    @test name(rlog[1].committer) == "foo"
+#    @test email(rlog[1].committer) == "foo@bar"
+#
+#    @test rlog[2].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+#    @test rlog[2].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+#    @test rlog[2].message == "commit: bla bla"
+#    @test name(rlog[2].committer) == "foo"
+#    @test email(rlog[2].committer) == "foo@bar"
+#end
 
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
