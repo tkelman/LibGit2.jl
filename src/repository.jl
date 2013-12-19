@@ -114,6 +114,20 @@ end
 
 exists(r::Repository, id::Oid) = id in r 
 
+exists(r::Repository, ref::String) = begin
+    @assert r.ptr != C_NULL
+    ref_ptr = Array(Ptr{Void}, 1)
+    err = api.git_reference_lookup(ref_ptr, r.ptr, bytestring(ref))
+    api.git_reference_free(ref_ptr[1])
+    if err == api.ENOTFOUND
+        return false
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end
+    return true
+end
+
+        
 @deprecate repo_isbare is_bare
 repo_isbare(r::Repository) = is_bare(r)
 

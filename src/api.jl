@@ -123,6 +123,7 @@ free!(sa::GitStrArray) = begin
     end
 end
 
+@libgit(git_oid_cmp, Cint, (Ptr{Uint8}, Ptr{Uint8}))
 # ----- libgit threads -----
 @libgit(git_threads_init, Cint, ())
 @libgit(git_threads_shutdown, Cint, ())
@@ -284,7 +285,8 @@ end
 @libgit(git_reference_is_valid_name, Cint, (Ptr{Cchar},))
 @libgit(git_reference_create, Cint, 
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
-@libgit(git_reference_free, Cint, (Ptr{Void},))
+@libgit(git_reference_free, Void, (Ptr{Void},))
+@libgit(git_reference_peel, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cint))
 @libgit(git_reference_symbolic_create, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
 @libgit(git_reference_lookup, Cint, 

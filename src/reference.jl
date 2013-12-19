@@ -1,7 +1,7 @@
 export GitReference, ReflogEntry, Sym,
        set_target, set_symbolic_target, resolve, 
        rename, target, symbolic_target, name,
-       git_reftype, isvalid_ref, reflog, has_reflog
+       git_reftype, isvalid_ref, reflog, has_reflog, peel
 
 #TODO:
 #abstract GitRefType
@@ -90,6 +90,26 @@ function name(r::GitReference)
     @assert r.ptr != C_NULL
     return bytestring(api.git_reference_name(r.ptr))
 end
+
+function peel{T}(r::GitReference{T})
+    @assert r.ptr != C_NULL
+    obj_ptr = Array(Ptr{Void}, 1)
+    err = api.git_reference_peel(obj_ptr, r.ptr, api.OBJ_ANY)
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end
+    if T <: Oid && !bool(api.git_oid_cmp(obj_ptr[1], api.git_reference_target(r.ptr)))
+        api.git_object_free(obj_ptr[1])
+        return nothing
+    else
+        oid = Oid(api.git_object_id(obj_ptr[1]))
+        api.git_object_free(obj_ptr[1])
+        return oid
+    end
+end
+
 
 type Reflog
     ptr::Ptr{Void}
