@@ -273,7 +273,7 @@ end
     delete!(test_repo, new_ref)
 end
 
-# test_write_and_read_unicode_refs
+@show :test_write_and_read_unicode_refs
 @with_tmp_repo_access begin
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
     ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
@@ -281,6 +281,7 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
+@show :1
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
@@ -303,6 +304,7 @@ end
     @test email(rlog[2].committer) == "foo@bar"
 end
 
+@show :2
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
