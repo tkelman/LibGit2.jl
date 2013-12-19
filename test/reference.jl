@@ -290,6 +290,7 @@ end
     log!(ref, nothing, Signature("foo", "foo@bar"))
     log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
     rlog = reflog(ref)
+    @show rlog
     @test length(rlog) == 2 
 
     @test rlog[1].id_old == Oid("0000000000000000000000000000000000000000")
