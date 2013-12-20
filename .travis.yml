@@ -28,12 +28,12 @@ script:
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
   - git submodule init
   - cd test/
+  - julia runtests.jl reference
   - julia runtests.jl oid
   - julia runtests.jl signature
   - julia runtests.jl index
   - julia runtests.jl object
   - julia runtests.jl odb
   - julia runtests.jl repository
-  - julia runtests.jl reference
   - git config --global user.name "testfirst testlast" 
   - julia runtests.jl config
