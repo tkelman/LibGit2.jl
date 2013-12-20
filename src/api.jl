@@ -224,7 +224,8 @@ end
 # ------ libgit tree ------
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
 @libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))
-@libgit(git_tree_entry_free, Cint, (Ptr{Void},))
+#@libgit(git_tree_entry_byindex, Ptr{
+@libgit(git_tree_entry_free, Void, (Ptr{Void},))
 @libgit(git_tree_entry_name, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_tree_entry_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_tree_entry_type, Cint, (Ptr{Void},))

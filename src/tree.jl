@@ -77,15 +77,6 @@ let
     end
 end
 
-free!(te::GitTreeEntry) = begin 
-    if te.ownsptr && te.ptr != C_NULL
-        @check api.git_tree_entry_free(te.ptr)
-        te.ptr = C_NULL
-    end
-end
-
-#TODO: entries become invalid after tree 
-#is explictly free'd, copy everything instead?
 function entry_byname(t::GitTree, filename::String)
     @assert t.ptr != C_NULL
     bname = bytestring(filename)
@@ -93,7 +84,10 @@ function entry_byname(t::GitTree, filename::String)
     if entry_ptr == C_NULL
         error("tree entry pointer is NULL")
     end
-    return GitTreeEntry(entry_ptr)
+    @assert entry_ptr != C_NULL
+    te = GitTreeEntry(entry_ptr)
+    api.git_tree_entry_free(entry_ptr)
+    return te
 end
 
 function entry_bypath(t::GitTree, path::String)
@@ -103,12 +97,21 @@ function entry_bypath(t::GitTree, path::String)
     @check api.git_tree_entry_bypath(entry_ptr, t.ptr, bpath)
     @check_null entry_ptr
     te = GitTreeEntry(entry_ptr[1], true)
-    # tree entries returned are owned by the user
-    # and must be explictly freed.  
-    # since we make a copy, free here
-    @check_null entry_ptr
-    @check api.git_tree_entry_free(entry_ptr[1])
+    api.git_tree_entry_free(entry_ptr[1])
     return te
 end
 
+function entry_byindex(t::GitTree, idx::Integer)
+    @assert t.ptr != C_NULL
+    @check api.git_tree_entry_byindex(entry_ptr, t.ptr, idx)
+    @check_null entry_ptr
+    #te = GitTree
+end
+
+Base.getindex(t::GitTree, entry::Integer) = begin
+
+end
+
+Base.getindex(t::GitTree, entry::String) = begin
+end
 
