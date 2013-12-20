@@ -334,6 +334,6 @@ end
 #    @test rlog[end].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
 #    @test rlog[end].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
 #    @test rlog[end].message == "commit: bla bla"
-#    @test name(rlog[end-1].committer) == "Julia User"
-#    @test email(rlog[end-1].committer) == "user@julia.com"
+#    @test name(rlog[end].committer) == "Julia User"
+#    @test email(rlog[end].committer) == "user@julia.com"
 #end
