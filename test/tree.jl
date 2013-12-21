@@ -3,23 +3,23 @@
     test_tree = lookup_tree(test_repo, id)
 
   begin # test_read_tree_data
-    @test id == oid(tree)
+    @test id == oid(test_tree)
     @test isa(test_tree, GitTree)
     @test length(test_tree) == 3
-    @test test_tree[1] |> oid == Oid("1385f264afb75a56a5bec74243be9b367ba4ca08")
-    @test test_tree[2] |> oid == Oid("fa49b077972391ad58037050f2a75f74e3671e92")
+    @test (test_tree[1] |> oid) == Oid("1385f264afb75a56a5bec74243be9b367ba4ca08")
+    @test (test_tree[2] |> oid) == Oid("fa49b077972391ad58037050f2a75f74e3671e92")
   end
 
   begin #test_read_tree_entry_data
     bent = test_tree[1]
-    tent = test_tree[2]
+    tent = test_tree[3]
 
     @test name(bent) == "README"
-    @test isa(bent, GitBlob)
+    @test isa(bent, GitTreeEntry{GitBlob})
 
     @test name(tent) == "subdir"
-    @test isa(tent, GitTree)
-    @test tent |> oid == Oid("619f9935957e010c419cb9d15621916ddfcc0b96")
+    @test isa(tent, GitTreeEntry{GitTree})
+    @test (tent |> oid) == Oid("619f9935957e010c419cb9d15621916ddfcc0b96")
     @test isa(lookup(test_repo, oid(tent)), GitTree)
   end
 
@@ -27,19 +27,47 @@
     bentid = Oid("1385f264afb75a56a5bec74243be9b367ba4ca08")
     bent = test_tree[bentid]
     @test name(bent) == "README"
-    @test isa(bent, GitBlob)
+    @test isa(bent, GitTreeEntry{GitBlob})
   end
 
   begin # test_get_entry_by_oid_returns_nil_if_no_oid
     nadaid = Oid("1385f264afb75a56a5bec74243be9b367ba4ca07")
-    nada = test_tree[nada]
+    nada = test_tree[nadaid]
     @test nada == nothing
   end
 
-  begin # test_get_entry_by_oid_throws_error_if_wrong_type
-      @test_throws test_tree["123"]
+  begin #test tree iteration
+      @test length(collect(test_tree)) == length(test_tree)
+      tes = sort(collect(test_tree), by=oid)
+      str = join([name(te) for te in tes], ":")
+      @test str == "README:subdir:new.txt"
+  end
+
+  begin # test tree walk only trees
+      walk_trees(test_tree, :postorder) do res
+          root, entry = res
+          @assert isa(entry, GitTreeEntry{GitTree})
+      end
+  end
+
+  begin # test tree walk only blob
+      walk_blobs(test_tree, :postorder) do res
+          root, entry = res
+          @assert isa(entry, GitTreeEntry{GitBlob})
+      end
+  end
+
+  begin # test iterate subtrees
+      for t in each_tree(test_tree)
+          @test isa(t, GitTreeEntry{GitTree})
+      end
+  end
+
+  begin # test iteratee subtree blobs
+      for b in each_blob(test_tree)
+          @test isa(b, GitTreeEntry{GitBlob})
+      end
   end
 end
 
-println("OK")
- 
+#TODO: tree write test 

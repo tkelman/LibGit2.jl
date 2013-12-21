@@ -98,6 +98,9 @@ const SUBMODULE_IGNORE_DIRTY     = cint(3)
 const SUBMODULE_IGNORE_ALL       = cint(4) 
 const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 
+const TREEWALK_PRE  = cint(0)
+const TREEWALK_POST = cint(1)
+
 const GIT_PATH_MAX = cint(4096)
 
 type GitStrArray
@@ -224,13 +227,15 @@ end
 # ------ libgit tree ------
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
 @libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))
-#@libgit(git_tree_entry_byindex, Ptr{
+@libgit(git_tree_entry_byindex, Ptr{Void}, (Ptr{Void}, Csize_t))
+@libgit(git_tree_entry_byoid, Ptr{Void}, (Ptr{Void}, Ptr{Uint8}))
 @libgit(git_tree_entry_free, Void, (Ptr{Void},))
 @libgit(git_tree_entry_name, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_tree_entry_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_tree_entry_type, Cint, (Ptr{Void},))
 @libgit(git_tree_entry_filemode, Cint, (Ptr{Void},))
 @libgit(git_tree_entrycount, Csize_t, (Ptr{Void},))
+@libgit(git_tree_walk, Cint, (Ptr{Void}, Cint, Ptr{Void}, Ptr{Void}))
 
 @libgit(git_treebuilder_create, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_treebuilder_free, Void, (Ptr{Void},))

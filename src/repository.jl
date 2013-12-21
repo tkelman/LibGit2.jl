@@ -68,9 +68,9 @@ end
 function cb_iter_oids(idptr::Ptr{Uint8}, o::Ptr{Void})
     try
         produce(Oid(idptr))
-        return convert(Cint, api.GIT_OK)
+        return api.GIT_OK
     catch err
-        return convert(Cint, api.ERROR)
+        return api.ERROR
     end
 end
 
