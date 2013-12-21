@@ -219,6 +219,13 @@ end
          Ptr{GitSignature}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
          Cint, Ptr{Ptr{Void}}))
                                         
+# ----- libgit tag ------
+@libgit(git_tag_name, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_tag_message, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_tag_target_id, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_tag_target, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_tag_tagger, Ptr{GitSignature}, (Ptr{Void},))
+
 # ------ libgit blob ------
 @libgit(git_blob_rawsize, Int64, (Ptr{Void},))
 @libgit(git_blob_owner, Ptr{Void}, (Ptr{Void},))
