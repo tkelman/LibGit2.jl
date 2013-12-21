@@ -17,7 +17,7 @@
     end
 
     begin # test_object_without_note
-        id = "8496071c1b46c854b31185ea97743be6a8774479"
+        id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
         obj = lookup(test_repo, id)
         @test notes(obj) == nothing
     end
