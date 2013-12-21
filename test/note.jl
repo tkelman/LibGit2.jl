@@ -28,16 +28,14 @@
         @test notes(obj, "refs/notes/missing") == nothing
     end
 
-    begin # test object without note
-    end
-
-    begin # test nil reference lookup
-    end
-
     begin # iterate over notes
     end
 
+    begin # test each note iterable
+    end
+
     begin # test default ref
+        @test note_default_ref(test_repo) == "refs/notes/commits"
     end
 end
 

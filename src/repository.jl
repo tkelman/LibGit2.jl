@@ -8,30 +8,6 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, note!, delete_note!, each_note, note_default_ref 
 
-function notes(obj::GitObject, ref=nothing)
-    lookup_note(obj, ref)
-end
-
-function lookup_note(obj::GitObject, ref=nothing)
-    if ref == nothing
-        bref = C_NULL
-    else 
-        bref = bytestring(ref)
-    end
-    note_ptr = Array(Ptr{Void}, 1)
-    repo_ptr = api.git_object_owner(obj.ptr)
-    err = api.git_note_read(note_ptr, repo_ptr, bref, oid(obj).oid)
-    if err == api.ENOTFOUND
-        return nothing
-    elseif err != api.GIT_OK
-        throw(GitError(err))
-    end
-    @check_null note_ptr
-    n = GitNote(note_ptr[1])
-    api.git_note_free(note_ptr[1])
-    return n
-end
-
 type Repository
     ptr::Ptr{Void}
 
@@ -387,6 +363,47 @@ function tag!(r::Repository;
    end
    return tid
 end
+
+function note_default_ref(r::Repository)
+    refname_ptr = Array(Ptr{Cchar}, 1)
+    @check api.git_note_default_ref(refname_ptr, r.ptr)
+    return bytestring(refname_ptr[1])
+end
+
+# todo the following should be moved to not    
+function notes(obj::GitObject, ref=nothing)
+    lookup_note(obj, ref)
+end
+
+function lookup_note(obj::GitObject, ref=nothing)
+    if ref == nothing
+        bref = C_NULL
+    else 
+        bref = bytestring(ref)
+    end
+    note_ptr = Array(Ptr{Void}, 1)
+    repo_ptr = api.git_object_owner(obj.ptr)
+    err = api.git_note_read(note_ptr, repo_ptr, bref, oid(obj).oid)
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end
+    @check_null note_ptr
+    n = GitNote(note_ptr[1])
+    api.git_note_free(note_ptr[1])
+    return n
+end
+
+function cb_iter_notes(blob_id::Ptr{Uint8}, ann_obj_id::Ptr{Uint8}, data::Ptr{Void})
+    err = api.git_object_lookup(ann_obj_ptr, repo_ptr, ann_obj_id, api.OBJ_BLOB)
+    err |= api.git_object_lookup(ann_obj_ptr, repo_ptr, blob_id, api.OBJ_BLOB)
+    
+end
+
+const c_cb_iter_notes = cfunction(cb_iter_notes, Cint, (Ptr{Uint8}, Ptr{Uint8}, Ptr{Void}))
+
+function iter_notes(obj::GitObject, ref=nothing)
 
 function ahead_behind(r::Repository,
                       lcommit::GitCommit,

@@ -36,6 +36,7 @@ script:
   - julia runtests.jl odb
   - julia runtests.jl tree
   - julia runtests.jl tag
+  - julia runtests.jl note
   - julia runtests.jl walker
   - julia runtests.jl repository
   - git config --global user.name "testfirst testlast" 

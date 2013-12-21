@@ -172,6 +172,7 @@ end
 @libgit(git_note_message, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_note_oid, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_note_free, Void, (Ptr{Void},))
+@libgit(git_note_default_ref, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void},))
 
 # ----- libgit graph ------
 @libgit(git_graph_ahead_behind, Cint, 
