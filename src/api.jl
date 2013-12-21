@@ -126,7 +126,6 @@ free!(sa::GitStrArray) = begin
     end
 end
 
-@libgit(git_oid_cmp, Cint, (Ptr{Uint8}, Ptr{Uint8}))
 # ----- libgit threads -----
 @libgit(git_threads_init, Cint, ())
 @libgit(git_threads_shutdown, Cint, ())
@@ -161,10 +160,18 @@ end
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_object_free, Cint, (Ptr{Void},))
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
-@libgit(git_oid_fmt, Cint, (Ptr{Cchar}, Ptr{Uint8}))
 @libgit(git_object_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint))
 @libgit(git_object_type, Cint, (Ptr{Void},))
 @libgit(git_object_owner, Ptr{Void}, (Ptr{Void},))
+
+@libgit(git_oid_cmp, Cint, (Ptr{Uint8}, Ptr{Uint8}))
+@libgit(git_oid_fmt, Cint, (Ptr{Cchar}, Ptr{Uint8}))
+
+# ----- libgit note ------
+@libgit(git_note_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}))
+@libgit(git_note_message, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_note_oid, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_note_free, Void, (Ptr{Void},))
 
 # ----- libgit graph ------
 @libgit(git_graph_ahead_behind, Cint, 
@@ -192,7 +199,6 @@ free!(s::GitSignature) = begin
     end
     s.email = C_NULL
 end
-
 
 @libgit(git_signature_default, Cint,
         (Ptr{Ptr{GitSignature}}, Ptr{Void}))
@@ -228,6 +234,7 @@ end
 @libgit(git_tag_delete, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_tag_create_lightweight, Cint, 
         (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint))
+
 # ------ libgit blob ------
 @libgit(git_blob_rawsize, Int64, (Ptr{Void},))
 @libgit(git_blob_owner, Ptr{Void}, (Ptr{Void},))
@@ -403,6 +410,5 @@ end
 @libgit(git_config_delete_entry, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_free, Void, (Ptr{Void},)) 
 @libgit(git_config_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void})) 
-
 
 end # module api

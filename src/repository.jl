@@ -5,7 +5,32 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
        ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
-       default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!
+       default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
+       notes, note!, delete_note!, each_note, note_default_ref 
+
+function notes(obj::GitObject, ref=nothing)
+    lookup_note(obj, ref)
+end
+
+function lookup_note(obj::GitObject, ref=nothing)
+    if ref == nothing
+        bref = C_NULL
+    else 
+        bref = bytestring(ref)
+    end
+    note_ptr = Array(Ptr{Void}, 1)
+    repo_ptr = api.git_object_owner(obj.ptr)
+    err = api.git_note_read(note_ptr, repo_ptr, bref, oid(obj).oid)
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end
+    @check_null note_ptr
+    n = GitNote(note_ptr[1])
+    api.git_note_free(note_ptr[1])
+    return n
+end
 
 type Repository
     ptr::Ptr{Void}

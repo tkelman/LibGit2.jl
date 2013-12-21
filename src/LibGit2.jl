@@ -17,6 +17,7 @@ include("blob.jl")
 include("reference.jl")
 include("odb.jl")
 include("remote.jl")
+include("note.jl")
 include("repository.jl")
 include("walk.jl")
 
