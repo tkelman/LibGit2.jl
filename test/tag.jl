@@ -28,3 +28,54 @@
         @test (target(obj) |> oid) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     end
 end
+
+# test writing a tag
+@with_tmp_repo_access begin
+   sig = Signature("Julia", "julia@julia.com")
+   tid = tag!(test_repo, 
+              name="tag",
+              message="test tag message\n",
+              target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"),
+              tagger=sig)
+   t = lookup(test_repo, tid)
+   @test isa(t, GitTag)
+   @test target_id(t) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644") 
+   @test target_id(t) == oid(target(t))
+   @test message(t) == "test tag message\n"
+   @test name(tagger(t)) == "Julia"
+   @test email(tagger(t)) == "julia@julia.com"
+   @show "trying this out"
+end
+
+# test writing a tag without a signature
+@with_tmp_repo_access begin
+    testname = "Julia"
+    testemail = "julia@julia.com"
+    config(test_repo)["user.name"] = testname
+    config(test_repo)["user.email"] = testemail
+    id = tag!(test_repo, 
+              name="tag", 
+              message="test tag message\n",
+              target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
+    @test isa(id, Oid)
+    t = lookup(test_repo, id)
+    @test name(tagger(t)) == testname
+    @test email(tagger(t)) == testemail
+end
+
+# test invalid message type
+@with_tmp_repo_access begin
+    sig = Signature("Julia", "julia@julia.com")
+    @test_throws tag!(test_repo, 
+                      name="tag", 
+                      message=:error,
+                      target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"),
+                      tagger=sig)
+end
+
+# test writing light tags
+@with_tmp_repo_access begin
+    tag!(test_repo, name="tag", target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
+    t = lookup_ref(test_repo, "refs/tags/tag")
+    @test target(t) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+end

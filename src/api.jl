@@ -225,7 +225,9 @@ end
 @libgit(git_tag_target_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_tag_target, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_tag_tagger, Ptr{GitSignature}, (Ptr{Void},))
-
+@libgit(git_tag_delete, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_tag_create_lightweight, Cint, 
+        (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint))
 # ------ libgit blob ------
 @libgit(git_blob_rawsize, Int64, (Ptr{Void},))
 @libgit(git_blob_owner, Ptr{Void}, (Ptr{Void},))

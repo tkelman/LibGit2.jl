@@ -1,5 +1,5 @@
 export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
-       repo_open, repo_init, repo_index, head, set_head!, tags, commits, references,
+       repo_open, repo_init, repo_index, head, set_head!, tags, tag!, commits, references,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
@@ -104,6 +104,12 @@ Base.delete!(r::Repository, ref::GitReference) = begin
     @assert r.ptr != C_NULL && ref.ptr != C_NULL
     @check api.git_reference_delete(ref.ptr)
     return r
+end
+
+Base.delete!(r::Repository, t::GitTag) = begin
+    @assert r.ptr != C_NULL && t.ptr != C_NULL
+    @check api.git_tag_delete(r.ptr, name(t))
+    return nothing
 end
 
 function read_header(r::Repository, id::Oid)
@@ -321,6 +327,40 @@ function tags(r::Repository, glob=nothing)
         out[i] = bytestring(cptr)
     end
     return out
+end
+
+function tag!(r::Repository; 
+              name::String="",
+              message::String="",
+              target::Union(Nothing,Oid)=nothing,
+              tagger::Union(Nothing,Signature)=nothing,
+              force::Bool=false)
+   @check r.ptr != C_NULL
+   if target != nothing
+       obj = lookup(r, target)
+   end
+   tid = Oid()
+   if !isempty(message)
+       if tagger != nothing
+           #TODO: memory leak here
+           gsig = git_signature(tagger)
+           #finalizer(gsig, api.free!)
+       else
+           gsig = git_signature(default_signature(r))
+       end
+       @check ccall((:git_tag_create, api.libgit2), Cint,
+                    (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar},
+                     Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}, Cint),
+                     tid.oid, r.ptr, bytestring(name), obj.ptr, 
+                     &gsig, bytestring(message), force)
+   else
+       @check api.git_tag_create_lightweight(tid.oid,
+                                             r.ptr,
+                                             bytestring(name),
+                                             obj.ptr,
+                                             force? 1 : 0)
+   end
+   return tid
 end
 
 function ahead_behind(r::Repository,

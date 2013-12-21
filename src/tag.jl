@@ -49,6 +49,10 @@ function tagger(t::GitTag)
     end
     gsig = unsafe_load(sig_ptr)
     sig =  Signature(gsig)
-    api.free!(gsig)
+    #TODO: all this signature stuff has
+    #to be cleaned up
+    #api.free!(gsig)
     return sig
 end
+
+#TODO: foreach(tag)...
