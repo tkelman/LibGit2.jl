@@ -1,5 +1,7 @@
 # lookup raises error if object type does not match
 @with_repo_access begin
+    #TODO:
+    @test_throws lookup_tree(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
 end
 
 @with_repo_access begin
