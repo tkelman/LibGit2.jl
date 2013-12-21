@@ -44,7 +44,6 @@ end
    @test message(t) == "test tag message\n"
    @test name(tagger(t)) == "Julia"
    @test email(tagger(t)) == "julia@julia.com"
-   @show "trying this out"
 end
 
 # test writing a tag without a signature
