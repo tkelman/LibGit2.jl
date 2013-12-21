@@ -21,7 +21,7 @@ try
     
     # test repo has one commit
     ctree = GitTree(c1)
-    @test count(ctree) == 1
+    @test length(ctree) == 1
 
     t = lookup(GitTree, repo, tid)
     @test oid(t) == tid
