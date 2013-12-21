@@ -209,6 +209,7 @@ end
 @libgit(git_commit_committer, Ptr{GitSignature}, (Ptr{Void},))
 @libgit(git_commit_author, Ptr{GitSignature}, (Ptr{Void},))
 @libgit(git_commit_parent, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cuint))
+@libgit(git_commit_parentcount, Csize_t, (Ptr{Void},))
 @libgit(git_commit_parent_id, Ptr{Void}, (Ptr{Void}, Cuint))
 @libgit(git_commit_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}))
 @libgit(git_commit_lookup_prefix, Cint,

@@ -38,7 +38,7 @@ Base.start(w::GitRevWalker) = begin
         gitcommit = lookup_commit(w.repo, commit_oid)
         return (gitcommit, false)
     elseif err == api.ITEROVER
-        return (nothing, false)
+        return (nothing, true)
     end
     throw(GitError(err))
 end
@@ -66,6 +66,15 @@ Base.push!(w::GitRevWalker, cid::Oid) = begin
     return nothing
 end
 
+Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev=false) = begin
+    s = symbol_to_gitsort(sort_mode)
+    if rev
+        s |= api.SORT_REVERSE
+    end
+    sortby!(w, s)
+    return nothing
+end
+
 Base.sortby!(w::GitRevWalker, sort_mode::Cint) = begin
     @assert w.ptr != C_NULL
     api.git_revwalk_sorting(w.ptr, sort_mode)
@@ -82,6 +91,18 @@ function reset!(w::GitRevWalker)
     @assert w.ptr != C_NULL
     api.git_revwalk_reset(w.ptr)
     return nothing
+end
+
+function symbol_to_gitsort(s::Symbol)
+    if s == :none
+        return api.SORT_NONE
+    elseif s == :topo
+        return api.SORT_TOPOLOGICAL
+    elseif s == :date
+        return api.SORT_TIME
+    else
+        error("unknown sort type :$s")
+    end
 end
 
 function walk(r::Repository, from::Oid, sorting=SortDate)

@@ -14,7 +14,19 @@ free!(o::GitObject) = begin
 end
 
 Base.isequal(o1::GitObject, o2::GitObject) = begin
-    o1.ptr == o2.ptr 
+    Base.isequal(oid(o1), oid(o2))
+end
+
+Base.isless(o1::GitObject, o2::GitObject) = begin
+    Base.isless(oid(o1), oid(o2))
+end
+
+Base.hash(o::GitObject) = begin
+    Base.hash(hex(o))
+end
+
+Base.cmp(o1::GitObject, o2::GitObject) = begin
+    Base.cmp(oid(o1), oid(o2))
 end
 
 function oid(o::GitObject)
@@ -55,7 +67,6 @@ function gitobj_from_ptr(ptr::Ptr{Void})
     @assert ptr != C_NULL
     obj_type = api.git_object_type(ptr) 
     T = gitobj_const_type(obj_type)
-    #@show "calling constructor"
     return T(ptr)
 end
 

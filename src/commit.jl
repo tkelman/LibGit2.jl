@@ -1,5 +1,5 @@
 export GitCommit, git_otype, message, tree, tree_id,
-       author, committer, parent, parent_id, parent_count
+       author, committer, parent, parent_id, parent_count, parents
 
 type GitCommit <: GitObject
     ptr::Ptr{Void}
@@ -86,6 +86,16 @@ function parent(c::GitCommit, n::Integer)
     return GitCommit(commit_ptr[1])
 end
 
+function parents(c::GitCommit)
+    @assert c.ptr != C_NULL
+    n = parent_count(c)
+    ps = GitCommit[]
+    for i in 0:n-1
+        push!(ps, parent(c, i))
+    end
+    return ps
+end
+
 function parent_id(c::GitCommit, n::Integer)
     @assert c.ptr != C_NULL
     if n < 0
@@ -101,5 +111,5 @@ end
 
 function parent_count(c::GitCommit)
     @assert c.ptr != C_NULL
-    return int(api.git_commit_parent_count(c.ptr))
+    return int(api.git_commit_parentcount(c.ptr))
 end
