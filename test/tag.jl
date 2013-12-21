@@ -14,6 +14,7 @@
         @test message(obj) == "test tag message\n"
         @test name(obj) == "v1.0"
         @test target_id(obj) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+        @test target_id(obj) == oid(target(obj))
         @test isa(target(obj), GitCommit)
         c = tagger(obj)
         @test name(c) == "Scott Chacon"
