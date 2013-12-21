@@ -6,7 +6,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
        ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
-       notes, note!, delete_note!, each_note, note_default_ref 
+       notes, note!, delete_note!, each_note, note_default_ref, iter_notes
 
 type Repository
     ptr::Ptr{Void}
@@ -395,15 +395,30 @@ function lookup_note(obj::GitObject, ref=nothing)
     return n
 end
 
-function cb_iter_notes(blob_id::Ptr{Uint8}, ann_obj_id::Ptr{Uint8}, data::Ptr{Void})
+function cb_iter_notes(blob_id::Ptr{Uint8}, ann_obj_id::Ptr{Uint8}, repo_ptr::Ptr{Void})
+    ann_obj_ptr = Array(Ptr{Void}, 1)
+    blob_ptr = Array(Ptr{Void}, 1)
     err = api.git_object_lookup(ann_obj_ptr, repo_ptr, ann_obj_id, api.OBJ_BLOB)
-    err |= api.git_object_lookup(ann_obj_ptr, repo_ptr, blob_id, api.OBJ_BLOB)
-    
+    err |= api.git_object_lookup(blob_ptr, repo_ptr, blob_id, api.OBJ_BLOB)
+    if err == api.GIT_OK
+        res = (gitobj_from_ptr(ann_obj_id[1]), 
+               gitobj_from_ptr(blob_ptr[1]))
+        produce(res)
+    end
+    return err
 end
 
 const c_cb_iter_notes = cfunction(cb_iter_notes, Cint, (Ptr{Uint8}, Ptr{Uint8}, Ptr{Void}))
 
-function iter_notes(obj::GitObject, ref=nothing)
+function iter_notes(r::Repository, notes_ref=nothing)
+    @assert r.ptr != C_NULL
+    if ref == nothing
+        bnotes_ref = C_NULL
+    else
+        bnotes_ref = bytestring(notes_ref)
+    end
+    return @task api.git_note_foreach(r.ptr, notes_ref, c_cb_iter_notes, r.ptr)
+end
 
 function ahead_behind(r::Repository,
                       lcommit::GitCommit,

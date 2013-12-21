@@ -29,9 +29,14 @@
     end
 
     begin # iterate over notes
+        for (note_blob, ann_obj) in iter_notes(test_repo, "refs/notes/commits")
+            @test content(note_blob) == "note text\n"
+            @test (ann_obj |> oid) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+        end
     end
 
     begin # test each note iterable
+        @test isa(iter_notes(test_repo, "refs/notes/commits"), Task)
     end
 
     begin # test default ref
@@ -39,3 +44,4 @@
     end
 end
 
+#TODO: NOTE WRITE TESTS
