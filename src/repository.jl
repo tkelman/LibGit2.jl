@@ -343,9 +343,7 @@ function tag!(r::Repository;
    tid = Oid()
    if !isempty(message)
        if tagger != nothing
-           #TODO: memory leak here
            gsig = git_signature(tagger)
-           #finalizer(gsig, api.free!)
        else
            gsig = git_signature(default_signature(r))
        end
@@ -362,6 +360,38 @@ function tag!(r::Repository;
                                              force? 1 : 0)
    end
    return tid
+end
+
+function note!(obj::GitObject, msg::String; 
+               committer::Union(Nothing, Signature)=nothing,
+               author::Union(Nothing, Signature)=nothing,
+               ref::Union(Nothing, String)=nothing,
+               force::Bool=false)
+    @assert obj.ptr != nothing
+    repo_ptr = api.git_object_owner(obj.ptr)
+    @assert repo_ptr != C_NULL
+    target_id = oid(obj)
+    bmsg = bytestring(msg)
+    bref = ref != nothing ? bytestring(ref) : C_NULL
+    if committer != nothing
+        gcommitter = git_signature(committer)
+    else
+        gcommitter = C_NULL
+    end
+    if author != nothing
+        gauthor = git_signature(author)
+    else
+        gauthor = C_NULL
+    end
+    note_id  = Oid()
+    @check ccall((:git_note_create, api.libgit2), Cint,
+                 (Ptr{Uint8}, Ptr{Void}, Ptr{api.GitSignature},
+                  Ptr{api.GitSignature}, Ptr{Cchar}, Ptr{Uint8},
+                  Ptr{Cchar}, Cint),
+                 note_id.oid, repo_ptr, &gcommitter, &gauthor,
+                 bref, target_id.oid, bytestring(msg),
+                 force? 1 : 0)
+    return note_id
 end
 
 function note_default_ref(r::Repository)

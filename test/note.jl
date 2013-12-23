@@ -45,3 +45,26 @@
 end
 
 #TODO: NOTE WRITE TESTS
+
+@with_tmp_repo_access begin
+    sig = Signature("Julia", "julia@julia.com")
+    id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
+    msg = "This is the note message\n\nThis note is created from Rugged"
+    obj = lookup(test_repo, id)
+
+    note_id = note!(obj, msg,
+                    committer=sig,
+                    author=sig,
+                    ref="refs/notes/test")
+
+    @test note_id == Oid("38c3a690c474d8dcdb13088205a464a60312eec4")
+    # note is actually a blob
+    blob = lookup(test_repo, note_id)
+    @test oid(blob) == note_id
+    @test raw_content(blob) == msg
+    @test isa(blob, GitBlob) 
+
+    n = notes(obj, "refs/notes/test")
+    @test oid(n) == note_id
+    @test message(n) == msg
+end
