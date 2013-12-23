@@ -126,7 +126,7 @@ end
 function set!(::Type{Bool}, c::GitConfig, value::Bool)
     @assert c.ptr != C_NULL
     bname = bytestring(name)
-    cval  = value? convert(Cint, 1) : convert(Cint, 0)
+    cval  = value? 1 : 0
     @check api.git_config_get_bool(out, c.ptr, cval)
     return nothing
 end

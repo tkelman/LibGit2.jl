@@ -50,6 +50,7 @@ function git_tree_id(c::GitCommit)
     return Oid(oid_ptr)
 end
 
+#TODO; memory leak with signature
 function author(c::GitCommit)
     @assert c.ptr != C_NULL
     ptr::Ptr{api.GitSignature} = api.git_commit_author(c.ptr)
@@ -58,7 +59,7 @@ function author(c::GitCommit)
     end
     gsig = unsafe_load(ptr)
     sig = Signature(gsig)
-    api.free!(gsig)
+    #api.free!(gsig)
     return sig
 end
 
@@ -70,7 +71,7 @@ function committer(c::GitCommit)
     end
     gsig = unsafe_load(ptr)
     sig = Signature(gsig)
-    api.free!(gsig)
+    #api.free!(gsig)
     return sig
 end
 

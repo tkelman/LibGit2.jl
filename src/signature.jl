@@ -52,10 +52,20 @@ function Signature(gsig::api.GitSignature)
                      gsig.time_offset)
 end
 
-git_signature(sig::Signature) = begin 
+git_signature(sig::Signature) = begin
+    #name_copy  = copy(sig.name)
+    #email_copy = copy(sig.email) 
     return api.GitSignature(convert(Ptr{Cchar}, sig.name),
                             convert(Ptr{Cchar}, sig.email),
                             sig.time, sig.time_offset)
+end
+
+git_signature_ptr(sig::Signature) = begin
+    sig_ptr = Array(Ptr{api.GitSignature}, 1)
+    @check api.git_signature_new(sig_ptr, sig.name, sig.email, 
+                                 sig.time, sig.time_offset)
+    @check_null sig_ptr
+    return sig_ptr[1]
 end
 
 function name(s::Signature)
