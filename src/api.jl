@@ -240,8 +240,12 @@ end
 # ------ libgit blob ------
 @libgit(git_blob_rawsize, Int64, (Ptr{Void},))
 @libgit(git_blob_owner, Ptr{Void}, (Ptr{Void},))
-@libgit(git_blob_rawcontent, Ptr{Void}, (Ptr{Void},))
+@libgit(git_blob_rawcontent, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_blob_is_binary, Cint, (Ptr{Void},))
+@libgit(git_blob_create_frombuffer, Cint, 
+        (Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Csize_t))
+@libgit(git_blob_create_fromworkdir, Cint,
+        (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}))
 
 # ------ libgit tree ------
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 

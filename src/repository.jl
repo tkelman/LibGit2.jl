@@ -6,7 +6,8 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
        ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
-       notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes
+       notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
+       blob_from_buffer, blob_from_workdir
 
 type Repository
     ptr::Ptr{Void}
@@ -520,6 +521,20 @@ function blob_at(r::Repository, rev::Oid, p::String)
     end
     blob = lookup_blob(r, oid(blob_entry))
     return blob
+end
+
+function blob_from_buffer(r::Repository, buf::ByteString)
+    @assert  r.ptr != C_NULL
+    blob_id = Oid()
+    @check api.git_blob_create_frombuffer(blob_id.oid, r.ptr, buf, length(buf))
+    return blob_id
+end
+
+function blob_from_workdir(r::Repository, path::String)
+    @assert r.ptr != C_NULL
+    blob_id = Oid()
+    @check api.git_blob_create_fromworkdir(blob_id.oid, r.ptr, bytestring(path))
+    return blob_id
 end
 
 #TODO: consolidate with odb
