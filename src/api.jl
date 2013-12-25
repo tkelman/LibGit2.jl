@@ -246,7 +246,10 @@ end
         (Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Csize_t))
 @libgit(git_blob_create_fromworkdir, Cint,
         (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}))
-
+@libgit(git_blob_create_fromdisk, Cint,
+        (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_blob_is_binary, Cint,
+        (Ptr{Void},))
 # ------ libgit tree ------
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
 @libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))

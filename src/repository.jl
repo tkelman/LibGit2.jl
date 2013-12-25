@@ -7,7 +7,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
-       blob_from_buffer, blob_from_workdir
+       blob_from_buffer, blob_from_workdir, blob_from_disk
 
 type Repository
     ptr::Ptr{Void}
@@ -536,6 +536,14 @@ function blob_from_workdir(r::Repository, path::String)
     @check api.git_blob_create_fromworkdir(blob_id.oid, r.ptr, bytestring(path))
     return blob_id
 end
+
+function blob_from_disk(r::Repository, path::String)
+    @assert r.ptr != C_NULL
+    blob_id = Oid()
+    @check api.git_blob_create_fromdisk(blob_id.oid, r.ptr, bytestring(path))
+    return blob_id
+end
+
 
 #TODO: consolidate with odb
 function write!{T<:GitObject}(::Type{T}, r::Repository, buf::ByteString)

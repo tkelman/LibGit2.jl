@@ -1,4 +1,4 @@
-export GitBlob, git_otype, is_binary, raw_content, sloc, text
+export GitBlob, git_otype, is_binary, raw_content, sloc, text, isbinary
 
 type GitBlob <: GitObject
     ptr::Ptr{Void}
@@ -30,13 +30,13 @@ function raw_content(b::GitBlob, max_bytes=-1)
         return ""
     end
     if max_bytes < 0 || max_bytes > data_size
-        return bytestring(data_ptr)
+        return utf8(bytestring(data_ptr))
     end
     if max_bytes > 0 && max_bytes < data_size
         data_copy = Array(Uint8, max_bytes)
         data_copy_ptr = convert(Ptr{Uint8}, data_copy)
         unsafe_copy!(data_copy_ptr, data_ptr, max_bytes)
-        return ASCIIString(data_copy)
+        return UTF8String(data_copy)
     end
 end
 
@@ -89,4 +89,10 @@ function text(b::GitBlob, max_lines=-1)
     unsafe_copy!(data_copy_ptr, data_ptr, data_size)
     return UTF8String(data_copy) 
 end
- 
+
+function isbinary(b::GitBlob)
+    @assert b.ptr != C_NULL
+    res = api.git_blob_is_binary(b.ptr)
+    return bool(res)
+end
+

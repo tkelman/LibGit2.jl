@@ -96,4 +96,33 @@ end
       blob_from_workdir(test_repo, "README")
 end
 
+# test_write_blob_from_disk
+@with_tmp_repo_access begin
+    file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
+    @test isfile(file_path)
+    id = blob_from_disk(test_repo, file_path)
+    @test isa(id, Oid)
+    b = lookup(test_repo, id)
+    fh = open(file_path, "r")
+    c = readall(fh)
+    rc = raw_content(b)
+    @test length(c) == length(rc)
+    for i in length(c)
+        @assert c[i] == rc[i]
+    end
+    close(fh)
+end
 
+# test_blob_is_binary
+@with_tmp_repo_access begin
+    binary_file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
+    binary_blob = lookup(test_repo, blob_from_disk(test_repo, binary_file_path))
+    @test isbinary(binary_blob) == true
+
+    text_file_path = joinpath(TESTDIR, joinpath("fixtures", "text_file.md"))
+    text_blob = lookup(test_repo, blob_from_disk(test_repo, text_file_path))
+    @test isbinary(text_blob) == false
+end
+
+#TODO: blob diff 
+#TODO; blob io

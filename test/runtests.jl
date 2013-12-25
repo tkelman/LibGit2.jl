@@ -4,7 +4,7 @@ using LibGit2
 include("util.jl")
 
 testnames = ["oid", "blob", "repository", "config", "signature", "index", "object",
-             "odb", "reference", "tree", "walker", "tag", "note", "blob"]
+             "odb", "reference", "tree", "walker", "tag", "note"] 
 
 tests = ARGS==["all"] ? testnames : ARGS
 
