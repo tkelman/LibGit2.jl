@@ -1,4 +1,14 @@
 @with_repo_access begin
+      # commit
+    @test_throws lookup_blob(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+      # tag
+    @test_throws lookup_blob(test_repo, Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
+      # tree
+    @test_throws lookup_blob(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
+end
+
+
+@with_repo_access begin
     begin :test_read_blob_data
         id = Oid("fa49b077972391ad58037050f2a75f74e3671e92")
         b = lookup(test_repo, id)
