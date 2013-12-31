@@ -175,6 +175,14 @@ end
 @libgit(git_note_default_ref, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void},))
 @libgit(git_note_foreach, Cint, (Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Void}))
 
+# ----- libgit patch ------
+@libgit(git_patch_free, Void, (Ptr{Void},))
+@libgit(git_patch_line_stats, Cint, 
+        (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}))
+@libgit(git_patch_print, Cint,
+        (Ptr{Void}, Ptr{Void}, Ptr{Void}))
+@libgit(git_patch_num_hunks, Csize_t, (Ptr{Void},))
+
 # ----- libgit graph ------
 @libgit(git_graph_ahead_behind, Cint, 
         (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}))
