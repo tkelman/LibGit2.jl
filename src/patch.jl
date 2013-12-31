@@ -60,3 +60,9 @@ function line_stats(p::GitPatch)
     return (lines[1], additions[1], deletions[1])
 end
 
+<<<<<<< HEAD
+=======
+end
+
+function
+>>>>>>> d399144fb7f653bc47b03165d21bf7257b2a0899
