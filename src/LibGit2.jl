@@ -1,5 +1,8 @@
 module LibGit2
 
+
+
+
 include("api.jl")
 export api
 
@@ -14,6 +17,7 @@ include("signature.jl")
 include("commit.jl")
 include("tag.jl")
 include("blob.jl")
+include("patch.jl")
 include("reference.jl")
 include("odb.jl")
 include("remote.jl")
