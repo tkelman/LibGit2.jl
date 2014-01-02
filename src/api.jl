@@ -103,6 +103,46 @@ const TREEWALK_POST = cint(1)
 
 const GIT_PATH_MAX = cint(4096)
 
+const DIFF_NORMAL  = cint(0)
+const DIFF_REVERSE = cuint(1) << cint(0)
+const DIFF_INCLUDE_IGNORED = cuint(1) << cint(1)
+const DIFF_RECURSE_IGNORED_DIRS = cuint(1) << cint(2)
+const DIFF_INCLUDE_UNTRACKED = cuint(1) << cint(3)
+const DIFF_RECURSE_UNTRACKED_DIRS = cuint(1) << cint(4)
+const DIFF_INCLUDE_UNMODIFIED = cuint(1) << cint(5)
+const DIFF_INCLUDE_TYPECHANGE = cuint(1) << cint(6)
+const DIFF_INCLUDE_TYPECHANGE_TREES = cuint(1) << cint(7)
+const DIFF_IGNORE_FILEMODE = cuint(1) << cint(8)
+const DIFF_IGNORE_SUBMODULES = cuint(1) << cint(9)
+const DIFF_IGNORE_CASE = cuint(1) << cint(10)
+const DIFF_DISABLE_PATHSPEC_MATCH = cuint(1) << cint(12)
+const DIFF_SKIP_BINARY_CHECK = cuint(1) << cint(13)
+const DIFF_ENABLE_FAST_UNTRACKED_DIRS = cuint(1) << cint(14)
+
+const DIFF_FORCE_TEXT = cuint(1) << cint(20)
+const DIFF_FORCE_BINARY = cuint(1) << cint(21)
+const DIFF_IGNORE_WHITESPACE = cuint(1) << cint(22)
+const DIFF_IGNORE_WHITESPACE_CHANGE = cuint(1) << cint(23)
+const DIFF_IGNORE_WHITESPACE_EOL = cuint(1) << cint(24)
+const DIFF_SHOW_UNTRACKED_CONTENT = cuint(1) << cint(25)
+const DIFF_SHOW_UNMODIFIED = cuint(1) << cint(26)
+const DIFF_PATIENCE = cuint(1) << cint(28)
+const DIFF_MINIMAL = cuint(1) << cint(29)
+
+const DIFF_FLAG_BINARY     = cuint(1) << cint(0)
+const DIFF_FLAG_NOT_BINARY = cuint(1) << cint(1)
+const DIFF_FLAG_VALID_OI   = cuint(1) << cint(2)
+
+const DIFF_DELTA_UNMODIFIED = cint(0)
+const DIFF_DELTA_ADDED      = cint(1)
+const DIFF_DELTA_DELETED    = cint(2)
+const DIFF_DELTA_MODIFIED   = cint(3)
+const DIFF_DELTA_RENAMED    = cint(4)
+const DIFF_DELTA_COPIED     = cint(5)
+const DIFF_DELTA_IGNORED    = cint(6)
+const DIFF_DELTA_UNTRACKED  = cint(7)
+const DIFF_DELTA_TYPECHANGE = cint(8)
+
 type GitStrArray
    strings::Ptr{Ptr{Cchar}}
    count::Csize_t
@@ -190,6 +230,9 @@ end
 # ----- libgit merge ------
 @libgit(git_merge_base_many, Cint,
         (Ptr{Uint8}, Ptr{Void}, Csize_t, Ptr{Void}))
+
+# ----- libgit diff ------
+@libgit(git_diff_free, Void, (Ptr{Void},))
 
 # ----- libgit signature ------
 type GitSignature
