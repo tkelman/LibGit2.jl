@@ -7,17 +7,20 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
-       blob_from_buffer, blob_from_workdir, blob_from_disk
+       blob_from_buffer, blob_from_workdir, blob_from_disk,
+       branch_names, lookup_branch, create_branch
 
 type Repository
     ptr::Ptr{Void}
-
-    function Repository(ptr::Ptr{Void})
+    
+    function Repository(ptr::Ptr{Void}, manage::Bool=true)
         if ptr == C_NULL
             throw(ArgumentError("Repository initialized with NULL pointer"))
         end
         r = new(ptr)
-        finalizer(r, free!)
+        if manage
+            finalizer(r, free!)
+        end
         return r
     end
 end
@@ -746,6 +749,86 @@ function commit(r::Repository,
 end
 
 function repo_set_workdir(r::Repository, dir::String, update::Bool)
+end
+
+# filter can be :all, :local, :remote
+function branch_names(r::Repository, filter=:all)
+    @assert r.ptr != C_NULL
+    local git_filter::Cint 
+    if filter == :all
+        git_filter = api.BRANCH_LOCAL | api.BRANCH_REMOTE
+    elseif filter == :local
+        git_filter = api.BRANCH_LOCAL
+    elseif filter == :remote
+        git_filter = api.BRANCH_REMOTE
+    else
+        throw(ArgumentError("filter can be :all, :local, or :remote"))
+    end
+    iter_ptr = Array(Ptr{Void}, 1)
+    @check api.git_branch_iterator_new(iter_ptr, r.ptr, git_filter)
+    @check_null iter_ptr
+    branch_ptr = Array(Ptr{Void}, 1)
+    branch_type = Array(Cint, 1)
+    names = String[]
+    while true
+        err = api.git_branch_next(branch_ptr, branch_type, iter_ptr[1])
+        if err == api.ITEROVER
+            break
+        end
+        if err != api.GIT_OK
+            if iter_ptr[1] != C_NULL
+                api.git_branch_iterator_free(iter_ptr[1])
+            end
+            throw(GitError(err))
+        end
+        name_ptr = api.git_reference_shorthand(branch_ptr[1])
+        push!(names, bytestring(name_ptr)) 
+    end
+    api.git_branch_iterator_free(iter_ptr[1])
+    return names
+end
+
+function lookup(::Type{GitBranch}, r::Repository,
+                branch_name::String, branch_type=:local)
+    @assert r.ptr != C_NULL
+    local git_branch_type::Cint
+    if branch_type == :local
+        git_branch_type = api.BRANCH_LOCAL
+    elseif branch_type == :remote 
+        git_branch_type = api.BRANCH_REMOTE
+    else
+        throw(ArgumentError("branch_type can be :local or :remote"))
+    end
+    branch_ptr = Array(Ptr{Void}, 1)
+    err = api.git_branch_lookup(branch_ptr, r.ptr,
+                                 bytestring(branch_name), git_branch_type)
+    if err == api.GIT_OK
+        return GitBranch(branch_ptr[1])
+    elseif err == api.ENOTFOUND
+        return nothing
+    else
+        throw(GitError(err))
+    end
+end
+
+lookup_branch(r::Repository, branch_name::String, branch_type=:local) = 
+        lookup(GitBranch, r, branch_name, branch_type)
+
+function create_branch(r::Repository, n::String, target::Oid, force::Bool=false)
+    @assert r.ptr != C_NULL
+    #TODO: give intelligent error msg when target
+    # does not exist
+    c = lookup_commit(r, target)
+    branch_ptr = Array(Ptr{Void}, 1)
+    @check api.git_branch_create(branch_ptr, r.ptr, bytestring(n),
+                                 c.ptr, force? 1 : 0)
+    return GitBranch(branch_ptr[1]) 
+end
+
+function create_branch(r::Repository, n::String,
+                       target::String="HEAD", force::Bool=false)
+    id = rev_parse_oid(r, target)
+    return create_branch(r, n, id, force)
 end
 
 #------- Tree Builder -------

@@ -91,6 +91,7 @@ const SUBMODULE_UPDATE_MERGE    = cint(3)
 const SUBMODULE_UPDATE_NONE     = cint(4)
 const SUBMODULE_UPDATE_DEFAULT  = cint(0)
 
+# git_submodule_ignore_t
 const SUBMODULE_IGNORE_RESET     = cint(-1)
 const SUBMODULE_IGNORE_NONE      = cint(1)  
 const SUBMODULE_IGNORE_UNTRACKED = cint(2)  
@@ -232,6 +233,52 @@ end
         (Ptr{Uint8}, Ptr{Void}, Csize_t, Ptr{Void}))
 
 # ----- libgit diff ------
+type GitDiffFile
+    oid::Ptr{Uint8}
+    path::Ptr{Cchar}
+    size::Int64
+    flags::Uint32
+    mode::Uint16
+end
+
+type GitDiffDelta 
+    status::Cint
+    flags::Uint32
+    similarity::Uint16
+    nfiles::Uint16
+
+    old_file_oid::Ptr{Uint8}
+    old_file_path::Ptr{Cchar}
+    old_file_size::Int64
+    old_file_flags::Uint32
+    old_file_mode::Uint16
+
+    new_file_oid::Ptr{Uint8}
+    new_file_path::Ptr{Cchar}
+    new_file_size::Int64
+    new_file_flags::Uint32
+    new_file_mode::Uint16
+end
+
+
+type GitDiffOptions
+    version::Cuint
+    flags::Uint32
+    # opts controlling which files are in the diff
+    ignore_submodules::Cint
+    pathspec_strings::Ptr{Ptr{Cchar}}
+    pathspec_count::Csize_t
+    notify_cb::Ptr{Void}
+    notify_payload::Ptr{Void}
+    # opts controlling how the diff text is generated
+    context_lines::Uint16
+    interhunk_lines::Uint16
+    oid_abbrev::Uint16
+    max_size::Int64
+    old_prefix::Ptr{Cchar}
+    new_prefix::Ptr{Cchar}
+end
+
 @libgit(git_diff_free, Void, (Ptr{Void},))
 
 # ----- libgit signature ------
@@ -334,6 +381,18 @@ end
 @libgit(git_remote_free, Void, (Ptr{Void},))
 @libgit(git_remote_list, Cint, (Ptr{GitStrArray}, Ptr{Void}))
 
+# ------ libgit branch ------
+@libgit(git_branch_create, Cint,
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint))
+@libgit(git_branch_iterator_new, Cint, (Ptr{Void}, Ptr{Void}, Cint))
+@libgit(git_branch_next, Cint, (Ptr{Void}, Ptr{Cint}, Ptr{Void}))
+@libgit(git_branch_iterator_free, Void, (Ptr{Void},))
+@libgit(git_branch_lookup, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_branch_name, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void}))
+@libgit(git_branch_delete, Cint, (Ptr{Void},))
+@libgit(git_branch_is_head, Cint, (Ptr{Void},))
+@libgit(git_branch_move, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint))
+
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
 @libgit(git_odb_free, Void, (Ptr{Void},))
@@ -392,6 +451,7 @@ end
 @libgit(git_reference_iterator_free, Cint, (Ptr{Void},))
 @libgit(git_reference_has_log, Cint, (Ptr{Void},))
 @libgit(git_reference_owner, Ptr{Void}, (Ptr{Void},))
+@libgit(git_reference_shorthand, Ptr{Cchar}, (Ptr{Void},))
 
 @libgit(git_reflog_write, Cint, (Ptr{Void},))
 @libgit(git_reflog_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
