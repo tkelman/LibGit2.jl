@@ -36,6 +36,20 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
-@sandboxed_test "mergedrepo" begin
+
+function new_idx_entry()
+    now = int(time())
+    return GitIndexEntry("new_path",
+                         Oid("d385f264afb75a56a5bec74243be9b367ba4ca08"),
+                         now,
+                         now,
+                         1000,
+                         234881027,
+                         88888,
+                         33199,
+                         502,
+                         502,
+                         3)
 end
 
+new_idx_entry()

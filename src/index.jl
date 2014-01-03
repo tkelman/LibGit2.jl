@@ -1,4 +1,4 @@
-export GitIndex, add_bypath!, write_tree!
+export GitIndex, GitIndexEntry, add_bypath!, write_tree!
 
 type GitIndex
     ptr::Ptr{Void}
@@ -9,6 +9,20 @@ type GitIndex
         finalizer(i, free!)
         return i
     end
+end
+
+type GitIndexEntry
+    path::String
+    oid::Oid
+    mtime::Int
+    ctime::Int
+    file_size::Int
+    dev::Int
+    ino::Int
+    mode::Int
+    uid::Int
+    gid::Int
+    stage::Int
 end
 
 free!(i::GitIndex) = begin
