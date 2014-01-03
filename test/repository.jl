@@ -42,7 +42,7 @@ tmp_repo(test_repo_path) do
         @test repo_isempty(repo)
         @test repo_workdir(repo) == abspath(test_repo_path)
         @test repo_path(repo) == joinpath(test_repo_path, ".git")
-        @test isa(repo_index(repo), Index)
+        @test isa(repo_index(repo), GitIndex)
         # empty repo has no head
         @test head(repo) == nothing
         # empty repo has no tags

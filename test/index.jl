@@ -13,7 +13,7 @@ try
     repo = create_test_repo(test_path)
     @test isdir(repo_workdir(repo)) 
     idx = repo_index(repo)
-    @test isa(idx, Index)
+    @test isa(idx, GitIndex)
     add_bypath!(idx, "README")
     tree_id = write_tree!(idx)
     @test isa(tree_id, Oid)
@@ -36,4 +36,6 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
+@sandboxed_test "mergedrepo" begin
+end
 

@@ -649,7 +649,7 @@ function repo_index(r::Repository)
     idx_ptr = Array(Ptr{Void}, 1)
     @check api.git_repository_index(idx_ptr, r.ptr)
     @check_null idx_ptr
-    return Index(idx_ptr[1])
+    return GitIndex(idx_ptr[1])
 end
 
 function lookup{T<:GitObject}(::Type{T}, r::Repository, id::Oid)
