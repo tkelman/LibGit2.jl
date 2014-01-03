@@ -56,3 +56,23 @@ end
     @test length(test_index) == 2
 end
 
+@with_test_index begin
+    clear!(test_index)
+    @test length(test_index) == 0
+end
+
+@with_test_index begin
+    remove!(test_index, "new.txt")
+    @test length(test_index) == 1
+end
+
+@with_test_index begin
+    remove_dir!(test_index, "does-not-exist")
+    @test length(test_index) == 2
+
+    remove_dir!(test_index, "", 2)
+    @test length(test_index) == 2
+
+    remove_dir!(test_index, "")
+    @test length(test_index) == 0
+end

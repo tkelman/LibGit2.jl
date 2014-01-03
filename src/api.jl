@@ -257,6 +257,8 @@ end
 @libgit(git_index_entrycount, Csize_t, (Ptr{Void},))
 @libgit(git_index_get_byindex, Ptr{GitIndexEntry}, (Ptr{Void}, Csize_t))
 @libgit(git_index_get_bypath,  Ptr{GitIndexEntry}, (Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_index_remove, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_index_remove_directory, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 
 # ----- libgit object ------
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
@@ -409,6 +411,7 @@ end
         (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_blob_is_binary, Cint,
         (Ptr{Void},))
+
 # ------ libgit tree ------
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
 @libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))

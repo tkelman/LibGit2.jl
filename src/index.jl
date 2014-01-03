@@ -1,4 +1,5 @@
-export GitIndex, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!
+export GitIndex, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
+       remove!, remove_dir!
 
 type GitIndex
     ptr::Ptr{Void}
@@ -47,6 +48,18 @@ function add_bypath!(i::GitIndex, path::String)
     bpath = bytestring(path)
     @check api.git_index_add_bypath(i.ptr, bpath)
     return nothing
+end
+
+function remove!(i::GitIndex, path::String, stage::Integer=0)
+    @assert i.ptr != C_NULL
+    @check api.git_index_remove(i.ptr, bytestring(path), stage)
+    return i
+end
+
+function remove_dir!(i::GitIndex, path::String, stage::Integer=0)
+    @assert i.ptr != C_NULL
+    @check api.git_index_remove_directory(i.ptr, bytestring(path), stage)
+    return i
 end
 
 Base.length(i::GitIndex) = begin
