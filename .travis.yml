@@ -44,3 +44,4 @@ script:
   - julia runtests.jl note
   - julia runtests.jl diff
   - julia runtests.jl branch
+  - julia runtests.jl repository_pack 
