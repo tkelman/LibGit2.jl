@@ -8,7 +8,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk,
-       branch_names, lookup_branch, create_branch
+       branch_names, lookup_branch, create_branch, lookup_remote
 
 type Repository
     ptr::Ptr{Void}
@@ -310,7 +310,22 @@ function remotes(r::Repository)
     end
     return out
 end
- 
+
+function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
+    @assert r.ptr != C_NULL
+    remote_ptr =  Array(Ptr{Void}, 1)
+    err = api.git_remote_load(remote_ptr, r.ptr, bytestring(remote_name))
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        throw(GitError(err))
+    end
+    @check_null remote_ptr
+    return GitRemote(remote_ptr[1])
+end
+
+lookup_remote(r::Repository, remote_name::String) = lookup(GitRemote, r, remote_name)
+
 function tags(r::Repository, glob=nothing)
     @assert r.ptr != C_NULL
     local cglob::ByteString
@@ -830,6 +845,13 @@ function create_branch(r::Repository, n::String,
     id = rev_parse_oid(r, target)
     return create_branch(r, n, id, force)
 end
+
+function create_branch(r::Repository, n::String,
+                       target::GitCommit, force::Bool=false)
+    id = oid(target)
+    return create_branch(r, n, id, force)
+end
+
 
 #------- Tree Builder -------
 type TreeBuilder

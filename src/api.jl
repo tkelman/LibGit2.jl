@@ -380,6 +380,8 @@ end
 # ------ libgit remote ------
 @libgit(git_remote_free, Void, (Ptr{Void},))
 @libgit(git_remote_list, Cint, (Ptr{GitStrArray}, Ptr{Void}))
+@libgit(git_remote_name, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_remote_load, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
 
 # ------ libgit branch ------
 @libgit(git_branch_create, Cint,
@@ -392,6 +394,10 @@ end
 @libgit(git_branch_delete, Cint, (Ptr{Void},))
 @libgit(git_branch_is_head, Cint, (Ptr{Void},))
 @libgit(git_branch_move, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_branch_remote_name, Cint, 
+        (Ptr{Cchar}, Csize_t, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_branch_upstream, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_branch_set_upstream, Cint, (Ptr{Void}, Ptr{Cchar}))
 
 # ------ libgit odb ------
 @libgit(git_odb_exists, Cint, (Ptr{Void}, Ptr{Uint8}))
@@ -452,6 +458,7 @@ end
 @libgit(git_reference_has_log, Cint, (Ptr{Void},))
 @libgit(git_reference_owner, Ptr{Void}, (Ptr{Void},))
 @libgit(git_reference_shorthand, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_reference_is_remote, Cint, (Ptr{Void},))
 
 @libgit(git_reflog_write, Cint, (Ptr{Void},))
 @libgit(git_reflog_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
