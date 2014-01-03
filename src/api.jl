@@ -198,6 +198,8 @@ end
 @libgit(git_index_add_bypath, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_index_write_tree, Cint, (Ptr{Uint8}, Ptr{Void}))
 @libgit(git_index_clear, Void, (Ptr{Void},))
+@libgit(git_index_read, Cint, (Ptr{Void}, Cint))
+@libgit(git_index_write, Cint, (Ptr{Void},))
 
 # ----- libgit object ------
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))

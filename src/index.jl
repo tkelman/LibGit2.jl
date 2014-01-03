@@ -30,6 +30,18 @@ function clear!(i::GitIndex)
     return i
 end
 
+function reload!(i::GitIndex)
+    @assert i.ptr != C_NUL
+    @check api.git_index_read(i.ptr, 0)
+    return i
+end
+
+function write!(i::GitIndex)
+    @assert i.ptr != C_NULL
+    @check api.git_index_write(i.ptr)
+    return i
+end 
+
 function add_bypath!(i::GitIndex, path::String)
     @assert i.ptr != C_NULL
     bpath = bytestring(path)
