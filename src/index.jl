@@ -1,4 +1,4 @@
-export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear!
+export GitIndex, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!
 
 type GitIndex
     ptr::Ptr{Void}
@@ -49,6 +49,21 @@ function add_bypath!(i::GitIndex, path::String)
     return nothing
 end
 
+Base.length(i::GitIndex) = begin
+    @assert i.ptr != C_NULL
+    return int(api.git_index_entrycount(i.ptr))
+end
+
+function entry_from_gitentry(
+Base.getindex(i::GitIndex, idx::Int) = begin
+    @assert i.ptr != C_NULL
+    entry_ptr = api.git_index_get_byindex(i.ptr, idx)
+    if entry == C_NULL
+        return nothing
+    end
+    return IndexEntry(entry_ptr)
+end
+
 function write_tree!(i::GitIndex)
     @assert i.ptr != C_NULL
     oid = Oid()
@@ -56,16 +71,38 @@ function write_tree!(i::GitIndex)
     return oid
 end
 
-type GitIndexEntry
+type IndexEntry
     path::String
     oid::Oid
-    mtime::Int
-    ctime::Int
+    ctime::Float64
+    mtime::Float64
     file_size::Int
     dev::Int
     ino::Int
     mode::Int
     uid::Int
     gid::Int
+    valid::Bool
     stage::Int
 end
+
+function IndexEntry(ptr::Ptr{GitIndexEntry})
+    @assert ptr != C_NULL
+    gentry = unsafe_load(ptr)
+    path  = bytestring(gentry.path)
+    oid   = Oid(gentry.oid)
+    ctime = gentry.ctime_seconds + (gentry.ctime_nanoseconds / 1e3)
+    mtime = gentry.mtime_seconds + (gentry.mtime_nanoseconds / 1e3)
+    dev   = gentry.dev
+    ino   = gentry.ino
+    mode  = gentry.mode
+    uid   = gentry.uid
+    gid   = gentry.gid
+    valid = bool(gentry.flag & api.IDXENTRY_VALID)
+    stage = (gentry.stage & api.IDXENTRY_STAGEMASK) >> api.IDXENTRY_STAGESHIFT
+    file_size = gentry.file_size
+    
+    return IndexEntry(path, oid, ctime, mtime, file_size,
+                      dev, ino, mode, uid, gid, valid, stage)
+end
+

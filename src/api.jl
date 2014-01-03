@@ -144,6 +144,39 @@ const DIFF_DELTA_IGNORED    = cint(6)
 const DIFF_DELTA_UNTRACKED  = cint(7)
 const DIFF_DELTA_TYPECHANGE = cint(8)
 
+# index 
+const IDXENTRY_NAMEMASK   = (0x0fff)
+const IDXENTRY_STAGEMASK  = (0x3000)
+const IDXENTRY_EXTENDED   = (0x4000)
+const IDXENTRY_VALID      = (0x8000)
+const IDXENTRY_STAGESHIFT = cint(12)
+
+const IDXENTRY_UPDATE            = cint(1) << cint(0)
+const IDXENTRY_REMOVE            = cint(1) << cint(1)
+const IDXENTRY_UPTODATE          = cint(1) << cint(2)
+const IDXENTRY_ADDED             = cint(1) << cint(3)
+
+const IDXENTRY_HASHED            = cint(1) << cint(4)
+const IDXENTRY_UNHASHED          = cint(1) << cint(5)
+const IDXENTRY_WT_REMOVE         = cint(1) << cint(6)
+const IDXENTRY_CONFLICTED        = cint(1) << cint(7)
+
+const IDXENTRY_UNPACKED          = cint(1) << cint(8)
+const IDXENTRY_NEW_SKIP_WORKTREE = cint(1) << cint(9)
+
+const INDEXCAP_IGNORE_CASE = cuint(1)
+const INDEXCAP_NO_FILEMODE = cuint(2)
+const INDEXCAP_NO_SYMLINKS = cuint(4)
+const INDEXCAP_FROM_OWNER  = ~(cuint(0))
+
+const INDEX_ADD_DEFAULT = cint(0)
+const INDEX_ADD_FORCE   = cuint(1) << cint(0)
+const INDEX_ADD_DISABLE_PATHSPEC_MATCH = cuint(1) << cint(1)
+const INDEX_ADD_CHECK_PATHSPEC = cuint(1u) << cint(2)
+
+
+const INDEX_STAGE_ANY = cint(-1)
+
 type GitStrArray
    strings::Ptr{Ptr{Cchar}}
    count::Csize_t
@@ -193,6 +226,27 @@ end
 @libgit(git_repository_is_bare, Cint, (Ptr{Void},))
 
 # ----- libgit index ------
+
+type GitIndexEntry
+    ctime_seconds::Int64
+    ctime_nanoseconds::Cuint
+
+    mtime_seconds::Int64
+    mtime_nanoseconds::Cuint
+
+    dev::Cuint
+    ino::Cuint
+    mode::Cuint
+    uid::Cuint
+    gid::Cuint
+
+    file_size::Int64
+    oid::Ptr{Uint8}
+    flags::Uint16
+    flags_extended::Uint16
+    path::Ptr{Cchar}
+end
+
 @libgit(git_index_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
 @libgit(git_index_free, Cint, (Ptr{Void},))
 @libgit(git_index_add_bypath, Cint, (Ptr{Void}, Ptr{Cchar}))
@@ -200,6 +254,9 @@ end
 @libgit(git_index_clear, Void, (Ptr{Void},))
 @libgit(git_index_read, Cint, (Ptr{Void}, Cint))
 @libgit(git_index_write, Cint, (Ptr{Void},))
+@libgit(git_index_entrycount, Csize_t, (Ptr{Void},))
+@libgit(git_index_get_byindex, Ptr{GitIndexEntry}, (Ptr{Void}, Csize_t))
+@libgit(git_index_get_bypath,  Ptr{GitIndexEntry}, (Ptr{Void}, Ptr{Cchar}, Cint))
 
 # ----- libgit object ------
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
