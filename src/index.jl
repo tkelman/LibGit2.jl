@@ -11,18 +11,10 @@ type GitIndex
     end
 end
 
-type GitIndexEntry
-    path::String
-    oid::Oid
-    mtime::Int
-    ctime::Int
-    file_size::Int
-    dev::Int
-    ino::Int
-    mode::Int
-    uid::Int
-    gid::Int
-    stage::Int
+function GitIndex(path::String)
+    index_ptr = Array(Ptr{Void}, 1)
+    @check api.git_index_open(index_ptr, bytestring(path))
+    return GitIndex(index_ptr[1])
 end
 
 free!(i::GitIndex) = begin
@@ -44,4 +36,18 @@ function write_tree!(i::GitIndex)
     oid = Oid()
     @check api.git_index_write_tree(oid.oid, i.ptr)
     return oid
+end
+
+type GitIndexEntry
+    path::String
+    oid::Oid
+    mtime::Int
+    ctime::Int
+    file_size::Int
+    dev::Int
+    ino::Int
+    mode::Int
+    uid::Int
+    gid::Int
+    stage::Int
 end

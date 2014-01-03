@@ -52,4 +52,6 @@ function new_idx_entry()
                          3)
 end
 
-new_idx_entry()
+@with_test_index begin
+end
+

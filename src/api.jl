@@ -193,6 +193,7 @@ end
 @libgit(git_repository_is_bare, Cint, (Ptr{Void},))
 
 # ----- libgit index ------
+@libgit(git_index_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
 @libgit(git_index_free, Cint, (Ptr{Void},))
 @libgit(git_index_add_bypath, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_index_write_tree, Cint, (Ptr{Uint8}, Ptr{Void}))

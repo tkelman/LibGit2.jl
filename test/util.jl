@@ -5,6 +5,15 @@ const TESTDIR = joinpath(PKGDIR, "test")
 const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 
 
+macro with_test_index(body)
+    quote
+        let path = joinpath(TESTDIR, "fixtures/testrepo.git/index"),
+            test_index = GitIndex(path)
+            $body
+        end
+    end
+end
+
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
         run(`rm -f -r $test_path`)
