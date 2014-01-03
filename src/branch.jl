@@ -26,6 +26,10 @@ Base.delete!(b::GitBranch) = begin
     return nothing
 end
 
+Base.isequal(b1::GitBranch, b2::GitBranch) = begin
+    canonical_name(b1) == canonical_name(b2)
+end
+
 function tip(b::GitBranch)
     lookup(owner(b), target(resolve(b)))
 end
@@ -158,18 +162,3 @@ end
 function rename(b::GitBranch, new_name::String, force::Bool=false)
     return move(b, new_name, force)
 end 
-
-Base.isequal(b1::GitBranch, b2::GitBranch) = begin
-    canonical_name(b1) == canonical_name(b2)
-end
-
-#lookup
-#each_name
-#each
-#delete!
-#rename
-#ishead
-#name
-#remote_name
-#upstream
-#upstream=
