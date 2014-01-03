@@ -1,4 +1,4 @@
-export GitIndex, GitIndexEntry, add_bypath!, write_tree!
+export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear!
 
 type GitIndex
     ptr::Ptr{Void}
