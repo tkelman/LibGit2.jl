@@ -30,6 +30,16 @@ Base.isequal(b1::GitBranch, b2::GitBranch) = begin
     canonical_name(b1) == canonical_name(b2)
 end
 
+Base.start(b::GitBranch) = begin
+    @assert b.ptr != C_NULL
+end
+
+Base.done(b::GitBranch, state) = begin
+end
+
+Base.next(b::GitBranch, state) = begin
+end
+
 function tip(b::GitBranch)
     lookup(owner(b), target(resolve(b)))
 end

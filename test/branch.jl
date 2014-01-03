@@ -92,7 +92,7 @@ end
     @test tip(new_branch) != nothing
     @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
-    #refute_nil @repo.branches.find { |p| p.name == "test_branch" }
+    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
 #test_create_unicode_branch
@@ -107,7 +107,8 @@ end
 
     @test tip(new_branch) != nothing
     @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    #refute_nil @repo.branches.find { |p| p.name == branch_name }
+
+    @test any(b -> name(b) == branch_name, iter_branches(test_repo))
 end
 
 #test_create_branch_short_sha
@@ -121,7 +122,7 @@ end
     @test tip(new_branch) != nothing
     @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
-    #refute_nil @repo.branches.find { |p| p.name == "test_branch" }
+    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
 #test_create_branch_from_tag
@@ -135,7 +136,7 @@ end
     @test tip(new_branch) != nothing
     @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
-    #refute_nil @repo.branches.find { |p| p.name == "test_branch" }
+    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
 #test_create_branch_from_head
@@ -148,7 +149,8 @@ end
 
     @test tip(new_branch) != nothing
     @test oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    #refute_nil @repo.branches.find { |p| p.name == "test_branch" }
+    
+    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
 # test_create_branch_explicit_head
@@ -161,7 +163,8 @@ end
 
     @test tip(new_branch) != nothing
     @test oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    #refute_nil @repo.branches.find { |p| p.name == "test_branch" }
+    
+    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
 # test_create_branch_from_commit
@@ -176,7 +179,7 @@ end
     @test tip(new_branch) != nothing
     @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
-    #refute_nil @repo.branches.find { |p| p.name == "test_branch" }
+    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
 #test_create_branch_from_unknown_ref_fails

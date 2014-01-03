@@ -8,7 +8,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk,
-       branch_names, lookup_branch, create_branch, lookup_remote
+       branch_names, lookup_branch, create_branch, lookup_remote, iter_branches
 
 type Repository
     ptr::Ptr{Void}
@@ -852,6 +852,74 @@ function create_branch(r::Repository, n::String,
     return create_branch(r, n, id, force)
 end
 
+type BranchIterator 
+    ptr::Ptr{Void}
+    repo::Repository
+
+    function BranchIterator(ptr::Ptr{Void}, r::Repository)
+        @assert ptr != C_NULL
+        bi = new(ptr, r)
+        finalizer(bi, free!)
+        return bi
+    end
+end
+
+free!(b::BranchIterator) = begin
+    if b.ptr != C_NULL
+        api.git_branch_iterator_free(b.ptr)
+        b.ptr = C_NULL
+    end
+end
+
+function iter_branches(r::Repository, filter=:all)
+    @assert r.ptr != C_NULL
+    local git_filter::Cint
+    if filter == :all
+        git_filter = api.BRANCH_LOCAL | api.BRANCH_REMOTE
+    elseif filter == :local
+        git_filter = api.BRANCH_LOCAL
+    elseif filter == :remote
+        git_filter == api.BRANCH_REMOTE
+    else
+        throw(ArgumentError("filter can be :all, :local, or :remote"))
+    end 
+    iter_ptr = Array(Ptr{Void}, 1)
+    @check api.git_branch_iterator_new(iter_ptr, r.ptr, git_filter)
+    @check_null iter_ptr
+    return BranchIterator(iter_ptr[1], r)
+end
+
+Base.start(b::BranchIterator) = begin
+    @assert b != C_NULL
+    branch_ptr = Array(Ptr{Void}, 1)
+    btype_ptr  = Array(Cint, 1)
+    ret = api.git_branch_next(branch_ptr, btype_ptr, b.ptr)
+    if ret == api.ITEROVER
+        return nothing
+    elseif ret != api.GIT_OK
+        throw(GitError(ret))
+    end
+    @check_null branch_ptr
+    return GitBranch(branch_ptr[1])
+end
+
+Base.done(b::BranchIterator, state) = begin
+    state == nothing
+end
+
+Base.next(b::BranchIterator, state) = begin
+    @assert b.ptr != C_NULL
+    branch_ptr = Array(Ptr{Void}, 1)
+    btype_ptr  = Array(Cint, 1)
+    ret = api.git_branch_next(branch_ptr, btype_ptr, b.ptr)
+    if ret == api.ITEROVER
+        return (state, nothing)
+    elseif ret != api.GIT_OK
+        throw(GitError(ret))
+    end
+    @check_null branch_ptr
+    return (state, GitBranch(branch_ptr[1]))
+end
 
 #------- Tree Builder -------
 type TreeBuilder
@@ -903,6 +971,7 @@ function repo_treebuilder(r::Repository)
 end
 
 #-------- Reference Iterator --------
+#TODO: handle error's when iterating (see branch)
 type ReferenceIterator
     ptr::Ptr{Void}
     repo::Repository
