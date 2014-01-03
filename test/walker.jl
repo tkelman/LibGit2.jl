@@ -99,4 +99,3 @@ end
         @test is_toposorted(sort_list)
     end
 end
-
