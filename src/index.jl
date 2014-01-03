@@ -24,6 +24,12 @@ free!(i::GitIndex) = begin
     end
 end
 
+function clear!(i::GitIndex)
+    @assert i.ptr != C_NULL
+    api.git_index_clear(i.ptr)
+    return i
+end
+
 function add_bypath!(i::GitIndex, path::String)
     @assert i.ptr != C_NULL
     bpath = bytestring(path)
