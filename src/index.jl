@@ -54,7 +54,6 @@ Base.length(i::GitIndex) = begin
     return int(api.git_index_entrycount(i.ptr))
 end
 
-function entry_from_gitentry(
 Base.getindex(i::GitIndex, idx::Int) = begin
     @assert i.ptr != C_NULL
     entry_ptr = api.git_index_get_byindex(i.ptr, idx)
@@ -86,7 +85,7 @@ type IndexEntry
     stage::Int
 end
 
-function IndexEntry(ptr::Ptr{GitIndexEntry})
+function IndexEntry(ptr::Ptr{api.GitIndexEntry})
     @assert ptr != C_NULL
     gentry = unsafe_load(ptr)
     path  = bytestring(gentry.path)
@@ -105,4 +104,3 @@ function IndexEntry(ptr::Ptr{GitIndexEntry})
     return IndexEntry(path, oid, ctime, mtime, file_size,
                       dev, ino, mode, uid, gid, valid, stage)
 end
-

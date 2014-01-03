@@ -39,19 +39,20 @@ end
 
 function new_idx_entry()
     now = int(time())
-    return GitIndexEntry("new_path",
-                         Oid("d385f264afb75a56a5bec74243be9b367ba4ca08"),
-                         now,
-                         now,
-                         1000,
-                         234881027,
-                         88888,
-                         33199,
-                         502,
-                         502,
-                         3)
+    return IndexEntry("new_path",
+                      Oid("d385f264afb75a56a5bec74243be9b367ba4ca08"),
+                      now,
+                      now,
+                      1000,
+                      234881027,
+                      88888,
+                      33199,
+                      502,
+                      502,
+                      3)
 end
 
 @with_test_index begin
+    @test length(test_index) == 2
 end
 

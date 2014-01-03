@@ -172,7 +172,7 @@ const INDEXCAP_FROM_OWNER  = ~(cuint(0))
 const INDEX_ADD_DEFAULT = cint(0)
 const INDEX_ADD_FORCE   = cuint(1) << cint(0)
 const INDEX_ADD_DISABLE_PATHSPEC_MATCH = cuint(1) << cint(1)
-const INDEX_ADD_CHECK_PATHSPEC = cuint(1u) << cint(2)
+const INDEX_ADD_CHECK_PATHSPEC = cuint(1) << cint(2)
 
 
 const INDEX_STAGE_ANY = cint(-1)
