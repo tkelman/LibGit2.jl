@@ -230,7 +230,7 @@ end
 type GitIndexEntry
     ctime_seconds::Int64
     ctime_nanoseconds::Cuint
-
+    
     mtime_seconds::Int64
     mtime_nanoseconds::Cuint
 
@@ -239,11 +239,32 @@ type GitIndexEntry
     mode::Cuint
     uid::Cuint
     gid::Cuint
-
     file_size::Int64
-    oid::Ptr{Uint8}
+
+    oid1::Uint8
+    oid2::Uint8
+    oid3::Uint8
+    oid4::Uint8
+    oid5::Uint8
+    oid6::Uint8
+    oid7::Uint8
+    oid8::Uint8
+    oid9::Uint8
+    oid10::Uint8
+    oid11::Uint8
+    oid12::Uint8
+    oid13::Uint8
+    oid14::Uint8
+    oid15::Uint8
+    oid16::Uint8
+    oid17::Uint8
+    oid18::Uint8
+    oid19::Uint8
+    oid20::Uint8
+    
     flags::Uint16
     flags_extended::Uint16
+
     path::Ptr{Cchar}
 end
 

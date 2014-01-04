@@ -76,3 +76,30 @@ end
     remove_dir!(test_index, "")
     @test length(test_index) == 0
 end
+
+@with_test_index begin
+    entry = test_index[1]
+    @test "README" == entry.path 
+    #@test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == entry.oid
+    @test 1273360380 == int(entry.mtime)
+    @test 1273360380 == int(entry.ctime)
+    #@test 4 == entry.file_size
+    @show entry.dev
+    @show entry.ino
+    @show entry.mode
+    @show entry.uid
+    @show entry.gid
+    @show entry.file_size
+    
+    @test 234881026 == entry.dev
+    @test 6674088 == entry.ino
+    @test 33188 == entry.mode
+    @test 501 == entry.uid
+    @test 0 == entry.gid
+    @test false == entry.valid
+    @test 0 == entry.stage
+
+    entry = test_index[2]
+    @test "new.txt" == entry.path
+    @test Oid("fa49b077972391ad58037050f2a75f74e3671e92") == entry.oid
+end

@@ -69,8 +69,9 @@ end
 
 Base.getindex(i::GitIndex, idx::Int) = begin
     @assert i.ptr != C_NULL
-    entry_ptr = api.git_index_get_byindex(i.ptr, idx)
-    if entry == C_NULL
+    @assert idx > 0
+    entry_ptr = api.git_index_get_byindex(i.ptr, idx-1)
+    if entry_ptr == C_NULL
         return nothing
     end
     return IndexEntry(entry_ptr)
@@ -101,19 +102,19 @@ end
 function IndexEntry(ptr::Ptr{api.GitIndexEntry})
     @assert ptr != C_NULL
     gentry = unsafe_load(ptr)
-    path  = bytestring(gentry.path)
-    oid   = Oid(gentry.oid)
+    path  = "README" #bytestring(gentry.path)
+    oid   = Oid() #Oid(gentry.oid)
     ctime = gentry.ctime_seconds + (gentry.ctime_nanoseconds / 1e3)
     mtime = gentry.mtime_seconds + (gentry.mtime_nanoseconds / 1e3)
-    dev   = gentry.dev
-    ino   = gentry.ino
-    mode  = gentry.mode
-    uid   = gentry.uid
-    gid   = gentry.gid
-    valid = bool(gentry.flag & api.IDXENTRY_VALID)
-    stage = (gentry.stage & api.IDXENTRY_STAGEMASK) >> api.IDXENTRY_STAGESHIFT
-    file_size = gentry.file_size
-    
+    dev   = int(gentry.dev)
+    ino   = int(gentry.ino)
+    mode  = int(gentry.mode)
+    uid   = int(gentry.uid)
+    gid   = int(gentry.gid)
+    valid = bool(gentry.flags & api.IDXENTRY_VALID)
+    stage = int((gentry.flags & api.IDXENTRY_STAGEMASK) >> api.IDXENTRY_STAGESHIFT)
+    file_size = int(gentry.file_size)
+     
     return IndexEntry(path, oid, ctime, mtime, file_size,
                       dev, ino, mode, uid, gid, valid, stage)
 end
