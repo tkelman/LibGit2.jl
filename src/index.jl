@@ -43,13 +43,6 @@ function write!(i::GitIndex)
     return i
 end 
 
-function add_bypath!(i::GitIndex, path::String)
-    @assert i.ptr != C_NULL
-    bpath = bytestring(path)
-    @check api.git_index_add_bypath(i.ptr, bpath)
-    return nothing
-end
-
 function remove!(i::GitIndex, path::String, stage::Integer=0)
     @assert i.ptr != C_NULL
     @check api.git_index_remove(i.ptr, bytestring(path), stage)
@@ -203,6 +196,14 @@ function add!(idx::GitIndex, entry::IndexEntry)
                  idx.ptr, &gentry)
     return idx
 end
+
+function add!(idx::GitIndex, path::String)
+    @assert idx.ptr != C_NULL
+    bpath = bytestring(path)
+    @check api.git_index_add_bypath(idx.ptr, bpath)
+    return idx
+end
+
 
 function getentry(idx::GitIndex, path::String, stage=0)
     @assert idx.ptr != C_NULL

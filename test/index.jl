@@ -14,7 +14,7 @@ try
     @test isdir(repo_workdir(repo)) 
     idx = repo_index(repo)
     @test isa(idx, GitIndex)
-    add_bypath!(idx, "README")
+    add!(idx, "README")
     tree_id = write_tree!(idx)
     @test isa(tree_id, Oid)
     @test isequal(hex(tree_id), "b7119b11e8ef7a1a5a34d3ac87f5b075228ac81e")
@@ -157,3 +157,17 @@ end
     @test length(test_index2) == 4
 end
 
+# test adding a path
+tmp_path = mktempdir()
+test_repo  = repo_init(tmp_path, bare=false)
+test_index1 = repo_index(test_repo)
+fh = open(joinpath(tmp_path, "test.txt"), "w")
+write(fh, "test content")
+close(fh)
+add!(test_index1, "test.txt")
+write!(test_index1)
+
+test_index2 = GitIndex(joinpath(tmp_path, ".git/index"))
+@test test_index2[1].path == "test.txt"
+close(test_repo)
+run(`rm -rf $tmp_path`)
