@@ -138,3 +138,22 @@ end
     @test join(map(x -> x.path, c), ":") == "README:new_path:new.txt"
 end
 
+# test can write index
+@with_test_index begin
+    tmp_path, tmp_io = mktemp()
+    write(tmp_io, readall(test_index_path))
+    close(tmp_io)
+    test_index1 = GitIndex(tmp_path)
+
+    entry = new_idx_entry()
+    add!(test_index1, entry)
+    entry.path = "else.txt"
+    add!(test_index1, entry)
+    write!(test_index1)
+
+    test_index2 = GitIndex(tmp_path)
+    c = sort(collect(test_index2), by=x->x.oid)
+    @test join(map(x -> x.path, c), ":") == "README:else.txt:new_path:new.txt"
+    @test length(test_index2) == 4
+end
+

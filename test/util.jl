@@ -7,8 +7,8 @@ const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 
 macro with_test_index(body)
     quote
-        let path = joinpath(TESTDIR, "fixtures/testrepo.git/index"),
-            test_index = GitIndex(path)
+        let test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index"),
+            test_index = GitIndex(test_index_path)
             $body
         end
     end
