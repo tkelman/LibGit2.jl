@@ -210,6 +210,7 @@ end
 @libgit(git_repository_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
 @libgit(git_repository_init, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}, Cint))
 @libgit(git_repository_free, Cint, (Ptr{Void},))
+@libgit(git_repository__cleanup, Void, (Ptr{Void},))
 @libgit(git_repository_index, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_repository_workdir, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_repository_path, Ptr{Cchar}, (Ptr{Void},))

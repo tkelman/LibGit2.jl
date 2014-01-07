@@ -27,6 +27,7 @@ end
 
 free!(r::Repository) = begin
     if r.ptr != C_NULL
+        close(r)
         api.git_repository_free(r.ptr)
         r.ptr = C_NULL
     end
@@ -61,8 +62,9 @@ Repository(path::String; alternates=nothing) = begin
 end
 
 Base.close(r::Repository) = begin
-    #TODO:
-    return r
+    if r.ptr != C_NULL
+        api.git_repository__close(r.ptr)
+    end
 end
 
 Base.in(id::Oid, r::Repository) = begin
