@@ -38,7 +38,7 @@ end
 # -----------------------------------------
 
 function new_idx_entry()
-    now = int(time())
+    now = time()
     return IndexEntry("new_path",
                       Oid("d385f264afb75a56a5bec74243be9b367ba4ca08"),
                       now,
@@ -49,6 +49,7 @@ function new_idx_entry()
                       33199,
                       502,
                       502,
+                      false,
                       3)
 end
 
@@ -105,6 +106,8 @@ end
 
 # test iterate entries
 @with_test_index begin
+    c = sort(collect(test_index), by=x->x.oid)
+    @test join(map(x->x.path, c), ":") == "README:new.txt"
 end
 
 # test update entries
@@ -125,5 +128,13 @@ end
     new_entry = getentry(test_index, entry.path, 3)
     @test isa(new_entry, IndexEntry)
     @test new_entry == entry
+end
+
+# test add new entries
+@with_test_index begin
+    add!(test_index, new_idx_entry())
+    @test length(test_index) == 3
+    c = sort(collect(test_index), by=x->x.oid)
+    @test join(map(x -> x.path, c), ":") == "README:new_path:new.txt"
 end
 

@@ -218,3 +218,20 @@ Base.isequal(e1::IndexEntry, e2::IndexEntry) = begin
            e1.valid == e2.valid && 
            e1.stage == e2.stage
 end
+
+Base.start(idx::GitIndex) = begin
+    if length(idx) == 0
+        return (0, nothing)
+    end
+    return (1, idx[1])
+end
+
+Base.done(idx::GitIndex, state) = begin
+    i = state[1]
+    return i == 0 || i > length(idx)
+end
+
+Base.next(idx::GitIndex, state) = begin
+    i = state[1] + 1
+    return (state[2], (i, idx[i]))
+end
