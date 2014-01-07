@@ -102,8 +102,7 @@ end
 function IndexEntry(ptr::Ptr{api.GitIndexEntry})
     @assert ptr != C_NULL
     gentry = unsafe_load(ptr)
-    path  = "README" #bytestring(gentry.path)
-    oid   = Oid() #Oid(gentry.oid)
+    path  = bytestring(gentry.path)
     ctime = gentry.ctime_seconds + (gentry.ctime_nanoseconds / 1e3)
     mtime = gentry.mtime_seconds + (gentry.mtime_nanoseconds / 1e3)
     dev   = int(gentry.dev)
@@ -114,7 +113,31 @@ function IndexEntry(ptr::Ptr{api.GitIndexEntry})
     valid = bool(gentry.flags & api.IDXENTRY_VALID)
     stage = int((gentry.flags & api.IDXENTRY_STAGEMASK) >> api.IDXENTRY_STAGESHIFT)
     file_size = int(gentry.file_size)
-     
+    
+    #TODO: refactor 
+    arr = Array(Uint8, api.OID_RAWSZ)
+    arr[1] = gentry.oid1 
+    arr[2] = gentry.oid2 
+    arr[3] = gentry.oid3 
+    arr[4] = gentry.oid4 
+    arr[5] = gentry.oid5 
+    arr[6] = gentry.oid6 
+    arr[7] = gentry.oid7 
+    arr[8] = gentry.oid8 
+    arr[9] = gentry.oid9 
+    arr[10] = gentry.oid10 
+    arr[11] = gentry.oid11 
+    arr[12] = gentry.oid12 
+    arr[13] = gentry.oid13 
+    arr[14] = gentry.oid14 
+    arr[15] = gentry.oid15 
+    arr[16] = gentry.oid16 
+    arr[17] = gentry.oid17 
+    arr[18] = gentry.oid18 
+    arr[19] = gentry.oid19 
+    arr[20] = gentry.oid20 
+    oid = Oid(arr)
+
     return IndexEntry(path, oid, ctime, mtime, file_size,
                       dev, ino, mode, uid, gid, valid, stage)
 end

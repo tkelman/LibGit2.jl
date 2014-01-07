@@ -80,16 +80,10 @@ end
 @with_test_index begin
     entry = test_index[1]
     @test "README" == entry.path 
-    #@test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == entry.oid
+    @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == entry.oid
     @test 1273360380 == int(entry.mtime)
     @test 1273360380 == int(entry.ctime)
-    #@test 4 == entry.file_size
-    @show entry.dev
-    @show entry.ino
-    @show entry.mode
-    @show entry.uid
-    @show entry.gid
-    @show entry.file_size
+    @test 4 == entry.file_size
     
     @test 234881026 == entry.dev
     @test 6674088 == entry.ino

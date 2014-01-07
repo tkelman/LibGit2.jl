@@ -233,7 +233,10 @@ type GitIndexEntry
     
     mtime_seconds::Int64
     mtime_nanoseconds::Cuint
-
+    
+    #TODO: why is this necessary??
+    padding::Cuint
+    
     dev::Cuint
     ino::Cuint
     mode::Cuint
