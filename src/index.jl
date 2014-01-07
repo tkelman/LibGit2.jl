@@ -77,6 +77,15 @@ Base.getindex(i::GitIndex, idx::Int) = begin
     return IndexEntry(entry_ptr)
 end
 
+Base.getindex(i::GitIndex, path::String) = begin
+    @assert i.ptr != C_NULL
+    entry_ptr = api.git_index_get_bypath(i.ptr, bytestring(path), 0)
+    if entry_ptr == C_NULL
+        return nothing
+    end
+    return IndexEntry(entry_ptr)
+end
+
 function write_tree!(i::GitIndex)
     @assert i.ptr != C_NULL
     oid = Oid()
