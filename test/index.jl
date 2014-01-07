@@ -52,20 +52,24 @@ function new_idx_entry()
                       3)
 end
 
+# test index size
 @with_test_index begin
     @test length(test_index) == 2
 end
 
+# test empty index
 @with_test_index begin
     clear!(test_index)
     @test length(test_index) == 0
 end
 
+# test remove entries
 @with_test_index begin
     remove!(test_index, "new.txt")
     @test length(test_index) == 1
 end
 
+# test remove dir
 @with_test_index begin
     remove_dir!(test_index, "does-not-exist")
     @test length(test_index) == 2
@@ -77,6 +81,7 @@ end
     @test length(test_index) == 0
 end
 
+# test get entry data
 @with_test_index begin
     entry = test_index[1]
     @test "README" == entry.path 
@@ -97,3 +102,28 @@ end
     @test "new.txt" == entry.path
     @test Oid("fa49b077972391ad58037050f2a75f74e3671e92") == entry.oid
 end
+
+# test iterate entries
+@with_test_index begin
+end
+
+# test update entries
+@with_test_index begin
+    now = int(time())
+    entry = test_index[1]
+    entry.oid = Oid("12ea3153a78002a988bb92f4123e7e831fd1138a")
+    entry.mtime = now
+    entry.ctime = now
+    entry.file_size = 1000
+    entry.dev = 234881027
+    entry.ino = 88888
+    entry.mode = 33199
+    entry.uid = 502
+    entry.gid = 502
+    entry.stage = 3
+    add!(test_index, entry)
+    new_entry = getentry(test_index, entry.path, 3)
+    @test isa(new_entry, IndexEntry)
+    @test new_entry == entry
+end
+

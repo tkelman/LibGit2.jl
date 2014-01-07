@@ -1,5 +1,5 @@
 export GitIndex, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
-       remove!, remove_dir!
+       remove!, remove_dir!, add!, getentry
 
 type GitIndex
     ptr::Ptr{Void}
@@ -99,6 +99,50 @@ type IndexEntry
     stage::Int
 end
 
+function api.GitIndexEntry(idx::IndexEntry)
+    flags = uint16(0x0)
+    flags &= ~api.IDXENTRY_STAGEMASK
+    flags |= (uint16(idx.stage) << api.IDXENTRY_STAGESHIFT) & api.IDXENTRY_STAGEMASK
+    flags &= ~api.IDXENTRY_VALID
+    if idx.valid
+        flags |= api.IDXENTRY_VALID
+    end
+    return api.GitIndexEntry(int64(idx.ctime), 
+                             zero(Cuint), 
+                             int64(idx.mtime), 
+                             zero(Cuint), 
+                             zero(Cuint), # padding
+                             convert(Cuint, idx.dev),
+                             convert(Cuint, idx.ino),
+                             convert(Cuint, idx.mode),
+                             convert(Cuint, idx.uid),
+                             convert(Cuint, idx.gid),
+                             int64(idx.file_size),
+                             idx.oid.oid[1],
+                             idx.oid.oid[2],
+                             idx.oid.oid[3],
+                             idx.oid.oid[4],
+                             idx.oid.oid[5],
+                             idx.oid.oid[6],
+                             idx.oid.oid[7],
+                             idx.oid.oid[8],
+                             idx.oid.oid[9],
+                             idx.oid.oid[10],
+                             idx.oid.oid[11],
+                             idx.oid.oid[12],
+                             idx.oid.oid[13],
+                             idx.oid.oid[14],
+                             idx.oid.oid[15],
+                             idx.oid.oid[16],
+                             idx.oid.oid[17],
+                             idx.oid.oid[18],
+                             idx.oid.oid[19],
+                             idx.oid.oid[20],
+                             flags,
+                             zero(Uint16),
+                             convert(Ptr{Cchar}, idx.path))
+end
+
 function IndexEntry(ptr::Ptr{api.GitIndexEntry})
     @assert ptr != C_NULL
     gentry = unsafe_load(ptr)
@@ -140,4 +184,37 @@ function IndexEntry(ptr::Ptr{api.GitIndexEntry})
 
     return IndexEntry(path, oid, ctime, mtime, file_size,
                       dev, ino, mode, uid, gid, valid, stage)
+end
+
+function add!(idx::GitIndex, entry::IndexEntry)
+    @assert idx.ptr != C_NULL
+    gentry = api.GitIndexEntry(entry)
+    @check ccall((:git_index_add, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{api.GitIndexEntry}),
+                 idx.ptr, &gentry)
+    return idx
+end
+
+function getentry(idx::GitIndex, path::String, stage=0)
+    @assert idx.ptr != C_NULL
+    entry_ptr = api.git_index_get_bypath(idx.ptr, bytestring(path), stage)
+    if entry_ptr == C_NULL
+        return nothing
+    end
+    return IndexEntry(entry_ptr)
+end
+
+Base.isequal(e1::IndexEntry, e2::IndexEntry) = begin
+    return e1.path  == e2.path &&
+           e1.oid   == e2.oid &&
+           e1.ctime == e2.ctime && 
+           e1.mtime == e2.mtime &&
+           e1.file_size == e2.file_size &&
+           e1.dev  == e2.dev && 
+           e1.ino  == e2.ino &&
+           e1.mode == e2.mode &&
+           e1.uid  == e2.uid &&
+           e1.gid  == e2.gid &&
+           e1.valid == e2.valid && 
+           e1.stage == e2.stage
 end
