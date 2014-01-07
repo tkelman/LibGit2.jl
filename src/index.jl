@@ -32,7 +32,7 @@ function clear!(i::GitIndex)
 end
 
 function reload!(i::GitIndex)
-    @assert i.ptr != C_NUL
+    @assert i.ptr != C_NULL
     @check api.git_index_read(i.ptr, 0)
     return i
 end

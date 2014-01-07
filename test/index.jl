@@ -157,7 +157,9 @@ end
     @test length(test_index2) == 4
 end
 
+# ------------------
 # test adding a path
+# ------------------
 tmp_path = mktempdir()
 test_repo  = repo_init(tmp_path, bare=false)
 test_index1 = repo_index(test_repo)
@@ -169,5 +171,35 @@ write!(test_index1)
 
 test_index2 = GitIndex(joinpath(tmp_path, ".git/index"))
 @test test_index2[1].path == "test.txt"
+
+close(test_repo)
+run(`rm -rf $tmp_path`)
+
+# --------------------
+# test reloading index
+# --------------------
+tmp_path = mktempdir()
+test_repo  = repo_init(tmp_path, bare=false)
+index = repo_index(test_repo)
+fh = open(joinpath(tmp_path, "test.txt"), "w")
+write(fh, "test content")
+close(fh)
+add!(index, "test.txt")
+write!(index)
+
+rindex = GitIndex(joinpath(tmp_path, ".git/index"))
+entry = rindex["test.txt"]
+@test entry.stage == 0
+
+add!(rindex, new_idx_entry())
+write!(rindex)
+
+@test length(index) == 1
+reload!(index)
+@test length(index) == 2
+
+entry = getentry(index, "new_path", 3)
+@test entry.mode == 33199
+
 close(test_repo)
 run(`rm -rf $tmp_path`)
