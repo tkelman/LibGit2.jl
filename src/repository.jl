@@ -63,7 +63,7 @@ end
 
 Base.close(r::Repository) = begin
     if r.ptr != C_NULL
-        api.git_repository__close(r.ptr)
+        api.git_repository__cleanup(r.ptr)
     end
 end
 
