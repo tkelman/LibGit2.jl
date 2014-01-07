@@ -144,6 +144,39 @@ const DIFF_DELTA_IGNORED    = cint(6)
 const DIFF_DELTA_UNTRACKED  = cint(7)
 const DIFF_DELTA_TYPECHANGE = cint(8)
 
+# index 
+const IDXENTRY_NAMEMASK   = (0x0fff)
+const IDXENTRY_STAGEMASK  = (0x3000)
+const IDXENTRY_EXTENDED   = (0x4000)
+const IDXENTRY_VALID      = (0x8000)
+const IDXENTRY_STAGESHIFT = cint(12)
+
+const IDXENTRY_UPDATE            = cint(1) << cint(0)
+const IDXENTRY_REMOVE            = cint(1) << cint(1)
+const IDXENTRY_UPTODATE          = cint(1) << cint(2)
+const IDXENTRY_ADDED             = cint(1) << cint(3)
+
+const IDXENTRY_HASHED            = cint(1) << cint(4)
+const IDXENTRY_UNHASHED          = cint(1) << cint(5)
+const IDXENTRY_WT_REMOVE         = cint(1) << cint(6)
+const IDXENTRY_CONFLICTED        = cint(1) << cint(7)
+
+const IDXENTRY_UNPACKED          = cint(1) << cint(8)
+const IDXENTRY_NEW_SKIP_WORKTREE = cint(1) << cint(9)
+
+const INDEXCAP_IGNORE_CASE = cuint(1)
+const INDEXCAP_NO_FILEMODE = cuint(2)
+const INDEXCAP_NO_SYMLINKS = cuint(4)
+const INDEXCAP_FROM_OWNER  = ~(cuint(0))
+
+const INDEX_ADD_DEFAULT = cint(0)
+const INDEX_ADD_FORCE   = cuint(1) << cint(0)
+const INDEX_ADD_DISABLE_PATHSPEC_MATCH = cuint(1) << cint(1)
+const INDEX_ADD_CHECK_PATHSPEC = cuint(1) << cint(2)
+
+
+const INDEX_STAGE_ANY = cint(-1)
+
 type GitStrArray
    strings::Ptr{Ptr{Cchar}}
    count::Csize_t
@@ -193,9 +226,63 @@ end
 @libgit(git_repository_is_bare, Cint, (Ptr{Void},))
 
 # ----- libgit index ------
+
+type GitIndexEntry
+    ctime_seconds::Int64
+    ctime_nanoseconds::Cuint
+    
+    mtime_seconds::Int64
+    mtime_nanoseconds::Cuint
+    
+    #TODO: why is this necessary??
+    padding::Cuint
+    
+    dev::Cuint
+    ino::Cuint
+    mode::Cuint
+    uid::Cuint
+    gid::Cuint
+    file_size::Int64
+
+    oid1::Uint8
+    oid2::Uint8
+    oid3::Uint8
+    oid4::Uint8
+    oid5::Uint8
+    oid6::Uint8
+    oid7::Uint8
+    oid8::Uint8
+    oid9::Uint8
+    oid10::Uint8
+    oid11::Uint8
+    oid12::Uint8
+    oid13::Uint8
+    oid14::Uint8
+    oid15::Uint8
+    oid16::Uint8
+    oid17::Uint8
+    oid18::Uint8
+    oid19::Uint8
+    oid20::Uint8
+    
+    flags::Uint16
+    flags_extended::Uint16
+
+    path::Ptr{Cchar}
+end
+
+@libgit(git_index_open, Cint, (Ptr{Ptr{Void}}, Ptr{Cchar}))
 @libgit(git_index_free, Cint, (Ptr{Void},))
 @libgit(git_index_add_bypath, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_index_write_tree, Cint, (Ptr{Uint8}, Ptr{Void}))
+@libgit(git_index_clear, Void, (Ptr{Void},))
+@libgit(git_index_read, Cint, (Ptr{Void}, Cint))
+@libgit(git_index_write, Cint, (Ptr{Void},))
+@libgit(git_index_entrycount, Csize_t, (Ptr{Void},))
+@libgit(git_index_get_byindex, Ptr{GitIndexEntry}, (Ptr{Void}, Csize_t))
+@libgit(git_index_get_bypath,  Ptr{GitIndexEntry}, (Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_index_remove, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_index_remove_directory, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 
 # ----- libgit object ------
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
@@ -348,6 +435,7 @@ end
         (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_blob_is_binary, Cint,
         (Ptr{Void},))
+
 # ------ libgit tree ------
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
 @libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))
