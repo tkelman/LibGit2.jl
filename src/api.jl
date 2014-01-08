@@ -186,8 +186,19 @@ type GitStrArray
        finalizer(sa, free!)
        return sa
    end
+   
+   function GitStrArray(s::Array{String, 1})
+       #TODO: memory management?
+       str_ptr = Array(Ptr{Cchar}, length(s))
+       for i in length(s)
+           str_ptr[i] = convert(Ptr{Cchar}, bytestring(s[i]))
+       end
+       sa = new(str_ptr, length(s))
+       return sa
+   end
 end
 
+    
 free!(sa::GitStrArray) = begin
     if sa.strings != C_NULL && sa.count > 0
         for i in 1:sa.count
@@ -284,6 +295,7 @@ end
 @libgit(git_index_get_bypath,  Ptr{GitIndexEntry}, (Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_index_remove, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_index_remove_directory, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
+@libgit(git_index_read_tree, Cint, (Ptr{Void}, Ptr{Void}))
 
 # ----- libgit object ------
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))

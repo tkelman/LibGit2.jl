@@ -28,7 +28,7 @@ end
 function seed_test_repo(repo)
     sig = Signature("test", "test@test.com")
     idx = repo_index(repo)
-    add_bypath!(idx, "README")
+    add!(idx, "README")
     tree_id = write_tree!(idx)
 
     msg = "This is a commit\n"

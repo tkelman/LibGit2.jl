@@ -203,3 +203,152 @@ entry = getentry(index, "new_path", 3)
 
 close(test_repo)
 run(`rm -rf $tmp_path`)
+
+# test idempotent read write
+@with_tmp_repo_access begin
+    head_id = lookup_ref(test_repo, "HEAD") |> resolve |> target
+    tree = GitTree(lookup(test_repo, head_id))
+    index = repo_index(test_repo)
+    read_tree!(index, tree)
+    
+    index_tree_id = write_tree!(index)
+    index_tree = lookup(test_repo, index_tree_id)
+    @test oid(index_tree) == oid(tree)
+end
+
+# test build tree from index
+@with_tmp_repo_access begin
+    head_id = lookup_ref(test_repo,
+                "refs/remotes/origin/packed") |> resolve |> target
+    tree = GitTree(lookup(test_repo, head_id))
+    index = repo_index(test_repo)
+    read_tree!(index, tree)
+    remove!(index, "second.txt")
+
+    new_tree_id = write_tree!(index)
+    @test head_id != new_tree_id
+    @test lookup(test_repo, new_tree_id)["second.txt"] == nothing
+end
+
+# --------------------
+# test index all 
+# --------------------
+
+# test add all lifecycle
+@sandboxed_test "testrepo.git" begin 
+    test_repo = repo_init(joinpath(test_repo_path, "add-all"))
+    cd(repo_workdir(test_repo)) do
+        open("file.foo", "w") do fh
+            write(fh, "a file")
+        end
+        open("file.bar", "w") do fh
+            write(fh, "another file")
+        end
+        open("file.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open("other.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open("more.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open(".gitignore", "w") do fh
+            write(fh, "*.foo\n")
+        end
+
+        index = repo_index(test_repo)
+        
+        add_all!(index, "file.*")
+        @test index["file.foo"]  == nothing
+        @test index["file.bar"]  != nothing
+        @test index["file.zzz"]  != nothing
+        @test index["other.zzz"] == nothing
+        @test index["more.zzz"]  == nothing
+
+        add_all!(index, "*.zzz")
+        @test index["file.foo"]  == nothing
+        @test index["file.bar"]  != nothing
+        @test index["file.zzz"]  != nothing
+        @test index["other.zzz"] != nothing
+        @test index["more.zzz"]  != nothing
+    end
+end
+
+# test update all
+@sandboxed_test "testrepo.git" begin 
+    test_repo = repo_init(joinpath(test_repo_path, "add-all"))
+    cd(repo_workdir(test_repo)) do
+        open("file.foo", "w") do fh
+            write(fh, "a file")
+        end
+        open("file.bar", "w") do fh
+            write(fh, "another file")
+        end
+        open("file.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open("other.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open("more.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open(".gitignore", "w") do fh
+            write(fh, "*.foo\n")
+        end
+
+        index = repo_index(test_repo)
+        add_all!(index, "file.*")
+
+        open("file.bar", "w") do fh
+            write(fh, "new content for file")
+        end
+        update_all!(index, "file.*")
+
+        @test index["file.bar"] != nothing 
+        @test lookup(test_repo, oid(index["file.bar"])) |> raw_content == "new content for file"
+
+        @test index["other.zzz"] == nothing
+        @test index["more.zzz"]  == nothing
+
+        rm("file.bar")
+        update_all!(index)
+
+        @test index["file.bar"] == nothing
+    end
+end
+
+# test remove all
+@sandboxed_test "testrepo.git" begin 
+    test_repo = repo_init(joinpath(test_repo_path, "add-all"))
+    cd(repo_workdir(test_repo)) do
+        open("file.foo", "w") do fh
+            write(fh, "a file")
+        end
+        open("file.bar", "w") do fh
+            write(fh, "another file")
+        end
+        open("file.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open("other.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open("more.zzz", "w") do fh
+            write(fh, "yet another one")
+        end
+        open(".gitignore", "w") do fh
+            write(fh, "*.foo\n")
+        end
+
+        index = repo_index(test_repo)
+        
+        add_all!(index, "file.*")
+        remove_all!(index, "*.zzz")
+
+        @test index["file.bar"] != nothing 
+        @test index["file.zzz"] == nothing
+    end
+end
+

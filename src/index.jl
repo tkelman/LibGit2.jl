@@ -1,5 +1,6 @@
 export GitIndex, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
-       remove!, remove_dir!, add!, getentry
+       remove!, remove_dir!, add!, getentry, read_tree!, add_all!, update_all!,
+       remove_all!
 
 type GitIndex
     ptr::Ptr{Void}
@@ -100,6 +101,8 @@ type IndexEntry
     valid::Bool
     stage::Int
 end
+
+oid(entry::IndexEntry) = entry.oid
 
 function api.GitIndexEntry(idx::IndexEntry)
     flags = uint16(0x0)
@@ -245,3 +248,80 @@ Base.next(idx::GitIndex, state) = begin
     i = state[1] + 1
     return (state[2], (i, idx[i]))
 end
+
+function read_tree!(idx::GitIndex, tree::GitTree)
+    @assert idx.ptr != C_NULL && tree.ptr != C_NULL
+    @check api.git_index_read_tree(idx.ptr, tree.ptr)
+    return idx
+end
+
+function add_all!(idx::GitIndex, pspec::String;
+                 force::Bool=false,
+                 disable_pathsepc_match::Bool=false,
+                 check_pathspec::Bool=false)
+    return add_all!(idx, String[pspec],
+                    force=force, 
+                    disable_pathsepc_match=disable_pathsepc_match,
+                    check_pathspec=check_pathspec)
+end
+
+function add_all!(idx::GitIndex, pspec::Array{String, 1};
+                 force::Bool=false,
+                 disable_pathsepc_match::Bool=false,
+                 check_pathspec::Bool=false)
+    @assert idx.ptr != C_NULL
+    flags = api.INDEX_ADD_DEFAULT
+    if force
+        flags |= api.INDEX_ADD_FORCE
+    end
+    if disable_pathsepc_match
+        flags |= api.INDEX_ADD_DISABLE_PATHSPEC_MATCH
+    end
+    if check_pathspec
+        flags |= api.INDEX_ADD_CHECK_PATHSPEC
+    end
+    #TODO: memory leak?
+    exception_ptr = Cint[0]
+    gstr_arr  = api.GitStrArray(pspec)
+    @check ccall((:git_index_add_all, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{api.GitStrArray}, Cuint, Ptr{Void}, Ptr{Cint}),
+                 idx.ptr, &gstr_arr, flags, C_NULL, exception_ptr)
+    if exception_ptr[1] > 0
+        #TODO: better exception handling
+        error("exception thrown for add_all!: $(exception_ptr[1])")
+    end
+    return idx
+end
+
+function update_all!(idx::GitIndex, pspec::Array{String,1})
+    @assert idx.ptr != C_NULL
+    exception_ptr   = Cint[0]
+    gstr_arr = api.GitStrArray(pspec)
+    @check ccall((:git_index_update_all, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{api.GitStrArray}, Ptr{Void}, Ptr{Cint}),
+                 idx.ptr, &gstr_arr, C_NULL, exception_ptr)
+    if exception_ptr[1] > 0
+        #TODO: better exception handling
+        error("exception thrown for update_all!: $(exception_ptr[1])")
+    end
+    return idx
+end
+
+update_all!(idx::GitIndex, pspec::String) = update_all!(idx, String[pspec])
+update_all!(idx::GitIndex) = update_all!(idx, String[""])
+
+function remove_all!(idx::GitIndex, pspec::Array{String, 1})
+    @assert idx.ptr != C_NULL
+    exception_ptr   = Cint[0]
+    gstr_arr = api.GitStrArray(pspec)
+    @check ccall((:git_index_remove_all, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{api.GitStrArray}, Ptr{Void}, Ptr{Cint}),
+                 idx.ptr, &gstr_arr, C_NULL, exception_ptr)
+    if exception_ptr[1] > 0
+        #TODO: better exception handling
+        error("exception thrown for update_all!: $(exception_ptr[1])")
+    end
+    return idx
+end
+
+remove_all!(idx::GitIndex, pspec::String) = remove_all!(idx, String[pspec])

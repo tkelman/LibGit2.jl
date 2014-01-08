@@ -50,7 +50,7 @@ try
 
     sig = Signature("test", "test@test.com")
     idx = repo_index(repo)
-    add_bypath!(idx, "README")
+    add!(idx, "README")
     tid = write_tree!(idx)
 
     message = "This is a commit\n"
