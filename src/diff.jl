@@ -53,63 +53,65 @@ function parse_git_diff_options(opts::Dict)
     if haskey(opts, :interhunk_lines)
         gdiff.interhunk_lines = uint16(opts[:interhunk_lines])
     end
-    if haskey(opts, :reverse)
+    if get(opts, :reverse, false)
         gdiff.flags |= api.DIFF_REVERSE
     end
-    if haskey(opts, :force_text)
+    if get(opts, :force_text, false)
         gdiff.flags |= api.DIFF_FORCE_TEXT
     end
-    if haskey(opts, :ignore_whitespace)
+    if get(opts, :ignore_whitespace, false)
         gdiff.flags |= api.DIFF_IGNORE_WHITESPACE
     end
-    if haskey(opts, :ignore_whitespace_change)
+    if get(opts, :ignore_whitespace_change, false)
         gdiff.flags |= api.DIFF_IGNORE_WHITESPACE_CHANGE
     end
-    if haskey(opts, :ignore_whitespace_eol)
+    if get(opts, :ignore_whitespace_eol, false)
         gdiff.flags |= api.DIFF_IGNORE_WHITESPACE_EOL
     end
-    if haskey(opts, :ignore_submodules)
+    if get(opts, :ignore_submodules, false)
         gdiff.flags |= api.DIFF_IGNORE_SUBMODULES
     end
-    if haskey(opts, :patience)
+    if get(opts, :patience, false)
         gdiff.flags |= api.DIFF_PATIENCE
     end
-    if haskey(opts, :include_ignored)
+    if get(opts, :include_ignored, false)
         gdiff.flags |= api.DIFF_INCLUDE_IGNORED
     end
-    if haskey(opts, :include_untracked)
+    if get(opts, :include_untracked, false)
         gdiff.flags |= api.DIFF_INCLUDE_UNTRACKED
     end
-    if haskey(opts, :include_unmodified)
-        gdiff.flags |= api.DIFF_INCLUDE_UNMODIFIED
+    if get(opts, :include_unmodified, false)
+       gdiff.flags |= api.DIFF_INCLUDE_UNMODIFIED
     end
-    if haskey(opts, :recurse_untracked_dirs)
-        gdiff.flags |= api.DIFF_RECURSE_UNTRACKED_DIRS
+    if get(opts, :recurse_untracked_dirs, false)
+       gdiff.flags |= api.DIFF_RECURSE_UNTRACKED_DIRS
     end
-    if haskey(opts, :disable_pathspec_match)
-        gdiff.flags |= api.DIFF_DISABLE_PATHSPEC_MATCH
+    if get(opts, :disable_pathspec_match, false)
+       gdiff.flags |= api.DIFF_DISABLE_PATHSPEC_MATCH
     end
-    if haskey(opts, :show_untracked_content)
-        gdiff.flags |= api.DIFF_SHOW_UNTRACKED_CONTENT
+    if get(opts, :show_untracked_content, false)
+       gdiff.flags |= api.DIFF_SHOW_UNTRACKED_CONTENT
     end
-    if haskey(opts, :skip_binary_check)
-        gdiff.flags |= api.DIFF_SKIP_BINARY_CHECK
+    if get(opts, :skip_binary_check, false)
+       gdiff.flags |= api.DIFF_SKIP_BINARY_CHECK
     end
-    if haskey(opts, :include_typechange)
-        gdiff.flags |= api.DIFF_INCLUDE_TYPECHANGE
+    if get(opts, :include_typechange, false)
+       gdiff.flags |= api.DIFF_INCLUDE_TYPECHANGE
     end
-    if haskey(opts, :include_typechange_trees)
-        gdiff.flags |= api.DIFF_INCLUDE_TYPECHANGE_TREES
+    if get(opts, :include_typechange_trees, false)
+       gdiff.flags |= api.DIFF_INCLUDE_TYPECHANGE_TREES
     end
-    if haskey(opts, :ignore_filemode)
-        gdiff.flags |= api.DIFF_IGNORE_FILEMODE
+    if get(opts, :ignore_filemode, false)
+       gdiff.flags |= api.DIFF_IGNORE_FILEMODE
     end
-    if haskey(opts, :recurse_ignored_dirs)
-        gdiff.flags |= api.DIFF_RECURSE_IGNORED_DIRS
+    if get(opts, :recurse_ignored_dirs, false)
+       gdiff.flags |= api.DIFF_RECURSE_IGNORED_DIRS
     end
     if haskey(opts, :paths)
         paths = opts[:paths]
-        @assert isa(paths, Array{String, 1})
+        if !(isa(paths, Array{String, 1}))
+            throw(TypeError("opts[:paths] must be of type Array{String}"))
+        end
         gdiff.pathspec_count = convert(Csize_t, length(paths))
         str_ptrs = Array(Ptr{Cchar}, length(paths))
         for i in 1:length(paths)
