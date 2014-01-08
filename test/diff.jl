@@ -1,3 +1,3 @@
-#@sandboxed_test "attr.git" begin
-#end
+@sandboxed_test "attr" begin
+end
 
