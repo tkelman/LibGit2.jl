@@ -377,6 +377,10 @@ type GitDiffOptions
     max_size::Int64
     old_prefix::Ptr{Cchar}
     new_prefix::Ptr{Cchar}
+
+    function GitDiffOptions()
+        return new(0, 0, 0, C_NULL, 0, C_NULL, C_NULL, 0, 0, 0, 0, C_NULL, C_NULL)
+    end
 end
 
 @libgit(git_diff_free, Void, (Ptr{Void},))
