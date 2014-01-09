@@ -183,6 +183,17 @@ end
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
 Base.diff(repo::Repository,
+          left::String,
+          right::Nothing,
+          opts=nothing) = begin
+    l = rev_parse(repo, left)
+    if l != nothing
+        return diff(repo, l, nothing, opts)
+    end
+    return nothing
+end
+
+Base.diff(repo::Repository,
           left::String, 
           right::String, 
           opts=nothing) = begin
@@ -202,6 +213,27 @@ Base.diff(repo::Repository,
           right::GitCommit,
           opts=nothing) = begin
     return diff(repo, GitTree(left), GitTree(right), opts)
+end
+
+Base.diff(repo::Repository,
+          left::GitCommit,
+          right::Nothing,
+          opts=nothing) = begin
+    return diff(repo, GitTree(left), nothing, opts)
+end
+
+Base.diff(repo::Repository,
+          left::GitTree,
+          right::Nothing,
+          opts=nothing) = begin
+    gopts = parse_git_diff_options(opts)
+    diff_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_diff_tree_to_tree, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
+                  Ptr{Void}, Ptr{api.GitDiffOptions}),
+                 diff_ptr, repo.ptr, left.ptr, C_NULL, &gopts)
+    @check_null diff_ptr
+    return GitDiff(diff_ptr[1])
 end
 
 Base.diff(repo::Repository,
