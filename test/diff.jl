@@ -230,3 +230,93 @@ end
     @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 70
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 0
 end
+
+@sandboxed_test "status" begin
+    c = lookup_commit(test_repo, "26a125ee1bf")
+    @test isa(c, GitCommit)
+    
+    d= diff_workdir(test_repo, c,
+     {:context_lines => 3,
+      :interhunk_lines => 1,
+      :include_ignored => true,
+      :include_untracked => true}
+    )
+    @test isa(d, GitDiff)
+    
+    ds = deltas(d)
+    ps = patches(d)
+      
+    hs = DiffHunk[]
+    for p in ps
+        hks = hunks(p)
+        if hks == nothing
+            continue
+        end
+        for h in hks
+            push!(hs, h)
+        end
+    end
+    ls = vcat([lines(h) for h in hs]...)
+     
+    @test length(ds) == 14
+    @test length(ps) == 14
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 0
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 4
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 4
+    @test sum(x -> x.status == :ignored? 1 : 0, ds) == 1
+    @test sum(x -> x.status == :untracked? 1 : 0, ds) == 5
+
+    @test length(hs) == 8
+
+    @test length(ls) == 13
+    @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 4
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 5 
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4 
+end 
+
+@sandboxed_test "status" begin
+    c = lookup_commit(test_repo, "26a125ee1bf")
+    t = GitTree(c)
+    @test isa(t, GitTree)
+    
+    d = diff_workdir(test_repo, t,
+     {:context_lines => 3,
+      :interhunk_lines => 1,
+      :include_ignored => true,
+      :include_untracked => true}
+    )
+    @test isa(d, GitDiff)
+    
+    ds = deltas(d)
+    ps = patches(d)
+      
+    hs = DiffHunk[]
+    for p in ps
+        hks = hunks(p)
+        if hks == nothing
+            continue
+        end
+        for h in hks
+            push!(hs, h)
+        end
+    end
+    ls = vcat([lines(h) for h in hs]...)
+     
+    @test length(ds) == 14
+    @test length(ps) == 14
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 0
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 4
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 4
+    @test sum(x -> x.status == :ignored? 1 : 0, ds) == 1
+    @test sum(x -> x.status == :untracked? 1 : 0, ds) == 5
+
+    @test length(hs) == 8
+
+    @test length(ls) == 13
+    @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 4
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 5 
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4 
+end 
+
