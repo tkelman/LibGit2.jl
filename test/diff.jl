@@ -491,7 +491,7 @@ end
     end
     ls = vcat([lines(h) for h in hs]...)
 
-    @test length(d) == 15
+    @test length(d) == 16
     @test length(ds) == 16
     @test length(ps) == 16
     
