@@ -318,11 +318,15 @@ end
 @libgit(git_object_free, Cint, (Ptr{Void},))
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_object_lookup, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint))
+@libgit(git_object_lookup_prefix, Cint,
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Csize_t, Cint))
 @libgit(git_object_type, Cint, (Ptr{Void},))
 @libgit(git_object_owner, Ptr{Void}, (Ptr{Void},))
 
 @libgit(git_oid_cmp, Cint, (Ptr{Uint8}, Ptr{Uint8}))
 @libgit(git_oid_fmt, Cint, (Ptr{Cchar}, Ptr{Uint8}))
+@libgit(git_oid_fromstr, Cint, (Ptr{Uint8}, Ptr{Cchar}))
+@libgit(git_oid_fromstrn, Cint, (Ptr{Uint8}, Ptr{Cchar}, Csize_t))
 
 # ----- libgit note ------
 @libgit(git_note_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}))

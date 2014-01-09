@@ -662,6 +662,23 @@ function lookup{T<:GitObject}(::Type{T}, r::Repository, id::Oid)
     return T(obj_ptr[1])
 end
 
+function lookup{T<:GitObject}(::Type{T}, r::Repository, id::String)
+    id_arr  = Array(Uint8, api.OID_RAWSZ)
+    @check api.git_oid_fromstrn(id_arr, bytestring(id), length(id))
+    obj_ptr = Array(Ptr{Void}, 1)
+    if length(id) < api.OID_HEXSZ
+        @check api.git_object_lookup_prefix(obj_ptr, r.ptr, 
+                                           id_arr, length(id),
+                                           git_otype(T))
+    else
+        @check api.git_object_lookup(obj_ptr, r.ptr, 
+                                     id_arr, length(id),
+                                     git_otype(T))
+    end
+    @check_null obj_ptr
+    return T(obj_ptr[1]) 
+end
+
 function lookup(r::Repository, id::Oid)
     @assert r.ptr != C_NULL
     obj_ptr = Array(Ptr{Void}, 1)
@@ -671,8 +688,11 @@ function lookup(r::Repository, id::Oid)
 end
 
 lookup_tree(r::Repository, id::Oid) = lookup(GitTree, r, id)
+lookup_tree(r::Repository, id::String) = lookup(GitTree, r, id)
 lookup_blob(r::Repository, id::Oid) = lookup(GitBlob, r, id)
+lookup_blob(r::Repository, id::String) = lookup(GitBlob, r, id)
 lookup_commit(r::Repository, id::Oid) = lookup(GitCommit, r, id)
+lookup_commit(r::Repository, id::String) = lookup(GitCommit, r, id)
 
 function lookup_ref(r::Repository, refname::String)
     @assert r.ptr != C_NULL

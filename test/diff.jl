@@ -153,4 +153,8 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4
 end
 
+@sandboxed_test "attr" begin
+    c = lookup_commit(test_repo, "605812a")
+    @test isa(c, GitCommit)
+end
 
