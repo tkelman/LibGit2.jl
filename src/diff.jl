@@ -1,4 +1,4 @@
-export GitDiff, parse_git_diff_options, deltas, patches
+export GitDiff, parse_git_diff_options, deltas, patches, diff_workdir
 
 type GitDiff
     ptr::Ptr{Void}
@@ -230,14 +230,22 @@ Base.diff(repo::Repository,
 end
 
 function diff_workdir(repo::Repository, left::String, opts=nothing)
-    left = rev_parse(repo, left)
-    diff_workdir(left, opts)
+    l = rev_parse(repo, left)
+    diff_workdir(repo, l, opts)
 end
 
-function diff_workdir(left::GitTree, opts=nothing)
+function diff_workdir(repo::Repository, left::GitCommit, opts=nothing)
+    diff_workdir(repo, GitTree(left), opts)
 end
 
-function diff_workdir(left::GitCommit, opts=nothing)
+function diff_workdir(repo::Repository, left::GitTree, opts=nothing)
+    gopts = parse_git_diff_options(opts)
+    diff_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_diff_tree_to_workdir, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffOptions}),
+                 diff_ptr, repo.ptr, left.ptr, &gopts)
+    @check_null diff_ptr
+    return GitDiff(diff_ptr[1])
 end
 
 function parse_git_diff_options()
