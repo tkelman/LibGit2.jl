@@ -373,7 +373,7 @@ end
 
 Base.merge!(d1::GitDiff, d2::GitDiff) = begin
     @check api.git_diff_merge(d1.ptr, d2.ptr)
-    return nothing
+    return d1
 end
 
 function diff_workdir(repo::Repository, left::String, opts=nothing)
@@ -396,6 +396,10 @@ function diff_workdir(repo::Repository, left::GitTree, opts=nothing)
 end
 
 function parse_git_diff_options()
+    return api.GitDiffOptions()
+end
+
+function parse_git_diff_options(o::Nothing)
     return api.GitDiffOptions()
 end
 

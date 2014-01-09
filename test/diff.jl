@@ -542,3 +542,41 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1) 
 end
 
+@sandboxed_test "attr" begin
+    a = GitTree(lookup_commit(test_repo, "605812a"))
+    b = GitTree(lookup_commit(test_repo, "370fe9ec22"))
+    c = GitTree(lookup_commit(test_repo, "f5b0af1fb4f5c"))
+
+    ab = diff(test_repo, a, b)
+    cb = diff(test_repo, c, b)
+    d  = merge!(ab, cb)
+    
+    ds = deltas(d)
+    ps = patches(d)
+    hs = DiffHunk[]
+    for p in ps
+        hks = hunks(p)
+        if hks == nothing
+            continue
+        end
+        for h in hks
+            push!(hs, h)
+        end
+    end
+    ls = vcat([lines(h) for h in hs]...)
+
+    @test length(d) == 6
+    @test length(ds) == 6
+    @test length(ps) == 6
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 2
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 1
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 3
+    
+    @test length(hs) == 6
+
+    @test length(ls) == 59
+    @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 36
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 22
+end
