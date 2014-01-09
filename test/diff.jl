@@ -618,3 +618,23 @@ end
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 0
     @test sum(x -> x.status == :typechange? 1 : 0, ds) == 1
 end 
+
+
+@sandboxed_test "unsymlinked.git" begin
+    a = GitTree(lookup_commit(test_repo, "806999"))
+    b = GitTree(lookup_commit(test_repo, "a8595c"))
+
+    d = diff(test_repo, a, b)
+
+    ds = deltas(d)
+    ps = patches(d)
+
+    @test length(d) == 1
+    @test length(ds) == 1
+    @test length(ps) == 1
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 0
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 0
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 1
+    @test sum(x -> x.status == :typechange? 1 : 0, ds) == 0
+end 
