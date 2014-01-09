@@ -54,6 +54,7 @@ function hunks(p::GitPatch)
     if nhunks == 0
         return nothing
     end
+    err::Cint = 0
     hunk_ptr = Array(Ptr{api.GitDiffHunk}, 1)
     lines_ptr = Csize_t[0]
     hs = DiffHunk[]
@@ -64,6 +65,9 @@ function hunks(p::GitPatch)
         end
         @check_null hunk_ptr
         push!(hs, DiffHunk(p, hunk_ptr[1], i, lines_ptr[1]))
+    end
+    if err != api.GIT_OK
+        throw(GitError(err))
     end
     return hs
 end
@@ -119,7 +123,7 @@ function lines(h::DiffHunk)
     for i in 1:lc
         err = api.git_patch_get_line_in_hunk(
                         line_ptr, h.patch.ptr, hi - 1, i-1)
-        if err != 0
+        if bool(err)
             break
         end
         @check_null line_ptr

@@ -162,6 +162,7 @@ function patches(d::GitDiff)
     if ndelta == 0
         return nothing
     end 
+    err::Cint = 0
     ps = GitPatch[]
     patch_ptr = Array(Ptr{Void}, 1)
     for i in 1:ndelta
@@ -171,6 +172,9 @@ function patches(d::GitDiff)
         end
         @assert patch_ptr != C_NULL
         push!(ps, GitPatch(patch_ptr[1]))
+    end
+    if err != api.GIT_OK
+        throw(GitError(err))
     end
     return ps
 end 
