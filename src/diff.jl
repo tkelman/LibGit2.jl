@@ -18,6 +18,64 @@ free!(d::GitDiff) = begin
     end
 end
 
+
+type DiffStats
+    files::Int
+    adds::Int
+    dels::Int
+
+    function DiffStats()
+        return new(0, 0, 0)
+    end
+end
+
+function cb_diff_file_stats(delta_ptr::Ptr{api.GitDiffDelta}, 
+                            progress::Cfloat, 
+                            payload::Ptr{Void})
+    delta = unsafe_load(delta_ptr)
+    stats = unsafe_pointer_to_objref(payload)::DiffStats
+    if delta.status == api.DELTA_ADDED ||
+       delta.status == api.DELTA_DELETED ||
+       delta.status == api.DELTA_MODIFIED ||
+       delta.status == api.DELTA_RENAMED ||
+       delta.status == api.DELTA_COPIED ||
+       delta.status == api.DELTA_TYPECHANGE
+        stats.files += 1
+    end
+    return api.GIT_OK
+end
+
+const c_cb_diff_file_stats = cfunction(cb_diff_file_stats, Cint,
+                                       (Ptr{api.GitDiffDelta}, Cfloat, Ptr{Void}))
+
+
+function cb_diff_line_stats(delta_ptr::Ptr{Void},
+                            hunk_ptr::Ptr{Void},
+                            line_ptr::Ptr{api.GitDiffLine},
+                            payload::Ptr{Void})
+    line = unsafe_load(line_ptr)
+    stats = unsafe_pointer_to_objref(payload)::DiffStats
+    if line.origin == api.DIFF_LINE_ADDITION
+        stats.adds += 1
+    elseif line.origin == api.DIFF_LINE_DELETION
+        stats.dels += 1
+    end
+    return api.GIT_OK
+end
+
+const c_cb_diff_line_stats = cfunction(cb_diff_line_stats, Cint,
+                                       (Ptr{Void}, Ptr{Void}, 
+                                        Ptr{api.GitDiffLine}, Ptr{Void}))
+
+
+Base.stat(d::GitDiff) = begin
+    stats = DiffStats()
+    ccall((:git_diff_foreach, api.libgit2), Void,
+          (Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Any),
+          d.ptr, c_cb_diff_file_stats, C_NULL, c_cb_diff_line_stats, &stats)
+    return stats
+end
+
 type DiffFile
     oid::Oid
     path::String
@@ -27,31 +85,31 @@ type DiffFile
 end
 
 function delta_status_symbol(s::Integer)
-    if s == api.DIFF_DELTA_UNMODIFIED
+    if s == api.DELTA_UNMODIFIED
         return :unmodified
     end
-    if s == api.DIFF_DELTA_ADDED
+    if s == api.DELTA_ADDED
         return :added
     end
-    if s == api.DIFF_DELTA_DELETED
+    if s == api.DELTA_DELETED
         return :deleted
     end
-    if s == api.DIFF_DELTA_MODIFIED
+    if s == api.DELTA_MODIFIED
         return :modified
     end
-    if s == api.DIFF_DELTA_RENAMED
+    if s == api.DELTA_RENAMED
         return :renamed
     end
-    if s == api.DIFF_DELTA_COPIED
+    if s == api.DELTA_COPIED
         return :copied
     end 
-    if s == api.DIFF_DELTA_IGNORED
+    if s == api.DELTA_IGNORED
         return :ignored
     end
-    if s == api.DIFF_DELTA_UNTRACKED
+    if s == api.DELTA_UNTRACKED
         return :untracked
     end
-    if s == api.DIFF_DELTA_TYPECHANGE
+    if s == api.DELTA_TYPECHANGE
         return :typechange
     end
     return :unknown

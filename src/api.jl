@@ -136,15 +136,15 @@ const DIFF_FLAG_BINARY     = cuint(1) << cint(0)
 const DIFF_FLAG_NOT_BINARY = cuint(1) << cint(1)
 const DIFF_FLAG_VALID_OID  = cuint(1) << cint(2)
 
-const DIFF_DELTA_UNMODIFIED = cint(0)
-const DIFF_DELTA_ADDED      = cint(1)
-const DIFF_DELTA_DELETED    = cint(2)
-const DIFF_DELTA_MODIFIED   = cint(3)
-const DIFF_DELTA_RENAMED    = cint(4)
-const DIFF_DELTA_COPIED     = cint(5)
-const DIFF_DELTA_IGNORED    = cint(6)
-const DIFF_DELTA_UNTRACKED  = cint(7)
-const DIFF_DELTA_TYPECHANGE = cint(8)
+const DELTA_UNMODIFIED = cint(0)
+const DELTA_ADDED      = cint(1)
+const DELTA_DELETED    = cint(2)
+const DELTA_MODIFIED   = cint(3)
+const DELTA_RENAMED    = cint(4)
+const DELTA_COPIED     = cint(5)
+const DELTA_IGNORED    = cint(6)
+const DELTA_UNTRACKED  = cint(7)
+const DELTA_TYPECHANGE = cint(8)
 
 cchar(c::Char) = convert(Cchar, c)
 
@@ -343,6 +343,7 @@ end
 @libgit(git_patch_print, Cint,
         (Ptr{Void}, Ptr{Void}, Ptr{Void}))
 @libgit(git_patch_num_hunks, Csize_t, (Ptr{Void},))
+@libgit(git_patch_get_delta, Ptr{GitDiffDelta}, (Ptr{Void},))
 
 # ----- libgit graph ------
 @libgit(git_graph_ahead_behind, Cint, 

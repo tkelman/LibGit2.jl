@@ -322,13 +322,8 @@ end
 
 @sandboxed_test "status" begin 
     idx = repo_index(test_repo)
-    @test isa(idx, GitIndex)
-
     c = lookup_commit(test_repo, "26a125ee1bf")
-    @test isa(c, GitCommit)
-
     t = GitTree(c)
-    @test isa(t, GitTree)
 
     # merge diffs to simulate "git diff 26a125ee1bf"
     diff1 = diff(test_repo, t, idx, 
@@ -367,4 +362,49 @@ end
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 4
     @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 8 
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 5 
+end
+
+@sandboxed_test "status" begin 
+    idx = repo_index(test_repo)
+    c = lookup_commit(test_repo, "26a125ee1bf")
+    t = GitTree(c)
+
+    # merge diffs to simulate "git diff 26a125ee1bf"
+    diff1 = diff(test_repo, t, idx, 
+                {:include_ignored=>true, :include_untracked=>true})
+    diff2 = diff(test_repo, idx, 
+                {:include_ignored=>true, :include_untracked=>true})
+    merge!(diff1, diff2)
+    diff_stat = stat(diff1)
+    
+    @test diff_stat.files == 11 
+    @test diff_stat.adds  == 8
+    @test diff_stat.dels  == 5
+
+    expected_patch_stat = [
+      [ 0, 1, 1 ], [ 1, 0, 2 ], [ 1, 0, 2 ], [ 0, 1, 1 ], [ 2, 0, 3 ],
+      [ 0, 1, 1 ], [ 0, 1, 1 ], [ 1, 0, 1 ], [ 2, 0, 2 ], [ 0, 1, 1 ],
+      [ 1, 0, 2 ]
+    ]
+
+    i = 1 
+    for patch in patches(diff1)
+        s = delta(patch).status 
+        if s == :unmodified || s == :ignored || s == :untracked
+            continue
+        end
+
+        @test isa(patch, GitPatch)
+        expected_adds  = expected_patch_stat[(i-1) * 3 + 1]
+        expected_dels  = expected_patch_stat[(i-1) * 3 + 2]
+        expected_lines = expected_patch_stat[(i-1) * 3 + 3]
+
+        patch_stat = stat(patch)
+       
+        @test expected_adds == patch_stat.adds
+        @test expected_dels == patch_stat.dels
+        @test nchanges(patch) == patch_stat.adds + patch_stat.dels
+        @test expected_lines == nlines(patch) 
+        i += 1
+    end
 end

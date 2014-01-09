@@ -1,4 +1,4 @@
-export GitPatch, lines, DiffHunk, hunks
+export GitPatch, lines, nlines, DiffHunk, hunks, nchanges, delta
 
 type GitPatch
     ptr::Ptr{Void}
@@ -15,6 +15,24 @@ function free!(p::GitPatch)
         api.git_patch_free(p.ptr)
         p.ptr = C_NULL
     end
+end
+
+type PatchStat
+    adds::Int
+    dels::Int
+end
+
+Base.stat(p::GitPatch) = begin
+    @assert p.ptr != C_NULL
+    adds = Csize_t[0]
+    dels = Csize_t[0]
+    api.git_patch_line_stats(C_NULL, adds, dels, p.ptr)
+    return PatchStat(int(adds[1]), int(dels[1]))
+end
+
+function nchanges(p::GitPatch)
+    s = stat(p)
+    return s.adds + s.dels
 end
 
 type DiffHunk
@@ -151,11 +169,11 @@ Base.string(p::GitPatch) = begin
     #@check api.git_patch_print(p.ptr
 end
 
-function lines(p::GitPatch)
+function nlines(p::GitPatch)
     @assert p.ptr != C_NULL
-    ctx  = Array(Csize_t, 1)
-    adds = Array(Csize_t, 1)
-    dels = Array(Csize_t, 1)
+    ctx  = Csize_t[0]
+    adds = Csize_t[0]
+    dels = Csize_t[0]
     @check api.git_patch_line_stats(ctx, adds, dels, p.ptr)
     return ctx[1] + adds[1] + dels[1]
 end
@@ -167,6 +185,9 @@ end
 
 function delta(p::GitPatch)
     @assert p.ptr != C_NULL
+    delta_ptr = api.git_patch_get_delta(p.ptr)
+    @assert delta_ptr != C_NULL
+    return DiffDelta(delta_ptr)
 end
 
 function line_stats(p::GitPatch)

@@ -20,8 +20,8 @@ include("remote.jl")
 include("branch.jl")
 include("note.jl")
 include("repository.jl")
-include("patch.jl")
 include("diff.jl")
+include("patch.jl")
 include("walk.jl")
 
 type __GitThreadsHandle
