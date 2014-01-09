@@ -126,28 +126,10 @@ type DiffDelta
         @assert ptr != C_NULL
         d = unsafe_load(ptr)
         
-        #TODO: refactor
         arr = Array(Uint8, api.OID_RAWSZ)
-        arr[1] = d.old_file_oid1
-        arr[2] = d.old_file_oid2
-        arr[3] = d.old_file_oid3
-        arr[4] = d.old_file_oid4
-        arr[5] = d.old_file_oid5
-        arr[6] = d.old_file_oid6
-        arr[7] = d.old_file_oid7
-        arr[8] = d.old_file_oid8
-        arr[9] = d.old_file_oid9
-        arr[10] = d.old_file_oid10
-        arr[11] = d.old_file_oid11
-        arr[12] = d.old_file_oid12
-        arr[13] = d.old_file_oid13
-        arr[14] = d.old_file_oid14
-        arr[15] = d.old_file_oid15
-        arr[16] = d.old_file_oid16
-        arr[17] = d.old_file_oid17
-        arr[18] = d.old_file_oid18
-        arr[19] = d.old_file_oid19
-        arr[20] = d.old_file_oid20
+        for i in 1:api.OID_RAWSZ
+            arr[i] = getfield(d, symbol("old_file_oid$i"))
+        end
         old_file_oid = Oid(arr)
         
         fold = DiffFile(old_file_oid,
@@ -157,26 +139,9 @@ type DiffDelta
                         int(d.old_file_mode))
         
         arr = Array(Uint8, api.OID_RAWSZ)
-        arr[1] = d.new_file_oid1
-        arr[2] = d.new_file_oid2
-        arr[3] = d.new_file_oid3
-        arr[4] = d.new_file_oid4
-        arr[5] = d.new_file_oid5
-        arr[6] = d.new_file_oid6
-        arr[7] = d.new_file_oid7
-        arr[8] = d.new_file_oid8
-        arr[9] = d.new_file_oid9
-        arr[10] = d.new_file_oid10
-        arr[11] = d.new_file_oid11
-        arr[12] = d.new_file_oid12
-        arr[13] = d.new_file_oid13
-        arr[14] = d.new_file_oid14
-        arr[15] = d.new_file_oid15
-        arr[16] = d.new_file_oid16
-        arr[17] = d.new_file_oid17
-        arr[18] = d.new_file_oid18
-        arr[19] = d.new_file_oid19
-        arr[20] = d.new_file_oid20
+        for i in 1:api.OID_RAWSZ
+            arr[i] = getfield(d, symbol("new_file_oid$i"))
+        end
         new_file_oid = Oid(arr)
                         
         fnew = DiffFile(new_file_oid,
