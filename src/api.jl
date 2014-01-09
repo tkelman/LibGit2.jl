@@ -136,6 +136,12 @@ const DIFF_FLAG_BINARY     = cuint(1) << cint(0)
 const DIFF_FLAG_NOT_BINARY = cuint(1) << cint(1)
 const DIFF_FLAG_VALID_OID  = cuint(1) << cint(2)
 
+const DIFF_FORMAT_PATCH = cuint(1)
+const DIFF_FORMAT_PATCH_HEADER = cuint(2)
+const DIFF_FORMAT_RAW = cuint(3)
+const DIFF_FORMAT_NAME_ONLY = cuint(4)
+const DIFF_FORMAT_NAME_STATUS = cuint(5)
+
 const DELTA_UNMODIFIED = cint(0)
 const DELTA_ADDED      = cint(1)
 const DELTA_DELETED    = cint(2)
@@ -464,6 +470,7 @@ end
 @libgit(git_diff_get_delta, Ptr{GitDiffDelta}, (Ptr{Void}, Csize_t))
 @libgit(git_patch_from_diff, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t))
 @libgit(git_diff_merge, Cint, (Ptr{Void}, Ptr{Void}))
+@libgit(git_diff_print, Void, (Ptr{Void}, Cuint, Ptr{Void}, Ptr{Cchar}))
 
 # ----- libgit signature ------
 type GitSignature

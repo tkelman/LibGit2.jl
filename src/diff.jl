@@ -1,4 +1,4 @@
-export GitDiff, parse_git_diff_options, deltas, patches, diff_workdir
+export GitDiff, parse_git_diff_options, deltas, patches, diff_workdir, patch
 
 type GitDiff
     ptr::Ptr{Void}
@@ -202,9 +202,43 @@ function patches(d::GitDiff)
     return ps
 end 
 
+#TODO: memory leaks?
+#TODO: unsafe_pointer_to_objref for payload?
+function cb_diff_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
+                       line_ptr::Ptr{api.GitDiffLine}, payload::Ptr{Void})
+    l = unsafe_load(line_ptr)
+    s = unsafe_pointer_to_objref(payload)::Array{Uint8,1}
+    if l.origin == api.DIFF_LINE_CONTEXT ||
+       l.origin == api.DIFF_LINE_ADDITION ||
+       l.origin == api.DIFF_LINE_DELETION
+       push!(s, l.origin)
+    end
+    for i in 1:l.content_len
+        push!(s, unsafe_load(l.content, i))
+    end
+    return api.GIT_OK
+end
+
+const c_cb_diff_print = cfunction(cb_diff_print, Cint,
+                                  (Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffLine}, Ptr{Void}))
+
+function patch(d::GitDiff; compact::Bool=false)
+    @assert d.ptr != C_NULL
+    s = Uint8[]
+    if compact
+        ccall((:git_diff_print, api.libgit2), Cint,
+              (Ptr{Void}, Cuint, Ptr{Void}, Any),
+              d.ptr, api.DIFF_FORMAT_NAME_STATUS, c_cb_diff_print, &s)
+    else
+        ccall((:git_diff_print, api.libgit2), Cint,
+              (Ptr{Void}, Cuint, Ptr{Void}, Any),
+              d.ptr, api.DIFF_FORMAT_PATCH, c_cb_diff_print, &s)
+    end
+    return UTF8String(s)
+end
+
 # diffable GitTree, GitCommit, GitIndex, or Nothing
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
-
 
 Base.diff(repo::Repository, 
          left::Nothing, 
