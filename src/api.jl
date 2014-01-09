@@ -104,6 +104,8 @@ const TREEWALK_POST = cint(1)
 
 const GIT_PATH_MAX = cint(4096)
 
+const DIFF_OPTIONS_VERSION = cint(1)
+
 const DIFF_NORMAL  = cint(0)
 const DIFF_REVERSE = cuint(1) << cint(0)
 const DIFF_INCLUDE_IGNORED = cuint(1) << cint(1)
@@ -132,7 +134,7 @@ const DIFF_MINIMAL = cuint(1) << cint(29)
 
 const DIFF_FLAG_BINARY     = cuint(1) << cint(0)
 const DIFF_FLAG_NOT_BINARY = cuint(1) << cint(1)
-const DIFF_FLAG_VALID_OI   = cuint(1) << cint(2)
+const DIFF_FLAG_VALID_OID  = cuint(1) << cint(2)
 
 const DIFF_DELTA_UNMODIFIED = cint(0)
 const DIFF_DELTA_ADDED      = cint(1)
@@ -143,6 +145,20 @@ const DIFF_DELTA_COPIED     = cint(5)
 const DIFF_DELTA_IGNORED    = cint(6)
 const DIFF_DELTA_UNTRACKED  = cint(7)
 const DIFF_DELTA_TYPECHANGE = cint(8)
+
+cchar(c::Char) = convert(Cchar, c)
+
+const DIFF_LINE_CONTEXT   = cchar(' ')
+const DIFF_LINE_ADDITION  = cchar('+')
+const DIFF_LINE_DELETION  = cchar('-')
+
+const DIFF_LINE_CONTEXT_EOFNL = cchar('=')
+const DIFF_LINE_ADD_EOFNL = cchar('>')
+const DIFF_LINE_DEL_EOFNL = cchar('<')
+
+const DIFF_LINE_FILE_HDR  = cchar('F')
+const DIFF_LINE_HUNK_HDR  = cchar('H')
+const DIFF_LINE_BINARY    = cchar('B')
 
 # index 
 const IDXENTRY_NAMEMASK   = (0x0fff)
@@ -346,20 +362,63 @@ type GitDiffDelta
     flags::Uint32
     similarity::Uint16
     nfiles::Uint16
+    
+    pad1::Cuint
 
-    old_file_oid::Ptr{Uint8}
+    old_file_oid1::Uint8
+    old_file_oid2::Uint8
+    old_file_oid3::Uint8
+    old_file_oid4::Uint8
+    old_file_oid5::Uint8
+    old_file_oid6::Uint8
+    old_file_oid7::Uint8
+    old_file_oid8::Uint8
+    old_file_oid9::Uint8
+    old_file_oid10::Uint8
+    old_file_oid11::Uint8
+    old_file_oid12::Uint8
+    old_file_oid13::Uint8
+    old_file_oid14::Uint8
+    old_file_oid15::Uint8
+    old_file_oid16::Uint8
+    old_file_oid17::Uint8
+    old_file_oid18::Uint8
+    old_file_oid19::Uint8
+    old_file_oid20::Uint8
+
     old_file_path::Ptr{Cchar}
     old_file_size::Int64
     old_file_flags::Uint32
     old_file_mode::Uint16
 
-    new_file_oid::Ptr{Uint8}
+    pad2::Cuint
+
+    new_file_oid1::Uint8
+    new_file_oid2::Uint8
+    new_file_oid3::Uint8
+    new_file_oid4::Uint8
+    new_file_oid5::Uint8
+    new_file_oid6::Uint8
+    new_file_oid7::Uint8
+    new_file_oid8::Uint8
+    new_file_oid9::Uint8
+    new_file_oid10::Uint8
+    new_file_oid11::Uint8
+    new_file_oid12::Uint8
+    new_file_oid13::Uint8
+    new_file_oid14::Uint8
+    new_file_oid15::Uint8
+    new_file_oid16::Uint8
+    new_file_oid17::Uint8
+    new_file_oid18::Uint8
+    new_file_oid19::Uint8
+    new_file_oid20::Uint8
+
     new_file_path::Ptr{Cchar}
     new_file_size::Int64
     new_file_flags::Uint32
     new_file_mode::Uint16
 end
-
 
 type GitDiffOptions
     version::Cuint
@@ -379,11 +438,26 @@ type GitDiffOptions
     new_prefix::Ptr{Cchar}
 
     function GitDiffOptions()
-        return new(0, 0, 0, C_NULL, 0, C_NULL, C_NULL, 0, 0, 0, 0, C_NULL, C_NULL)
+        return new(DIFF_OPTIONS_VERSION, 
+                   0, 
+                   SUBMODULE_IGNORE_DEFAULT, 
+                   C_NULL, 
+                   0, 
+                   C_NULL, 
+                   C_NULL, 
+                   3, 
+                   0, 
+                   0, 
+                   0, 
+                   C_NULL, 
+                   C_NULL)
     end
 end
 
 @libgit(git_diff_free, Void, (Ptr{Void},))
+@libgit(git_diff_num_deltas, Csize_t, (Ptr{Void},))
+@libgit(git_diff_get_delta, Ptr{GitDiffDelta}, (Ptr{Void}, Csize_t))
+@libgit(git_patch_from_diff, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t))
 
 # ----- libgit signature ------
 type GitSignature
@@ -642,5 +716,159 @@ end
 @libgit(git_config_delete_entry, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_free, Void, (Ptr{Void},)) 
 @libgit(git_config_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void})) 
+
+# --- libgit diff hunk ----
+type GitDiffHunk
+    old_start::Cint
+    old_lines::Cint
+    new_start::Cint
+    new_lines::Cint
+    header_len::Csize_t
+    # char header[128] 
+    header1::Cchar
+    header2::Cchar
+    header3::Cchar
+    header4::Cchar
+    header5::Cchar
+    header6::Cchar
+    header7::Cchar
+    header8::Cchar
+    header9::Cchar
+    header10::Cchar
+    header11::Cchar
+    header12::Cchar
+    header13::Cchar
+    header14::Cchar
+    header15::Cchar
+    header16::Cchar
+    header17::Cchar
+    header18::Cchar
+    header19::Cchar
+    header20::Cchar
+    header21::Cchar
+    header22::Cchar
+    header23::Cchar
+    header24::Cchar
+    header25::Cchar
+    header26::Cchar
+    header27::Cchar
+    header28::Cchar
+    header29::Cchar
+    header30::Cchar
+    header31::Cchar
+    header32::Cchar
+    header33::Cchar
+    header34::Cchar
+    header35::Cchar
+    header36::Cchar
+    header37::Cchar
+    header38::Cchar
+    header39::Cchar
+    header40::Cchar
+    header41::Cchar
+    header42::Cchar
+    header43::Cchar
+    header44::Cchar
+    header45::Cchar
+    header46::Cchar
+    header47::Cchar
+    header48::Cchar
+    header49::Cchar
+    header50::Cchar
+    header51::Cchar
+    header52::Cchar
+    header53::Cchar
+    header54::Cchar
+    header55::Cchar
+    header56::Cchar
+    header57::Cchar
+    header58::Cchar
+    header59::Cchar
+    header60::Cchar
+    header61::Cchar
+    header62::Cchar
+    header63::Cchar
+    header64::Cchar
+    header65::Cchar
+    header66::Cchar
+    header67::Cchar
+    header68::Cchar
+    header69::Cchar
+    header70::Cchar
+    header71::Cchar
+    header72::Cchar
+    header73::Cchar
+    header74::Cchar
+    header75::Cchar
+    header76::Cchar
+    header77::Cchar
+    header78::Cchar
+    header79::Cchar
+    header80::Cchar
+    header81::Cchar
+    header82::Cchar
+    header83::Cchar
+    header84::Cchar
+    header85::Cchar
+    header86::Cchar
+    header87::Cchar
+    header88::Cchar
+    header89::Cchar
+    header90::Cchar
+    header91::Cchar
+    header92::Cchar
+    header93::Cchar
+    header94::Cchar
+    header95::Cchar
+    header96::Cchar
+    header97::Cchar
+    header98::Cchar
+    header99::Cchar
+    header100::Cchar
+    header101::Cchar
+    header102::Cchar
+    header103::Cchar
+    header104::Cchar
+    header105::Cchar
+    header106::Cchar
+    header107::Cchar
+    header108::Cchar
+    header109::Cchar
+    header110::Cchar
+    header111::Cchar
+    header112::Cchar
+    header113::Cchar
+    header114::Cchar
+    header115::Cchar
+    header116::Cchar
+    header117::Cchar
+    header118::Cchar
+    header119::Cchar
+    header120::Cchar
+    header121::Cchar
+    header122::Cchar
+    header123::Cchar
+    header124::Cchar
+    header125::Cchar
+    header126::Cchar
+    header127::Cchar
+    header128::Cchar
+end 
+
+@libgit(git_patch_num_hunks, Csize_t, (Ptr{Void},))
+@libgit(git_patch_get_hunk, Cint, (Ptr{Ptr{GitDiffHunk}}, Ptr{Csize_t}, Ptr{Void}, Csize_t))
+
+type GitDiffLine
+    origin::Cchar
+    old_lineno::Cint
+    new_lineno::Cint
+    num_lines::Cint
+    content_len::Csize_t
+    content_offset::Coff_t
+    content::Ptr{Cchar}
+end
+
+@libgit(git_patch_get_line_in_hunk, Cint, 
+        (Ptr{Ptr{GitDiffLine}}, Ptr{Void}, Csize_t, Csize_t))
 
 end # module api

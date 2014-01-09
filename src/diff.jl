@@ -1,7 +1,14 @@
-export GitDiff, parse_git_diff_options
+export GitDiff, parse_git_diff_options, deltas, patches
 
 type GitDiff
     ptr::Ptr{Void}
+
+    function GitDiff(ptr::Ptr{Void})
+        @assert ptr != C_NULL
+        d = new(ptr)
+        finalizer(d, free!)
+        return d
+    end
 end
 
 free!(d::GitDiff) = begin
@@ -11,23 +18,204 @@ free!(d::GitDiff) = begin
     end
 end
 
+type DiffFile
+    oid::Oid
+    path::String
+    size::Int
+    flags::Int
+    mode::Int
+end
+
+function delta_status_symbol(s::Integer)
+    if s == api.DIFF_DELTA_UNMODIFIED
+        return :unmodified
+    end
+    if s == api.DIFF_DELTA_ADDED
+        return :added
+    end
+    if s == api.DIFF_DELTA_DELETED
+        return :deleted
+    end
+    if s == api.DIFF_DELTA_MODIFIED
+        return :modified
+    end
+    if s == api.DIFF_DELTA_RENAMED
+        return :renamed
+    end
+    if s == api.DIFF_DELTA_COPIED
+        return :copied
+    end 
+    if s == api.DIFF_DELTA_IGNORED
+        return :ignored
+    end
+    if s == api.DIFF_DELTA_UNTRACKED
+        return :untracked
+    end
+    if s == api.DIFF_DELTA_TYPECHANGE
+        return :typechange
+    end
+    return :unknown
+end
+
+type DiffDelta
+    old_file::DiffFile
+    new_file::DiffFile
+    similarity::Int
+    status::Symbol
+    isbinary::Bool
+
+    function DiffDelta(ptr::Ptr{api.GitDiffDelta})
+        @assert ptr != C_NULL
+        d = unsafe_load(ptr)
+        
+        #TODO: refactor
+        arr = Array(Uint8, api.OID_RAWSZ)
+        arr[1] = d.old_file_oid1
+        arr[2] = d.old_file_oid2
+        arr[3] = d.old_file_oid3
+        arr[4] = d.old_file_oid4
+        arr[5] = d.old_file_oid5
+        arr[6] = d.old_file_oid6
+        arr[7] = d.old_file_oid7
+        arr[8] = d.old_file_oid8
+        arr[9] = d.old_file_oid9
+        arr[10] = d.old_file_oid10
+        arr[11] = d.old_file_oid11
+        arr[12] = d.old_file_oid12
+        arr[13] = d.old_file_oid13
+        arr[14] = d.old_file_oid14
+        arr[15] = d.old_file_oid15
+        arr[16] = d.old_file_oid16
+        arr[17] = d.old_file_oid17
+        arr[18] = d.old_file_oid18
+        arr[19] = d.old_file_oid19
+        arr[20] = d.old_file_oid20
+        old_file_oid = Oid(arr)
+        
+        fold = DiffFile(old_file_oid,
+                        bytestring(d.old_file_path),
+                        int(d.old_file_size),
+                        int(d.old_file_flags),
+                        int(d.old_file_mode))
+        
+        arr = Array(Uint8, api.OID_RAWSZ)
+        arr[1] = d.new_file_oid1
+        arr[2] = d.new_file_oid2
+        arr[3] = d.new_file_oid3
+        arr[4] = d.new_file_oid4
+        arr[5] = d.new_file_oid5
+        arr[6] = d.new_file_oid6
+        arr[7] = d.new_file_oid7
+        arr[8] = d.new_file_oid8
+        arr[9] = d.new_file_oid9
+        arr[10] = d.new_file_oid10
+        arr[11] = d.new_file_oid11
+        arr[12] = d.new_file_oid12
+        arr[13] = d.new_file_oid13
+        arr[14] = d.new_file_oid14
+        arr[15] = d.new_file_oid15
+        arr[16] = d.new_file_oid16
+        arr[17] = d.new_file_oid17
+        arr[18] = d.new_file_oid18
+        arr[19] = d.new_file_oid19
+        arr[20] = d.new_file_oid20
+        new_file_oid = Oid(arr)
+                        
+        fnew = DiffFile(new_file_oid,
+                        bytestring(d.new_file_path),
+                        int(d.new_file_size),
+                        int(d.new_file_flags),
+                        int(d.new_file_mode))
+        return new(fold, 
+                   fnew, 
+                   int(d.similarity),
+                   delta_status_symbol(d.status),
+                   (bool(d.flags & api.DIFF_FLAG_NOT_BINARY) &&
+                    bool(d.flags & api.DIFF_FLAG_BINARY)))
+    end
+end
+
+
+Base.length(d::GitDiff) = begin
+    @assert d.ptr != C_NULL
+    return int(api.git_diff_num_deltas(d.ptr))
+end
+
+function deltas(d::GitDiff)
+    @assert d.ptr != C_NULL
+    ndelta = api.git_diff_num_deltas(d.ptr)
+    if ndelta == 0
+        return nothing
+    end
+    ds = Array(DiffDelta, ndelta)
+    for i in 1:ndelta
+        delta_ptr = api.git_diff_get_delta(d.ptr, i-1)
+        @assert delta_ptr != C_NULL
+        ds[i] = DiffDelta(delta_ptr)
+    end
+    return ds
+end
+
+function patches(d::GitDiff)
+    @assert d.ptr != C_NULL
+    ndelta = api.git_diff_num_deltas(d.ptr)
+    if ndelta == 0
+        return nothing
+    end 
+    ps = GitPatch[]
+    patch_ptr = Array(Ptr{Void}, 1)
+    for i in 1:ndelta
+        err = api.git_patch_from_diff(patch_ptr, d.ptr, i-1)
+        if bool(err)
+            break
+        end
+        @assert patch_ptr != C_NULL
+        push!(ps, GitPatch(patch_ptr[1]))
+    end
+    return ps
+end 
+
 # diffable GitTree, GitCommit, GitIndex, or Nothing
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
-Base.diff(left::String, right::String, opts=nothing) = begin
-    rleft  = rev_parse(left)
-    rright = rev_parse(right)
-    if rleft != nothing
-        return diff(rleft, rright, opts)
-    elseif rright != nothing
+Base.diff(repo::Repository,
+          left::String, 
+          right::String, 
+          opts=nothing) = begin
+    l = rev_parse(repo, left)
+    r = rev_parse(repo, right)
+    if l != nothing
+        return diff(repo, l, r, opts)
+    elseif r != nothing
         opts = opts == nothing ? {} : opts
-        return diff(rleft, rright, merge(opts, {:reverse => !opts[:reverse]}))
+        return diff(repo, l, r, merge(opts, {:reverse => !opts[:reverse]}))
     end
     return nothing
 end
 
-function diff_workdir(left::String, opts=nothing)
-    left = rev_parse(left)
+Base.diff(repo::Repository,
+          left::GitCommit, 
+          right::GitCommit,
+          opts=nothing) = begin
+    return diff(repo, GitTree(left), GitTree(right), opts)
+end
+
+Base.diff(repo::Repository,
+          left::GitTree, 
+          right::GitTree, 
+          opts=nothing) = begin 
+    gopts = parse_git_diff_options(opts)
+    diff_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_diff_tree_to_tree, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
+                  Ptr{Void}, Ptr{api.GitDiffOptions}),
+                 diff_ptr, repo.ptr, left.ptr, right.ptr, &gopts)
+    @check_null diff_ptr
+    return GitDiff(diff_ptr[1])
+end
+
+function diff_workdir(repo::Repository, left::String, opts=nothing)
+    left = rev_parse(repo, left)
     diff_workdir(left, opts)
 end
 
