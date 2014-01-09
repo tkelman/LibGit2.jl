@@ -408,3 +408,69 @@ end
         i += 1
     end
 end
+
+@sandboxed_test "attr" begin 
+    a = GitTree(lookup_commit(test_repo, "605812a"))
+    b = GitTree(lookup_commit(test_repo, "370fe9ec22"))
+    c = GitTree(lookup_commit(test_repo, "f5b0af1fb4f5c"))
+
+    d = diff(test_repo, a, b, {:context_lines => 1, :interhunk_lines => 1})
+    ds = deltas(d)
+    ps = patches(d)
+    hs = DiffHunk[]
+    for p in ps
+        hks = hunks(p)
+        if hks == nothing
+            continue
+        end
+        for h in hks
+            push!(hs, h)
+        end
+    end
+    ls = vcat([lines(h) for h in hs]...)
+
+    @test length(d) == 5
+    @test length(ds) == 5
+    @test length(ps) == 5
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 2
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 1
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 2
+    
+    @test length(hs) == 5 
+
+    @test length(ls) == (7 + 24 + 1 + 6 + 6)
+    @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == (24 + 1 + 5 + 5)
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1) 
+
+    d = diff(test_repo, c, b, {:context_lines => 1, :interhunk_lines => 1})
+    ds = deltas(d)
+    ps = patches(d)
+    hs = DiffHunk[]
+    for p in ps
+        hks = hunks(p)
+        if hks == nothing
+            continue
+        end
+        for h in hks
+            push!(hs, h)
+        end
+    end
+    ls = vcat([lines(h) for h in hs]...)
+
+    @test length(ds) == 2
+    @test length(ps) == 2
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 0
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 0
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 2
+    
+    @test length(hs) == 2
+
+    @test length(ls) == (8 + 15)
+    @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 1
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 14) 
+end
+
