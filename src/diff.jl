@@ -183,22 +183,11 @@ end
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
 Base.diff(repo::Repository,
-          left::String,
-          right::Nothing,
+          left::Union(Nothing, String),
+          right::Union(Nothing, String), 
           opts=nothing) = begin
-    l = rev_parse(repo, left)
-    if l != nothing
-        return diff(repo, l, nothing, opts)
-    end
-    return nothing
-end
-
-Base.diff(repo::Repository,
-          left::String, 
-          right::String, 
-          opts=nothing) = begin
-    l = rev_parse(repo, left)
-    r = rev_parse(repo, right)
+    l = left  != nothing ? rev_parse(repo, left)  : nothing
+    r = right != nothing ? rev_parse(repo, right) : nothing
     if l != nothing
         return diff(repo, l, r, opts)
     elseif r != nothing
@@ -209,29 +198,29 @@ Base.diff(repo::Repository,
 end
 
 Base.diff(repo::Repository,
-          left::GitCommit, 
-          right::GitCommit,
+          left::Union(Nothing, GitCommit),
+          right::Union(Nothing, GitCommit),
           opts=nothing) = begin
-    return diff(repo, GitTree(left), GitTree(right), opts)
+    return diff(repo, 
+                left  != nothing ? GitTree(left) : nothing, 
+                right != nothing ? GitTree{right} :nothing,
+                opts)
 end
 
+  
 Base.diff(repo::Repository,
-          left::GitCommit,
-          right::Nothing,
-          opts=nothing) = begin
-    return diff(repo, GitTree(left), nothing, opts)
-end
-
-Base.diff(repo::Repository,
-          left::GitTree,
-          right::Nothing,
+          left::Union(Nothing, GitTree),
+          right::Union(Nothing, GitTree),
           opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Array(Ptr{Void}, 1)
     @check ccall((:git_diff_tree_to_tree, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
                   Ptr{Void}, Ptr{api.GitDiffOptions}),
-                 diff_ptr, repo.ptr, left.ptr, C_NULL, &gopts)
+                 diff_ptr, repo.ptr, 
+                 left  != nothing ? left.ptr : C_NULL, 
+                 right != nothing ? right.ptr : C_NULL,
+                 &gopts)
     @check_null diff_ptr
     return GitDiff(diff_ptr[1])
 end
