@@ -182,6 +182,7 @@ end
 # diffable GitTree, GitCommit, GitIndex, or Nothing
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
+
 Base.diff(repo::Repository, left::Nothing, right::Nothing, opts=nothing) = begin
     return nothing
 end
@@ -203,15 +204,41 @@ Base.diff(repo::Repository,
 end
 
 Base.diff(repo::Repository,
-          left::Union(Nothing, GitCommit),
-          right::Union(Nothing, GitCommit),
+          left::GitCommit,
+          right::GitCommit,
           opts=nothing) = begin
     return diff(repo, 
-                left  != nothing ? GitTree(left)  : nothing, 
-                right != nothing ? GitTree(right) : nothing,
+                GitTree(left), 
+                GitTree(right),
                 opts)
 end
-  
+
+Base.diff(repo::Repository,
+          left::GitCommit,
+          right::Nothing,
+          opts=nothing) = begin
+    return diff(repo, 
+                GitTree(left), 
+                nothing,
+                opts)
+end
+
+Base.diff(repo::Repository,
+          left::Nothing,
+          right::GitCommit,
+          opts=nothing) = begin
+    return diff(repo,
+                nothing, 
+                GitTree(right),
+                opts)
+end
+
+Base.diff(repo::Repository, c::GitCommit, opts=nothing) = begin
+    p = first(parents(c))
+    return diff(repo, GitTree(c), GitTree(p), opts)
+end
+
+ 
 Base.diff(repo::Repository,
           left::Union(Nothing, GitTree),
           right::Union(Nothing, GitTree),
