@@ -580,3 +580,22 @@ end
     @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 36
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 22
 end
+
+@sandboxed_test "unsymlinked.git" begin
+    a = GitTree(lookup_commit(test_repo, "7fccd7"))
+    b = GitTree(lookup_commit(test_repo, "806999"))
+
+    d = diff(test_repo, a, b)
+
+    ds = deltas(d)
+    ps = patches(d)
+
+    @test length(d) == 3
+    @test length(ds) == 3
+    @test length(ps) == 3
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 1
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 2
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 0
+    @test sum(x -> x.status == :typechange? 1 : 0, ds) == 0
+end 
