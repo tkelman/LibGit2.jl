@@ -470,8 +470,8 @@ function parse_git_diff_options(opts::Dict)
     end
     if haskey(opts, :paths)
         paths = opts[:paths]
-        if !(isa(paths, Array{String, 1}))
-            throw(TypeError("opts[:paths] must be of type Array{String}"))
+        if !(isa(paths, Array{ASCIIString, 1}))
+            throw(ArgumentError("opts[:paths] must be of type Array{String}"))
         end
         gdiff.pathspec_count = convert(Csize_t, length(paths))
         str_ptrs = Array(Ptr{Cchar}, length(paths))
