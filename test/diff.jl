@@ -750,6 +750,80 @@ end
     a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
     d = diff(test_repo, a, b)
+
+    ps = patches(d)
+    @test length(ps) == 2 
+
+    @test "another.txt" == delta(ps[1]).old_file.path
+    @test "another.txt" == delta(ps[1]).new_file.path
+
+    @test delta(ps[1]).isbinary == false
+    
+    hs = hunks(ps[1])
+    @test length(hs) == 3
+
+    @test beginswith(hs[1].header, "@@ -1,5 +1,5 @@")
+    @test beginswith(hs[2].header, "@@ -8,10 +8,6 @@")
+    @test beginswith(hs[3].header, "@@ -32,6 +28,10 @@")
+
+    @test "readme.txt" == delta(ps[2]).old_file.path
+    @test "readme.txt" == delta(ps[2]).new_file.path
+
+    @test delta(ps[2]).isbinary == false
+
+    hs = hunks(ps[2])
+    @test length(hs) == 3 
+
+    @test beginswith(hs[1].header, "@@ -1,4 +1,4 @@")
+    @test beginswith(hs[2].header, "@@ -7,10 +7,6 @@")
+    @test beginswith(hs[3].header, "@@ -24,12 +20,9 @@")
+
+    ls = lines(hs[1])
+    @test length(ls) == 5 
+
+    @test :deletion == ls[1].line_origin
+    @test "The Git feature that really makes it stand apart from nearly every other SCM\n" == ls[1].content
+    @test 0 == ls[1].content_offset
+
+    @test :addition == ls[2].line_origin
+    @test "The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM\n" == ls[2].content
+    @test 0 == ls[2].content_offset
+
+    @test :context == ls[3].line_origin
+    @test "out there is its branching model.\n" == ls[3].content
+    @test ls[3].content_offset == nothing
+
+    @test :context == ls[4].line_origin
+    @test "\n" == ls[4].content
+
+    @test :context == ls[5].line_origin
+    @test "Git allows and encourages you to have multiple local branches that can be\n" == ls[5].content
+
+    ls = lines(hs[3])
+
+    @test length(ls) == 14
+
+    @test :deletion == ls[4].line_origin
+    @test "of your branches. You can choose to share just one of your branches, a few\n" == ls[4].content
+    @test 1248 == ls[4].content_offset
+
+    @test :deletion == ls[5].line_origin
+    @test "of them, or all of them. This tends to free people to try new ideas without\n" == ls[5].content
+    @test 1323 == ls[5].content_offset
+
+    @test :deletion == ls[12].line_origin
+    @test "it.\n" == ls[12].content
+    @test 1721 == ls[12].content_offset
+
+    @test :addition == ls[13].line_origin
+    @test "it.!" == ls[13].content
+    @test 1289 == ls[13].content_offset
+end
+
+@sandboxed_test "diff" begin
+    a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
+    b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
+    d = diff(test_repo, a, b)
     @test patch(d, compact=true) == "M\tanother.txt
 M\treadme.txt
 "

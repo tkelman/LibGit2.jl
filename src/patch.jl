@@ -123,9 +123,13 @@ type DiffLine
     function DiffLine(h::DiffHunk, ptr::Ptr{api.GitDiffLine})
         @assert ptr != C_NULL
         l = unsafe_load(ptr)
+        c = Array(Uint8, l.content_len)
+        for i in 1:l.content_len
+            c[i] = unsafe_load(l.content, i)
+        end
         return new(h,
                    line_origin_to_symbol(l.origin),
-                   bytestring(l.content),
+                   UTF8String(c),
                    l.old_lineno,
                    l.new_lineno,
                    l.content_offset == -1 ? nothing : l.content_offset)
