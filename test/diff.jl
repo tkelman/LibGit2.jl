@@ -638,3 +638,31 @@ end
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 1
     @test sum(x -> x.status == :typechange? 1 : 0, ds) == 0
 end 
+
+@sandboxed_test "diff" begin
+    a = lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69"))
+    b = lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10"))
+
+    d = diff(test_repo, GitTree(a), GitTree(b))
+    @test length(d) == 2
+end
+
+@sandboxed_test "diff" begin
+    a = lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69"))
+    b = lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10"))
+
+    d = diff(test_repo, GitTree(a), GitTree(b))
+    ds = deltas(d)
+
+    @test length(d) == 2 
+    
+    @test ds[1].old_file.path == "another.txt"
+    @test ds[1].new_file.path == "another.txt"
+
+    @test ds[1].isbinary == false
+
+    @test ds[2].old_file.path == "readme.txt"
+    @test ds[2].new_file.path == "readme.txt"
+
+    @test ds[2].isbinary == false
+end
