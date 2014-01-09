@@ -134,5 +134,73 @@ end
     @test isbinary(text_blob) == false
 end
 
+# test blob diff
+@sandboxed_test "diff" begin
+    t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
+    t2 = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
+
+    b = lookup(test_repo, oid(t1["readme.txt"]))
+    o = lookup(test_repo, oid(t2["readme.txt"]))
+    p = diff(test_repo, b, o)
+    
+    @test delta(p).status == :modified
+
+    hs = hunks(p)
+    @test length(hs) == 3
+
+    @test beginswith(hs[1].header, "@@ -1,4 +1,4 @@")
+    @test beginswith(hs[2].header, "@@ -7,10 +7,6 @@")
+    @test beginswith(hs[3].header, "@@ -24,12 +20,9 @@")
+    
+    ls = lines(hs[1])
+    @test length(ls) == 5
+    @test :deletion == ls[1].line_origin
+    @test "The Git feature that really makes it stand apart from nearly every other SCM\n" == ls[1].content
+
+    @test :addition == ls[2].line_origin
+    @test "The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM\n" == ls[2].content
+
+    @test :context == ls[3].line_origin
+    @test "out there is its branching model.\n" == ls[3].content
+
+    @test :context == ls[4].line_origin
+    @test "\n" == ls[4].content
+
+    @test :context == ls[5].line_origin
+    @test "Git allows and encourages you to have multiple local branches that can be\n" == ls[5].content
+end
+
+# test_diff_nil
+@sandboxed_test "diff" begin
+    t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
+    b  = lookup(test_repo, oid(t1["readme.txt"]))
+    p  = diff(test_repo, b, nothing)
+    
+    @test delta(p).status == :deleted 
+    
+    hs = hunks(p)
+    @test length(hs) == 1
+
+    @test beginswith(first(hs).header, "@@ -1,35 +0,0 @@")
+    ls = lines(first(hs))
+    
+    @test length(ls) == 35
+    for l in ls
+      @test l.line_origin == :deletion
+    end
+end
+
+# test_diff_with_paths
+@sandboxed_test "diff" begin
+    t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
+    t2 = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
+
+    b = lookup(test_repo, oid(t1["readme.txt"]))
+    o = lookup(test_repo, oid(t2["readme.txt"]))
+    p = diff(test_repo, b, o, {:old_path => "old_readme.txt", :new_path => "new_readme.txt"})
+ 
+    @test "old_readme.txt" == delta(p).old_file.path
+    @test "new_readme.txt" == delta(p).new_file.path
+end
 #TODO: blob diff 
 #TODO; blob io

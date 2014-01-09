@@ -133,7 +133,7 @@ type DiffDelta
         old_file_oid = Oid(arr)
         
         fold = DiffFile(old_file_oid,
-                        bytestring(d.old_file_path),
+                        d.old_file_path != C_NULL ? bytestring(d.old_file_path) : "",
                         int(d.old_file_size),
                         int(d.old_file_flags),
                         int(d.old_file_mode))
@@ -145,7 +145,7 @@ type DiffDelta
         new_file_oid = Oid(arr)
                         
         fnew = DiffFile(new_file_oid,
-                        bytestring(d.new_file_path),
+                        d.new_file_path != C_NULL ? bytestring(d.new_file_path) : "",
                         int(d.new_file_size),
                         int(d.new_file_flags),
                         int(d.new_file_mode))
@@ -370,6 +370,7 @@ Base.diff(repo::Repository, idx::GitIndex, other::GitTree, opts=nothing) = begin
    return GitDiff(diff_ptr[1])
 end
 
+
 Base.merge!(d1::GitDiff, d2::GitDiff) = begin
     @check api.git_diff_merge(d1.ptr, d2.ptr)
     return d1
@@ -403,6 +404,7 @@ function parse_git_diff_options(o::Nothing)
 end
 
 #TODO: better type error handling
+#TODO: git str array leaks memory?
 function parse_git_diff_options(opts::Dict)
     gdiff = api.GitDiffOptions()
     if haskey(opts, :max_size)

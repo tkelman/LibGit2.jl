@@ -17,6 +17,68 @@ function free!(p::GitPatch)
     end
 end
 
+Base.diff(repo::Repository, blob::GitBlob, other::Nothing, opts=nothing) = begin
+    old_path_ptr::Ptr{Cchar} = C_NULL
+    new_path_ptr::Ptr{Cchar} = C_NULL
+    if opts != nothing
+        if get(opts, :old_path, nothing) != nothing
+            old_path_ptr = convert(Ptr{Cchar}, opts[:old_path]::ByteString)
+        end
+        if get(opts, :new_path, nothing) != nothing
+            new_path_ptr = convert(Ptr{Cchar}, opts[:new_path]::ByteString)
+        end
+    end
+    gopts = parse_git_diff_options(opts)
+    patch_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_patch_from_blobs, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Cchar}, Ptr{api.GitDiffOptions}),
+                 patch_ptr, blob.ptr, old_path_ptr, C_NULL, new_path_ptr, &gopts)
+    @check_null patch_ptr
+    return GitPatch(patch_ptr[1])
+end
+
+Base.diff(repo::Repository, blob::GitBlob, other::GitBlob, opts=nothing) = begin
+    old_path_ptr::Ptr{Cchar} = C_NULL
+    new_path_ptr::Ptr{Cchar} = C_NULL
+    if opts != nothing
+        if get(opts, :old_path, nothing) != nothing
+            old_path_ptr = convert(Ptr{Cchar}, opts[:old_path]::ByteString)
+        end
+        if get(opts, :new_path, nothing) != nothing
+            new_path_ptr = convert(Ptr{Cchar}, opts[:new_path]::ByteString)
+        end
+    end
+    gopts = parse_git_diff_options(opts)
+    patch_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_patch_from_blobs, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Cchar}, Ptr{api.GitDiffOptions}),
+                 patch_ptr, blob.ptr, old_path_ptr, other.ptr, new_path_ptr, &gopts)
+    @check_null patch_ptr
+    return GitPatch(patch_ptr[1])
+end
+
+Base.diff(repo::Repository, blob::GitBlob, other::String, opts= nothing) = begin
+    old_path_ptr::Ptr{Cchar} = C_NULL
+    new_path_ptr::Ptr{Cchar} = C_NULL
+    if opts != nothing
+        if get(opts, :old_path, nothing) != nothing
+            old_path_ptr = convert(Ptr{Cchar}, opts[:old_path]::ByteString)
+        end
+        if get(opts, :new_path, nothing) != nothing
+            new_path_ptr = convert(Ptr{Cchar}, opts[:new_path]::ByteString)
+        end
+    end
+    gopts = parse_git_diff_options(opts)
+    patch_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_patch_from_blob_and_buffer, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar},
+                  Ptr{Cchar}, Csize_t, Ptr{Cchar}, Ptr{api.GitDiffOptions}),
+                 patch_ptr, blob.ptr, old_path_ptr, 
+                 buffer, length(buffer), new_path_ptr, &gopts)
+    @check_null patch_ptr
+    return GitPatch(patch_ptr[1])
+end
+
 type PatchStat
     adds::Int
     dels::Int
