@@ -182,6 +182,10 @@ end
 # diffable GitTree, GitCommit, GitIndex, or Nothing
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
+Base.diff(repo::Repository, left::Nothing, right::Nothing, opts=nothing) = begin
+    return nothing
+end
+
 Base.diff(repo::Repository,
           left::Union(Nothing, String),
           right::Union(Nothing, String), 
@@ -192,7 +196,8 @@ Base.diff(repo::Repository,
         return diff(repo, l, r, opts)
     elseif r != nothing
         opts = opts == nothing ? {} : opts
-        return diff(repo, l, r, merge(opts, {:reverse => !opts[:reverse]}))
+        return diff(repo, l, r, 
+                merge(opts, {:reverse => !get(opts, :reverse, true)}))
     end
     return nothing
 end
@@ -202,11 +207,10 @@ Base.diff(repo::Repository,
           right::Union(Nothing, GitCommit),
           opts=nothing) = begin
     return diff(repo, 
-                left  != nothing ? GitTree(left) : nothing, 
-                right != nothing ? GitTree{right} :nothing,
+                left  != nothing ? GitTree(left)  : nothing, 
+                right != nothing ? GitTree(right) : nothing,
                 opts)
 end
-
   
 Base.diff(repo::Repository,
           left::Union(Nothing, GitTree),
@@ -221,20 +225,6 @@ Base.diff(repo::Repository,
                  left  != nothing ? left.ptr : C_NULL, 
                  right != nothing ? right.ptr : C_NULL,
                  &gopts)
-    @check_null diff_ptr
-    return GitDiff(diff_ptr[1])
-end
-
-Base.diff(repo::Repository,
-          left::GitTree, 
-          right::GitTree, 
-          opts=nothing) = begin 
-    gopts = parse_git_diff_options(opts)
-    diff_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_diff_tree_to_tree, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
-                  Ptr{Void}, Ptr{api.GitDiffOptions}),
-                 diff_ptr, repo.ptr, left.ptr, right.ptr, &gopts)
     @check_null diff_ptr
     return GitDiff(diff_ptr[1])
 end
