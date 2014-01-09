@@ -304,6 +304,14 @@ Base.diff(repo::Repository, c::GitCommit, opts=nothing) = begin
     end
 end
 
+Base.diff(repo::Repository, left::GitTree, right::String, opts=nothing) = begin
+    other = rev_parse(repo, right)
+    return diff(repo, left, other, opts)
+end
+
+Base.diff(repo::Repository, left::GitTree, right::GitCommit, opts=nothing) = begin
+    return diff(repo, left, GitTree(right), opts)
+end
 
 Base.diff(repo::Repository,
           left::Union(Nothing, GitTree),
