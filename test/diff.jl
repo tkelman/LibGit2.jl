@@ -320,3 +320,51 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4 
 end 
 
+@sandboxed_test "status" begin 
+    idx = repo_index(test_repo)
+    @test isa(idx, GitIndex)
+
+    c = lookup_commit(test_repo, "26a125ee1bf")
+    @test isa(c, GitCommit)
+
+    t = GitTree(c)
+    @test isa(t, GitTree)
+
+    # merge diffs to simulate "git diff 26a125ee1bf"
+    diff1 = diff(test_repo, t, idx, 
+                {:include_ignored=>true, :include_untracked=>true})
+    diff2 = diff(test_repo, idx, 
+                {:include_ignored=>true, :include_untracked=>true})
+    merge!(diff1, diff2)
+
+    ds = deltas(diff1)
+    ps = patches(diff1)
+      
+    hs = DiffHunk[]
+    for p in ps
+        hks = hunks(p)
+        if hks == nothing
+            continue
+        end
+        for h in hks
+            push!(hs, h)
+        end
+    end
+    ls = vcat([lines(h) for h in hs]...)
+     
+    @test length(ds) == 15
+    @test length(ps) == 15
+    
+    @test sum(x -> x.status == :added? 1 : 0, ds) == 2
+    @test sum(x -> x.status == :deleted? 1 : 0, ds) == 5
+    @test sum(x -> x.status == :modified? 1 : 0, ds) == 4
+    @test sum(x -> x.status == :ignored? 1 : 0, ds) == 1
+    @test sum(x -> x.status == :untracked? 1 : 0, ds) == 3
+
+    @test length(hs) == 11
+
+    @test length(ls) == 17
+    @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 4
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 8 
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 5 
+end

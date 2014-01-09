@@ -462,6 +462,7 @@ end
 @libgit(git_diff_num_deltas, Csize_t, (Ptr{Void},))
 @libgit(git_diff_get_delta, Ptr{GitDiffDelta}, (Ptr{Void}, Csize_t))
 @libgit(git_patch_from_diff, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t))
+@libgit(git_diff_merge, Cint, (Ptr{Void}, Ptr{Void}))
 
 # ----- libgit signature ------
 type GitSignature

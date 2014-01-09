@@ -183,7 +183,10 @@ end
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
 
-Base.diff(repo::Repository, left::Nothing, right::Nothing, opts=nothing) = begin
+Base.diff(repo::Repository, 
+         left::Nothing, 
+         right::Nothing, 
+         opts=nothing) = begin
     return nothing
 end
 
@@ -243,7 +246,7 @@ Base.diff(repo::Repository, c::GitCommit, opts=nothing) = begin
     end
 end
 
- 
+
 Base.diff(repo::Repository,
           left::Union(Nothing, GitTree),
           right::Union(Nothing, GitTree),
@@ -259,6 +262,52 @@ Base.diff(repo::Repository,
                  &gopts)
     @check_null diff_ptr
     return GitDiff(diff_ptr[1])
+end
+
+Base.diff(repo::Repository, left::GitTree, right::GitIndex, opts=nothing) = begin
+    gopts = parse_git_diff_options(opts)
+    diff_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_diff_tree_to_index, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
+                  Ptr{Void}, Ptr{api.GitDiffOptions}),
+                  diff_ptr, repo.ptr, left.ptr, right.ptr, &gopts)
+    @check_null diff_ptr
+    return GitDiff(diff_ptr[1])
+end
+
+
+Base.diff(repo::Repository, idx::GitIndex, opts=nothing) = begin
+    return diff(repo, idx, nothing, opts)
+end
+
+Base.diff(repo::Repository, idx::GitIndex, other::Nothing, opts=nothing) = begin
+    gopts = parse_git_diff_options(opts)
+    diff_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_diff_index_to_workdir, api.libgit2), Cint,
+                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffOptions}),
+                  diff_ptr, repo.ptr, idx.ptr, &gopts)
+    @check_null diff_ptr
+    return GitDiff(diff_ptr[1])
+end
+
+Base.diff(repo::Repository, idx::GitIndex, other::GitCommit, opts=nothing) = begin
+    return diff(repo, idx, GitTree(other), opts)
+end
+
+Base.diff(repo::Repository, idx::GitIndex, other::GitTree, opts=nothing) = begin
+    gopts = parse_git_diff_options(opts)
+    diff_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_diff_tree_to_index, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
+                  Ptr{Void}, Ptr{api.GitDiffOptions}),
+                  diff_ptr, repo.ptr, other.ptr, idx.ptr, &gopts)
+   @check_null diff_ptr
+   return GitDiff(diff_ptr[1])
+end
+
+Base.merge!(d1::GitDiff, d2::GitDiff) = begin
+    @check api.git_diff_merge(d1.ptr, d2.ptr)
+    return nothing
 end
 
 function diff_workdir(repo::Repository, left::String, opts=nothing)
