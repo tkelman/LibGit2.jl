@@ -219,20 +219,44 @@ function lines(h::DiffHunk)
     return ls
 end
 
-function cb_patch_print(delta::Ptr{Void},
-                        hunk::Ptr{Void},
-                        line::Ptr{Void},
-                        payload::Ptr{Void})
-     return api.GIT_OK
- end
+#TODO: memory leaks?
+#TODO: unsafe_pointer_to_objref for payload?
+function cb_patch_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
+                        line_ptr::Ptr{api.GitDiffLine}, payload::Ptr{Void})
+    l = unsafe_load(line_ptr)
+    s = unsafe_pointer_to_objref(payload)::Array{Uint8,1}
+    add_origin = false
+    if l.origin == api.DIFF_LINE_CONTEXT ||
+       l.origin == api.DIFF_LINE_ADDITION ||
+       l.origin == api.DIFF_LINE_DELETION
+       add_origin = true
+    end 
+    prev_len = length(s)
+    if add_origin
+        resize!(s, prev_len + l.content_len + 1)
+        s[prev_len + 1] = l.origin
+        for i in 1:l.content_len
+            s[prev_len + i + 1] = unsafe_load(l.content, i)
+        end
+    else
+        resize!(s, prev_len + l.content_len)
+        for i in 1:l.content_len
+            s[prev_len + i] = unsafe_load(l.content, i)
+        end
+    end
+    return api.GIT_OK
+end
 
 const c_cb_patch_print = cfunction(cb_patch_print, Cint,
-                                   (Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}))
-                                               
+                                  (Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffLine}, Ptr{Void}))
+
 Base.string(p::GitPatch) = begin
     @assert p.ptr != C_NULL
-    str = Array(Cchar, 1)
-    #@check api.git_patch_print(p.ptr
+    s = Uint8[]
+    @check ccall((:git_patch_print, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{Void}, Any),
+                 p.ptr, c_cb_patch_print, &s)
+    return UTF8String(s)
 end
 
 function nlines(p::GitPatch)
