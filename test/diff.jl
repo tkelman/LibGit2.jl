@@ -381,11 +381,11 @@ end
     @test diff_stat.adds  == 8
     @test diff_stat.dels  == 5
 
-    expected_patch_stat = [
+    expected_patch_stat = {
       [ 0, 1, 1 ], [ 1, 0, 2 ], [ 1, 0, 2 ], [ 0, 1, 1 ], [ 2, 0, 3 ],
       [ 0, 1, 1 ], [ 0, 1, 1 ], [ 1, 0, 1 ], [ 2, 0, 2 ], [ 0, 1, 1 ],
       [ 1, 0, 2 ]
-    ]
+    }
 
     i = 1 
     for patch in patches(diff1)
@@ -395,9 +395,9 @@ end
         end
 
         @test isa(patch, GitPatch)
-        expected_adds  = expected_patch_stat[(i-1) * 3 + 1]
-        expected_dels  = expected_patch_stat[(i-1) * 3 + 2]
-        expected_lines = expected_patch_stat[(i-1) * 3 + 3]
+        expected_adds  = expected_patch_stat[i][1]
+        expected_dels  = expected_patch_stat[i][2]
+        expected_lines = expected_patch_stat[i][3]
 
         patch_stat = stat(patch)
        
@@ -753,4 +753,24 @@ end
     @test patch(d, compact=true) == "M\tanother.txt
 M\treadme.txt
 "
+end
+
+@sandboxed_test "diff" begin
+    a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
+    b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
+    d = diff(test_repo, a, b)
+
+    diff_stat = stat(d)
+    @test diff_stat.files == 2
+    @test diff_stat.adds  == 7
+    @test diff_stat.dels  == 14
+
+    expected_patch_stat = {[ 5, 5, 26 ], [ 2, 9, 28 ]}
+
+    for (patch, expected)  in zip(patches(d), expected_patch_stat)
+        patch_stat = stat(patch)
+        @test expected[1] == patch_stat.adds
+        @test expected[2] == patch_stat.dels
+        @test expected[3] == nlines(patch)
+    end
 end
