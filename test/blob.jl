@@ -202,5 +202,5 @@ end
     @test "old_readme.txt" == delta(p).old_file.path
     @test "new_readme.txt" == delta(p).new_file.path
 end
-#TODO: blob diff 
+
 #TODO; blob io
