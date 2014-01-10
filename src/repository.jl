@@ -608,6 +608,10 @@ function rev_parse(r::Repository, rev::String)
     return obj
 end
 
+function rev_parse(r::Repository, rev::Oid)
+    return rev_parse(r, string(rev))
+end
+
 function merge_base(r::Repository, args...)
     @assert r.ptr != C_NULL
     if length(args) < 2
@@ -941,6 +945,62 @@ Base.next(b::BranchIterator, state) = begin
     end
     @check_null branch_ptr
     return (state, GitBranch(branch_ptr[1]))
+end
+
+#------- Tree merge ---------
+function parse_merge_options(opts::Nothing)
+    return api.GitMergeTreeOpts()
+end
+
+function parse_merge_options(opts::Dict)
+    merge_opts = api.GitMergeTreeOpts()
+    if haskey(opts, :rename_threshold)
+        merge_opts.rename_threshold = convert(Cuint, opts[:rename_threshold])
+    end
+    if haskey(opts, :target_limit)
+        merge_opts.target_limit = convert(Cuint, opts[:target_limit])
+    end
+    if haskey(opts, :automerge)
+        a = opts[:automerge]
+        if a == :normal
+            merge_opts.flags = api.MERGE_AUTOMERGE_NORMAL
+        elseif a == :none
+            merge_opts.flags = api.MERGE_AUTOMERGE_NONE
+        elseif a == :favor_ours
+            merge_opts.flags = api.MERGE_AUTOMERGE_FAVOR_OURS
+        elseif a == :favor_theirs
+            merge_opts.flags = api.MERGE_AUTOMERGE_FAVOR_THEIRS
+        else
+            error("Unknown automerge option :$a")
+        end
+    end
+    if get(opts, :renames, false)
+        merge_opts.flags |= MERGE_TREE_FIND_RENAMES
+    end
+    return merge_opts
+end
+
+#TODO: tree's should reference owning repository
+Base.merge!(r::Repository, t1::GitTree, t2::GitTree, opts=nothing) = begin
+    @assert r.ptr != C_NULL t1.ptr != C_NULL && t2.ptr != C_NULL 
+    gopts = parse_merge_options(opts)
+    idx_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_merge_trees, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
+                 idx_ptr, r.ptr, C_NULL, t1.ptr, t2.ptr, &gopts)
+    @check_null idx_ptr
+    return GitIndex(idx_ptr[1])
+end
+
+Base.merge!(r::Repository, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothing) = begin
+    @assert r.ptr != C_NULL t1.ptr != C_NULL && t2.ptr != C_NULL && ancestor.ptr != C_NULL
+    gopts = parse_merge_options(opts)
+    idx_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_merge_trees, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
+                 idx_ptr, r.ptr, ancestor.ptr, t1.ptr, t2.ptr, &gopts)
+    @check_null idx_ptr
+    return GitIndex(idx_ptr[1])
 end
 
 #------- Tree Builder -------

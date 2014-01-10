@@ -1,6 +1,6 @@
 export GitIndex, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
        remove!, remove_dir!, add!, getentry, read_tree!, add_all!, update_all!,
-       remove_all!
+       remove_all!, has_conflicts
 
 type GitIndex
     ptr::Ptr{Void}
@@ -24,6 +24,11 @@ free!(i::GitIndex) = begin
         api.git_index_free(i.ptr)
         i.ptr = C_NULL
     end
+end
+
+function has_conflicts(i::GitIndex)
+    @assert i.ptr != C_NULL
+    return bool(api.git_index_has_conflicts(i.ptr))
 end
 
 function clear!(i::GitIndex)

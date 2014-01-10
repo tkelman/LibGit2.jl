@@ -196,8 +196,40 @@ const INDEX_ADD_FORCE   = cuint(1) << cint(0)
 const INDEX_ADD_DISABLE_PATHSPEC_MATCH = cuint(1) << cint(1)
 const INDEX_ADD_CHECK_PATHSPEC = cuint(1) << cint(2)
 
-
 const INDEX_STAGE_ANY = cint(-1)
+
+const MERGE_TREE_FIND_RENAMES = cint(1) << cint(0)
+const MERGE_AUTOMERGE_NORMAL  = cint(0)
+const MERGE_AUTOMERGE_NONE    = cint(1)
+const MERGE_AUTOMERGE_FAVOR_OURS = cint(2)
+const MERGE_AUTOMERGE_FAVOR_THEIRS = cint(3)
+
+const MERGE_NO_FASTFORWARD = cint(1)
+const MERGE_FASTFORWARD_ONLY = cint(2)
+
+type GitMergeOpts
+    version::Cuint
+    merge_flags::Cint
+    merge_tree_opts::Cint
+    checkout_opts::Cint
+
+    function GitMergeOpts()
+        return new(1, 0, 1, 1)
+    end
+end
+
+type GitMergeTreeOpts
+    version::Cuint
+    flags::Cint
+    rename_threshold::Cuint
+    target_limit::Cuint
+    metric::Ptr{Void}
+    automerge_flags::Cint
+
+    function GitMergeTreeOpts()
+        return new(1, 0, 0, C_NULL, 0)
+    end
+end
 
 type GitStrArray
    strings::Ptr{Ptr{Cchar}}
@@ -318,6 +350,7 @@ end
 @libgit(git_index_remove, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_index_remove_directory, Cint, (Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_index_read_tree, Cint, (Ptr{Void}, Ptr{Void}))
+@libgit(git_index_has_conflicts, Cint, (Ptr{Void},))
 
 # ----- libgit object ------
 @libgit(git_object_id, Ptr{Uint8}, (Ptr{Void},))
