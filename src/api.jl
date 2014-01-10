@@ -625,6 +625,14 @@ end
 @libgit(git_remote_clear_refspecs, Void, (Ptr{Void},))
 @libgit(git_remote_save, Cint, (Ptr{Void},))
 
+# ------ libgit remote ------
+@libgit(git_push_new, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
+@libgit(git_push_free, Void, (Ptr{Void},))
+@libgit(git_push_add_refspec, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_push_finish, Cint, (Ptr{Void},))
+@libgit(git_push_unpack_ok, Cint, (Ptr{Void},))
+@libgit(git_push_update_tips, Cint, (Ptr{Void},))
+
 # ------k libgit branch ------
 @libgit(git_branch_create, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint))

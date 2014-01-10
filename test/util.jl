@@ -45,12 +45,12 @@ type SandBoxedTest
     torndown::Bool
 end
 
-function clone(sbt::SandBoxedTest, repo_path, name)
+function clone(sbt::SandBoxedTest, repo_path, new_path)
         orig_dir = pwd()
         cd(sbt.path)
-        run(`git clone --quiet  -- $repo_path $new_name`)
+        run(`git clone --quiet  -- $repo_path $new_path`)
         cd(orig_dir)
-        return Repository(joinpath(sbt.path, name))
+        return Repository(joinpath(sbt.path, new_path))
 end
 
 function setup(::Type{SandBoxedTest}, repo_name::String)

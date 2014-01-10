@@ -168,5 +168,68 @@ end
     @test ["+refs/*:refs/*"] == rename!(remote, "test_remote")
 end
 
-#TODO: REMOTE PUSH TEST
+# test_push_single_ref
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    config(remote_repo)["core.bare"] = "true"
+    repo = clone(sbt, "testrepo.git", "testrepo")
+    create_ref(repo, "refs/heads/unit_test", 
+               Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    remote = lookup_remote(repo, "origin")
+
+    result = push!(test_repo, remote,
+                   ["refs/heads/master", 
+                    "refs/heads/master:refs/heads/foobar",
+                    "refs/heads/unit_test"])
+    @test isempty(result)
+
+    @test (target(lookup_ref(remote_repo, "refs/heads/foobar")) 
+            == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+
+    @test (target(lookup_ref(remote_repo, "refs/heads/unit_test"))
+            == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
+end
+
+# test_push_non_bare_raise error
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    config(remote_repo)["core.bare"] = "false"
+    repo = clone(sbt, "testrepo.git", "testrepo")
+    create_ref(repo, "refs/heads/unit_test", 
+               Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    remote = lookup_remote(repo, "origin")
+    @test_throws push!(repo, remote, ["refs/heads/master"])
+end
+
+#test_push_non_forward_raise_error
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    config(remote_repo)["core.bare"] = "true"
+    repo = clone(sbt, "testrepo.git", "testrepo")
+    create_ref(repo, "refs/heads/unit_test", 
+               Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    remote = lookup_remote(repo, "origin")
+
+    @test_throws push!(repo, remote, ["refs/heads/unit_test:refs/heads/master"])
+
+    @test (target(lookup_ref(remote_repo, "refs/heads/master"))
+              == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+end
+
+#test_push_non_forward_forced_raise_no_error
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    config(remote_repo)["core.bare"] = "true"
+    repo = clone(sbt, "testrepo.git", "testrepo")
+    create_ref(repo, "refs/heads/unit_test", 
+               Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    remote = lookup_remote(repo, "origin")
+
+    result = push!(repo, remote, ["+refs/heads/unit_test:refs/heads/master"])
+    
+    @test isempty(result)
+    @test (target(lookup_ref(remote_repo, "refs/heads/master"))
+            == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
+end
+
 #TODO: REMOTE TRANSPORT TEST

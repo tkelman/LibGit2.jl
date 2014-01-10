@@ -350,6 +350,73 @@ function remote_add!(r::Repository, name::String, url::String)
     return GitRemote(remote_ptr[1])
 end
 
+function cb_push_status(ref_ptr::Ptr{Cchar}, msg_ptr::Ptr{Cchar}, payload::Ptr{Void})
+    if msg_ptr != C_NULL 
+        result = unsafe_pointer_to_objref(payload)::Dict{UTF8String,UTF8String}
+        result[utf8(bytestring(ref_ptr))] = utf8(bytestring(msg_ptr))
+    end
+    return api.GIT_OK
+end
+
+const c_cb_push_status = cfunction(cb_push_status, Cint,
+                                   (Ptr{Cchar}, Ptr{Cchar}, Ptr{Void}))
+
+#TODO: possible julia bug?? refs only works for ASCIIStrings...
+Base.push!(r::Repository, remote::GitRemote, refs::Vector{ASCIIString}) = begin
+    @assert r.ptr != C_NULL && remote.ptr != C_NULL
+    err = zero(Cint) 
+    push_ptr = Ptr{Void}[0]
+    err = api.git_push_new(push_ptr, remote.ptr)
+    if err != api.GIT_OK
+        if push_ptr != C_NULL
+            api.git_push_free(push_ptr[1])
+        end
+        throw(GitError(err))
+    end
+    for ref in refs
+        err = api.git_push_add_refspec(push_ptr[1], bytestring(ref))
+    end
+    if err != api.GIT_OK
+        api.git_push_free(push_ptr[1])
+        throw(GitError(err))
+    end
+    err = api.git_push_finish(push_ptr[1])
+    if err != api.GIT_OK
+        api.git_push_free(push_ptr[1])
+        if err == api.ENONFASTFORWARD
+            error("non-fast-forward upate rejected")
+        elseif err == -8
+            error("could not push to repo (check for non-bare repo)")
+        end
+    end
+    err = api.git_push_unpack_ok(push_ptr[1])
+    if err == api.GIT_OK
+        api.git_push_free(push_ptr[1])
+        error("remote side did not unpack successfully")
+    end
+    result = (UTF8String=>UTF8String)[]
+    err = ccall((:git_push_status_foreach, api.libgit2), Cint,
+                (Ptr{Void}, Ptr{Void}, Any),
+                push_ptr[1], c_cb_push_status, &result)
+    if err != api.GIT_OK
+        api.git_push_free(push_ptr[1])
+        throw(GitError(err))
+    end
+    err = api.git_push_update_tips(push_ptr[1])
+    if err != api.GIT_OK
+        api.git_push_free(push_ptr[1])
+        throw(GitError(err))
+    end
+    return result
+end
+
+Base.push!(r::Repository, remote::String, refs::Array{String, 1}) = begin
+    @assert r.ptr != C_NULL
+    remote_ptr = Array(Ptr{Void}, 1)
+    @check api.git_remote_load(remote_ptr, r.ptr, bytestring(remote))
+    return push!(r, GitRemote(remote_ptr[1]), refs)
+end
+
 function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
     @assert r.ptr != C_NULL
     remote_ptr =  Array(Ptr{Void}, 1)
