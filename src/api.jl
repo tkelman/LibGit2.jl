@@ -207,6 +207,9 @@ const MERGE_AUTOMERGE_FAVOR_THEIRS = cint(3)
 const MERGE_NO_FASTFORWARD = cint(1)
 const MERGE_FASTFORWARD_ONLY = cint(2)
 
+const DIRECTION_FETCH = cint(0)
+const DIRECTION_PUSH  = cint(1)
+
 type GitMergeOpts
     version::Cuint
     merge_flags::Cint
@@ -607,6 +610,10 @@ end
 @libgit(git_remote_list, Cint, (Ptr{GitStrArray}, Ptr{Void}))
 @libgit(git_remote_name, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_remote_load, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_remote_create_inmemory, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_remote_connected, Cint, (Ptr{Void},))
+@libgit(git_remote_connect, Cint, (Ptr{Void}, Cint))
+@libgit(git_remote_disconnect, Cint, (Ptr{Void}, ))
 
 # ------ libgit branch ------
 @libgit(git_branch_create, Cint,
@@ -762,6 +769,8 @@ end
 @libgit(git_config_delete_entry, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_config_free, Void, (Ptr{Void},)) 
 @libgit(git_config_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void})) 
+
+# --- libgit remote ----
 
 # --- libgit diff hunk ----
 type GitDiffHunk

@@ -313,6 +313,15 @@ function remotes(r::Repository)
     return out
 end
 
+#TODO: this should be moved to remote
+GitRemote(r::Repository, url::String) = begin
+    @assert r.ptr != C_NULL
+    remote_ptr = Array(Ptr{Void}, 1)
+    @check api.git_remote_create_inmemory(remote_ptr, r.ptr, C_NULL, bytestring(url))
+    @check_null remote_ptr
+    return GitRemote(remote_ptr[1])
+end
+
 function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
     @assert r.ptr != C_NULL
     remote_ptr =  Array(Ptr{Void}, 1)
