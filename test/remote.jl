@@ -120,8 +120,6 @@ end
     @test_throws lookup_remote(test_repo, "*\?")
 end
 
-#TODO: remote write
-
 # test_remote_add
 @with_tmp_repo_access begin
    remote_add!(test_repo, "upstream", "git://github.com/libgit2/libgit2.git")
@@ -143,7 +141,6 @@ end
     save!(remote)
     @test url(lookup_remote(test_repo, "origin")) == new_url
 end
-
 
 # test_rename
 @with_tmp_repo_access begin
@@ -170,3 +167,6 @@ end
     remote = lookup_remote(test_repo, "origin")
     @test ["+refs/*:refs/*"] == rename!(remote, "test_remote")
 end
+
+#TODO: REMOTE PUSH TEST
+#TODO: REMOTE TRANSPORT TEST
