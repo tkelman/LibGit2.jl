@@ -47,3 +47,4 @@ script:
   - julia runtests.jl repository_pack 
   - julia runtests.jl patch
   - julia runtests.jl merge
+  - julia runtests.jl remote
