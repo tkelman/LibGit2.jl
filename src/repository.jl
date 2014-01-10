@@ -9,7 +9,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk,
        branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
-       remote_names
+       remote_names, remote_add!
 
 type Repository
     ptr::Ptr{Void}
@@ -339,6 +339,15 @@ function remote_names(r::Repository)
         ns[i] = bytestring(unsafe_load(rs.strings, i))
     end
     return ns
+end
+
+function remote_add!(r::Repository, name::String, url::String)
+    @assert r.ptr != C_NULL
+    check_valid_url(url)
+    remote_ptr = Array(Ptr{Void}, 1)
+    @check api.git_remote_create(remote_ptr, r.ptr, bytestring(name), bytestring(url))
+    @check_null remote_ptr
+    return GitRemote(remote_ptr[1])
 end
 
 function lookup(::Type{GitRemote}, r::Repository, remote_name::String)

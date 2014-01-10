@@ -610,6 +610,7 @@ end
 @libgit(git_remote_list, Cint, (Ptr{GitStrArray}, Ptr{Void}))
 @libgit(git_remote_name, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_remote_load, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}))
+@libgit(git_remote_create, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Cchar}))
 @libgit(git_remote_create_inmemory, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_remote_connected, Cint, (Ptr{Void},))
 @libgit(git_remote_connect, Cint, (Ptr{Void}, Cint))
@@ -622,6 +623,7 @@ end
 @libgit(git_remote_add_push, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_remote_add_fetch, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_remote_clear_refspecs, Void, (Ptr{Void},))
+@libgit(git_remote_save, Cint, (Ptr{Void},))
 
 # ------k libgit branch ------
 @libgit(git_branch_create, Cint,

@@ -120,3 +120,53 @@ end
     @test_throws lookup_remote(test_repo, "*\?")
 end
 
+#TODO: remote write
+
+# test_remote_add
+@with_tmp_repo_access begin
+   remote_add!(test_repo, "upstream", "git://github.com/libgit2/libgit2.git")
+    remote = lookup_remote(test_repo, "upstream")
+    @test name(remote) == "upstream"
+    @test url(remote)  == "git://github.com/libgit2/libgit2.git"
+end
+
+# test_remote_add_with_invalid_url
+@with_tmp_repo_access begin
+    @test_throws remote_add!(test_repo, "upstream", "libgit2")
+end
+
+# test_url_set
+@with_tmp_repo_access begin
+    new_url = "git://github.com/l?#!@#ibgit2/TestGitRepository.git"
+    remote = lookup_remote(test_repo, "origin")
+    set_url!(remote, new_url)
+    save!(remote)
+    @test url(lookup_remote(test_repo, "origin")) == new_url
+end
+
+
+# test_rename
+@with_tmp_repo_access begin
+    remote = lookup_remote(test_repo, "origin")
+    rename!(remote, "new_remote_name")
+    @test lookup_remote(test_repo, "new_remote_name") != nothing
+end
+
+#test_rename_invalid_name
+@with_tmp_repo_access begin
+    remote = lookup_remote(test_repo, "origin")
+    @test_throws rename!(remote, "/?")
+end
+
+#test_rename_exists
+@with_tmp_repo_access begin
+    remote = lookup_remote(test_repo, "origin")
+    @test_throws rename!(remote, "origin")
+end
+
+# test_rename_error_callback
+@with_tmp_repo_access begin
+    config(test_repo)["remote.origin.fetch"]  = "+refs/*:refs/*"
+    remote = lookup_remote(test_repo, "origin")
+    @test ["+refs/*:refs/*"] == rename!(remote, "test_remote")
+end

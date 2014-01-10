@@ -1,5 +1,5 @@
 export GitRemote, name, isconnected, disconnect, url, set_url!, push_url, set_push_url!,
-       fetch_refspecs, push_refspecs, add_fetch!, add_push!, clear_refspecs! 
+       fetch_refspecs, push_refspecs, add_fetch!, add_push!, clear_refspecs!, save!, rename!
 
 type GitRemote
     ptr::Ptr{Void}
@@ -132,6 +132,29 @@ function clear_refspecs!(r::GitRemote)
     @assert r.ptr != C_NULL
     api.git_remote_clear_refspecs(r.ptr)
     return r
+end
+
+function save!(r::GitRemote)
+    @assert r.ptr != C_NULL
+    @check api.git_remote_save(r.ptr)
+    return r
+end
+
+function cb_remote_rename(refspec_name::Ptr{Cchar}, payload::Ptr{Void})
+    errs = unsafe_pointer_to_objref(payload)::Array{String, 1}
+    push!(errs, bytestring(refspec_name))
+    return api.GIT_OK
+end
+
+const c_cb_remote_rename = cfunction(cb_remote_rename, Cint, (Ptr{Cchar}, Ptr{Void}))
+
+function rename!(r::GitRemote, name::String) 
+    @assert r.ptr != C_NULL
+    errs = String[]
+    @check ccall((:git_remote_rename, api.libgit2), Cint,
+                  (Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
+                  r.ptr, bytestring(name), c_cb_remote_rename, &errs)
+    return length(errs) == 0 ? nothing : errs
 end
 
 function check_valid_url(s::String)
