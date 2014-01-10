@@ -298,6 +298,7 @@ function commits(r::Repository)
 end
 
 function remotes(r::Repository)
+    error()
     @assert r.ptr != C_NULL
     gitremotes = api.GitStrArray()
     @check ccall((:git_remote_list, api.libgit2), Cint,
@@ -323,6 +324,7 @@ GitRemote(r::Repository, url::String) = begin
     return GitRemote(remote_ptr[1])
 end
 
+#TODO: this is redundant with above function
 function remote_names(r::Repository)
     @assert r.ptr != C_NULL
     rs = api.GitStrArray()
