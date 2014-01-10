@@ -8,7 +8,8 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk,
-       branch_names, lookup_branch, create_branch, lookup_remote, iter_branches
+       branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
+       remote_names
 
 type Repository
     ptr::Ptr{Void}
@@ -320,6 +321,19 @@ GitRemote(r::Repository, url::String) = begin
     @check api.git_remote_create_inmemory(remote_ptr, r.ptr, C_NULL, bytestring(url))
     @check_null remote_ptr
     return GitRemote(remote_ptr[1])
+end
+
+function remote_names(r::Repository)
+    @assert r.ptr != C_NULL
+    rs = api.GitStrArray()
+    @check ccall((:git_remote_list, api.libgit2), Cint,
+                  (Ptr{api.GitStrArray}, Ptr{Void}),
+                  &rs, r.ptr)
+    ns = Array(String, rs.count)
+    for i in 1:rs.count
+        ns[i] = bytestring(unsafe_load(rs.strings, i))
+    end
+    return ns
 end
 
 function lookup(::Type{GitRemote}, r::Repository, remote_name::String)

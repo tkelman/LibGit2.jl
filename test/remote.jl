@@ -6,4 +6,8 @@
     @test isconnected(remote) == false
 end
 
+@with_repo_access begin
+    ns = remote_names(test_repo)
+    @test sort(ns) == sort(["test_remote", "libgit2"])
+end
 

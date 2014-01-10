@@ -56,6 +56,5 @@ Base.connect(f::Function, r::GitRemote, dir::Symbol) = begin
         disconnect(r)
     end
 end
-
     
 
