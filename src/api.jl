@@ -619,8 +619,11 @@ end
 @libgit(git_remote_set_url, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_remote_pushurl, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_remote_set_pushurl, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_remote_add_push, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_remote_add_fetch, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_remote_clear_refspecs, Void, (Ptr{Void},))
 
-# ------ libgit branch ------
+# ------k libgit branch ------
 @libgit(git_branch_create, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint))
 @libgit(git_branch_iterator_new, Cint, (Ptr{Void}, Ptr{Void}, Cint))

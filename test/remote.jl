@@ -16,7 +16,6 @@ end
     @test sort(map(r -> name(r), rs)) == sort(["test_remote", "libgit2"])
 end
 
-
 #test_remote_new_name
 @with_repo_access begin
     remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
@@ -65,5 +64,59 @@ end
     new_url = "upstream"
     remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
     @test_throws set_push_url!(remote, new_url)
+end
+
+#@show :test_fetch_refspecs
+@with_repo_access begin 
+    remote = lookup_remote(test_repo, "test_remote")
+    @test ["+refs/heads/*:refs/remotes/test_remote/*"] == fetch_refspecs(remote)
+    @test isempty(push_refspecs(lookup_remote(test_repo, "libgit2")))
+end
+
+#@show :test_push_refspecs
+@with_repo_access begin 
+    remote = lookup_remote(test_repo, "test_remote")
+    @test ["refs/heads/*:refs/heads/testing/*"] == push_refspecs(remote)
+    @test isempty(push_refspecs(lookup_remote(test_repo, "libgit2")))
+end
+
+#@show :test_add_fetch
+@with_repo_access begin 
+    remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
+    add_fetch!(remote, "+refs/heads/*:refs/remotes/test/*")
+    @test ["+refs/heads/*:refs/remotes/test/*"] == fetch_refspecs(remote)
+end
+
+#@show :test_add_push
+@with_repo_access begin 
+    remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
+    add_push!(remote, "refs/heads/*:refs/heads/test/*")
+    @test ["refs/heads/*:refs/heads/test/*"] == push_refspecs(remote)
+end
+
+#@show :test_clear_refspecs
+@with_repo_access begin 
+    remote = lookup_remote(test_repo, "test_remote")
+    clear_refspecs!(remote)
+
+    @test isempty(push_refspecs(remote))
+    @test isempty(fetch_refspecs(remote))
+end
+
+# test_remote_lookup
+@with_repo_access begin 
+    remote = lookup_remote(test_repo, "libgit2")
+    @test url(remote) == "git://github.com/libgit2/libgit2.git"
+    @test name(remote) == "libgit2"
+end
+
+#test_remote_lookup_missing
+@with_repo_access begin 
+    @test lookup_remote(test_repo, "missing_remote") == nothing
+end
+
+#test_remote_lookup_invalid
+@with_repo_access begin 
+    @test_throws lookup_remote(test_repo, "*\?")
 end
 
