@@ -66,35 +66,35 @@ end
     @test_throws set_push_url!(remote, new_url)
 end
 
-#@show :test_fetch_refspecs
+# test_fetch_refspecs
 @with_repo_access begin 
     remote = lookup_remote(test_repo, "test_remote")
     @test ["+refs/heads/*:refs/remotes/test_remote/*"] == fetch_refspecs(remote)
     @test isempty(push_refspecs(lookup_remote(test_repo, "libgit2")))
 end
 
-#@show :test_push_refspecs
+# test_push_refspecs
 @with_repo_access begin 
     remote = lookup_remote(test_repo, "test_remote")
     @test ["refs/heads/*:refs/heads/testing/*"] == push_refspecs(remote)
     @test isempty(push_refspecs(lookup_remote(test_repo, "libgit2")))
 end
 
-#@show :test_add_fetch
+# test_add_fetch
 @with_repo_access begin 
     remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
     add_fetch!(remote, "+refs/heads/*:refs/remotes/test/*")
     @test ["+refs/heads/*:refs/remotes/test/*"] == fetch_refspecs(remote)
 end
 
-#@show :test_add_push
+# test_add_push
 @with_repo_access begin 
     remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
     add_push!(remote, "refs/heads/*:refs/heads/test/*")
     @test ["refs/heads/*:refs/heads/test/*"] == push_refspecs(remote)
 end
 
-#@show :test_clear_refspecs
+# test_clear_refspecs
 @with_repo_access begin 
     remote = lookup_remote(test_repo, "test_remote")
     clear_refspecs!(remote)
@@ -110,12 +110,12 @@ end
     @test name(remote) == "libgit2"
 end
 
-#test_remote_lookup_missing
+# test_remote_lookup_missing
 @with_repo_access begin 
     @test lookup_remote(test_repo, "missing_remote") == nothing
 end
 
-#test_remote_lookup_invalid
+# test_remote_lookup_invalid
 @with_repo_access begin 
     @test_throws lookup_remote(test_repo, "*\?")
 end
@@ -232,4 +232,3 @@ end
             == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
 end
 
-#TODO: REMOTE TRANSPORT TEST

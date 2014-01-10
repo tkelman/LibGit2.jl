@@ -362,7 +362,7 @@ const c_cb_push_status = cfunction(cb_push_status, Cint,
                                    (Ptr{Cchar}, Ptr{Cchar}, Ptr{Void}))
 
 #TODO: possible julia bug?? refs only works for ASCIIStrings...
-Base.push!(r::Repository, remote::GitRemote, refs::Vector{ASCIIString}) = begin
+Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
     @assert r.ptr != C_NULL && remote.ptr != C_NULL
     err = zero(Cint) 
     push_ptr = Ptr{Void}[0]
@@ -410,7 +410,7 @@ Base.push!(r::Repository, remote::GitRemote, refs::Vector{ASCIIString}) = begin
     return result
 end
 
-Base.push!(r::Repository, remote::String, refs::Array{String, 1}) = begin
+Base.push!{T<:String}(r::Repository, remote::String, refs::Vector{T}) = begin
     @assert r.ptr != C_NULL
     remote_ptr = Array(Ptr{Void}, 1)
     @check api.git_remote_load(remote_ptr, r.ptr, bytestring(remote))
