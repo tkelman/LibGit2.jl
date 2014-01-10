@@ -298,19 +298,21 @@ function commits(r::Repository)
 end
 
 function remotes(r::Repository)
-    error()
     @assert r.ptr != C_NULL
-    gitremotes = api.GitStrArray()
+    rs = api.GitStrArray()
     @check ccall((:git_remote_list, api.libgit2), Cint,
                  (Ptr{api.GitStrArray}, Ptr{Void}),
-                 &gitremotes, r.ptr)
-    if gitremotes.count == 0 
+                 &rs, r.ptr)
+    if rs.count == 0 
         return nothing 
     end
-    out = Array(ASCIIString, gitremotes.count)
-    for i in 1:gitremotes.count
-        cptr = unsafe_load(gitremotes.strings, i)
-        out[i] = bytestring(cptr)
+    remote_ptr = Array(Ptr{Void}, 1)
+    out = Array(GitRemote, rs.count)
+    for i in 1:rs.count 
+        rstr = bytestring(unsafe_load(rs.strings, i))
+        @check api.git_remote_load(remote_ptr, r.ptr, rstr)
+        @check_null remote_ptr
+        out[i] = GitRemote(remote_ptr[1])
     end
     return out
 end
@@ -318,6 +320,7 @@ end
 #TODO: this should be moved to remote
 GitRemote(r::Repository, url::String) = begin
     @assert r.ptr != C_NULL
+    check_valid_url(url)
     remote_ptr = Array(Ptr{Void}, 1)
     @check api.git_remote_create_inmemory(remote_ptr, r.ptr, C_NULL, bytestring(url))
     @check_null remote_ptr

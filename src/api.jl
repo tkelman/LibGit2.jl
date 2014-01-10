@@ -614,6 +614,11 @@ end
 @libgit(git_remote_connected, Cint, (Ptr{Void},))
 @libgit(git_remote_connect, Cint, (Ptr{Void}, Cint))
 @libgit(git_remote_disconnect, Cint, (Ptr{Void}, ))
+@libgit(git_remote_url, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_remote_valid_url, Cint, (Ptr{Cchar},))
+@libgit(git_remote_set_url, Cint, (Ptr{Void}, Ptr{Cchar}))
+@libgit(git_remote_pushurl, Ptr{Cchar}, (Ptr{Void},))
+@libgit(git_remote_set_pushurl, Cint, (Ptr{Void}, Ptr{Cchar}))
 
 # ------ libgit branch ------
 @libgit(git_branch_create, Cint,

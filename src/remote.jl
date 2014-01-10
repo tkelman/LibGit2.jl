@@ -1,4 +1,4 @@
-export GitRemote, name, isconnected, disconnect
+export GitRemote, name, isconnected, disconnect, url, set_url!, push_url, set_push_url!
 
 type GitRemote
     ptr::Ptr{Void}
@@ -57,4 +57,40 @@ Base.connect(f::Function, r::GitRemote, dir::Symbol) = begin
     end
 end
     
+function url(r::GitRemote)
+    @assert r.ptr != C_NULL
+    url_ptr = api.git_remote_url(r.ptr)
+    if url_ptr == C_NULL
+        return nothing
+    end
+    return bytestring(url_ptr)
+end
+
+function set_url!(r::GitRemote, url::String)
+    @assert r.ptr != C_NULL
+    check_valid_url(url)
+    @check api.git_remote_set_url(r.ptr, bytestring(url))
+    return r
+end
+
+function push_url(r::GitRemote)
+    @assert r.ptr != C_NULL
+    url_ptr = api.git_remote_pushurl(r.ptr)
+    if url_ptr == C_NULL
+        return nothing
+    end
+    return bytestring(url_ptr)
+end
+
+function set_push_url!(r::GitRemote, url::String)
+    @assert r.ptr != C_NULL
+    check_valid_url(url)
+    @check api.git_remote_set_pushurl(r.ptr, bytestring(url))
+    return r
+end
+function check_valid_url(s::String)
+    if !bool(api.git_remote_valid_url(bytestring(s)))
+        throw(ArgumentError("invalid url"))
+    end
+end
 
