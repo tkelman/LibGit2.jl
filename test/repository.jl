@@ -434,7 +434,7 @@ end
 #---------------------------
 # Repo Clone Test
 #---------------------------
-#TODO: 
+#TODO:
 
 #---------------------------
 # Repo Namespace Test
@@ -465,10 +465,87 @@ end
 #---------------------------
 # Repo Push Test
 #---------------------------
-# TODO: 
+# test_push_single_ref
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
+    test_repo = clone(sbt, "testrepo.git", "testrepo")
+    config(remote_repo)["core.bare"] = "true"
+    create_ref(test_repo,
+        "refs/heads/unit_test",
+        Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    
+    result = push!(test_repo, "origin", 
+                ["refs/heads/master",
+                "refs/heads/master:refs/heads/foobar", 
+                "refs/heads/unit_test"])
+    @test isempty(result)
+
+    @test (target(lookup_ref(remote_repo, "refs/heads/foobar"))
+                == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+    @test (target(lookup_ref(remote_repo, "refs/heads/unit_test"))
+                == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
+end
+
+# test_push_to_non_bare_raise_error
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
+    test_repo = clone(sbt, "testrepo.git", "testrepo")
+    config(remote_repo)["core.bare"] = "false"
+    create_ref(test_repo,
+        "refs/heads/unit_test",
+        Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+
+    @test_throws push!(test_repo, "origin", ["refs/heads/master"])
+end
+
+# tets_push_to_remote_instance
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
+    test_repo = clone(sbt, "testrepo.git", "testrepo")
+    config(remote_repo)["core.bare"] = "true"
+
+    origin = lookup_remote(test_repo, "origin")
+    result = push!(test_repo, origin, ["refs/heads/master"])
+    @test isempty(result)
+end
+
+# test_push_non_forward_raise_error
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
+    test_repo = clone(sbt, "testrepo.git", "testrepo")
+    config(remote_repo)["core.bare"] = "true"
+    create_ref(test_repo,
+        "refs/heads/unit_test",
+        Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    @test_throws push!(test_repo, "origin",
+                       ["refs/heads/unit_test:refs/heads/master"])
+    @test (target(lookup_ref(remote_repo, "refs/heads/master"))
+                == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+end
+
+# test_push_non_forward_raise_error 
+@sandboxed_test "testrepo.git" begin
+    remote_repo = test_repo
+    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
+    test_repo = clone(sbt, "testrepo.git", "testrepo")
+    config(remote_repo)["core.bare"] = "true"
+    create_ref(test_repo,
+        "refs/heads/unit_test",
+        Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+
+    result = push!(test_repo, "origin", 
+                   ["+refs/heads/unit_test:refs/heads/master"])
+    @test isempty(result) 
+
+    @test (target(lookup_ref(remote_repo, "refs/heads/master")) 
+               == Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+end
 
 #---------------------------
 # Repo Checkout Test
 #---------------------------
 # TODO: 
-

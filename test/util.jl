@@ -5,6 +5,28 @@ const TESTDIR = joinpath(PKGDIR, "test")
 const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 
 
+macro repo_clone_test(body)
+    local tmp_dir = tempname()
+    mkdir(tmp_dir)
+    quote
+        let remote_repo = test_repo
+            source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
+            try
+               test_repo = clone(sbt, "testrepo.git", "testrepo")
+               config(remote_repo)["core.bare"] = "true"
+               create_ref(test_repo,
+                  "refs/heads/unit_test",
+                  Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+               $body
+            finally
+               close(test_repo)
+               close(remote_repo)
+               run($(`rm -r -f $tmp_dir`))
+           end
+        end
+    end
+end
+
 macro remote_transport_test(body)
     local tmp_dir = joinpath(tempname(), "dir")
     quote
