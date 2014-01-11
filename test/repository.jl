@@ -548,4 +548,120 @@ end
 #---------------------------
 # Repo Checkout Test
 #---------------------------
-# TODO: 
+# test_checkout_tree_with_revspec_string
+@sandboxed_checkout_test begin 
+    checkout_tree!(test_repo, "refs/heads/dir", {:strategy => :force})
+    set_head!(test_repo, "refs/heads/dir")
+
+    @test isfile(joinpath(repo_workdir(test_repo), "README"))
+    @test isfile(joinpath(repo_workdir(test_repo), "branch_file.txt"))
+    @test isfile(joinpath(repo_workdir(test_repo), "new.txt"))
+    @test isfile(joinpath(repo_workdir(test_repo), "a/b.txt"))
+
+    @test isfile(joinpath(repo_workdir(test_repo), "ab")) == false
+
+    checkout_tree!(test_repo, "refs/heads/subtrees", {:strategy => :safe})
+    set_head!(test_repo, "refs/heads/subtrees")
+    
+    @test isfile(joinpath(repo_workdir(test_repo), "README"))
+    @test isfile(joinpath(repo_workdir(test_repo), "branch_file.txt"))
+    @test isfile(joinpath(repo_workdir(test_repo), "new.txt"))
+    @test isfile(joinpath(repo_workdir(test_repo), "ab/4.txt"))
+    @test isfile(joinpath(repo_workdir(test_repo), "ab/c/3.txt"))
+    @test isfile(joinpath(repo_workdir(test_repo), "ab/de/2.txt"))
+    @test isfile(joinpath(repo_workdir(test_repo), "ab/de/fgh/1.txt"))
+    
+    @test isdir(joinpath(repo_workdir(test_repo), "a")) == false
+end
+
+# test_checkout_tree_raises_errors_in_progress_cb
+@sandboxed_checkout_test begin 
+    try
+        checkout_tree!(test_repo, "refs/heads/dir",
+                {:strategy => :force,
+                 :progress => (x...) -> error("fail")})
+    catch err
+        @test err.msg == "fail"
+    end
+end
+
+@sandboxed_checkout_test begin 
+    try
+        checkout_tree!(test_repo, "refs/heads/dir",
+                {:strategy => :force,
+                 :notify => (x...) -> error("fail")})
+    catch err
+        @test err.msg == "fail"
+    end
+end
+
+#test_checkout_tree_subdirectory
+@sandboxed_checkout_test begin 
+    @test isfile(joinpath(repo_workdir(test_repo), "ab")) == false
+    checkout_tree!(test_repo, "refs/heads/subtrees", 
+                   {:strategy => :safe, :paths => "ab/de/"})
+
+    @test isdir(joinpath(repo_workdir(test_repo)), "ab")
+    @test isfile(joinpath(repo_workdir(test_repo)), "ab/de/2.txt")
+    @test isfile(joinpath(repo_workdir(test_repo)), "ab/de/fgh/1.txt")
+end
+
+#test_checkout_tree_subtree_directory
+@sandboxed_checkout_test begin 
+    @test isfile(joinpath(repo_workdir(test_repo), "de")) == false
+    checkout_tree!(test_repo, "refs/heads/subtrees:ab",
+                   {:strategy => :safe, :paths => "de/"})
+
+    @test isdir(joinpath(repo_workdir(test_repo)), "de")
+    @test isfile(joinpath(repo_workdir(test_repo)), "de/2.txt")
+    @test isfile(joinpath(repo_workdir(test_repo)), "de/fgh/1.txt")
+end
+
+#test_checkout_tree_raises_with_bare_repo
+@sandboxed_checkout_test begin 
+    @test_throws checkout_tree!(test_bare, "HEAD", {:strategy => :safe_create})
+end
+
+#test checkout tree works with bare repo and target directory
+@sandboxed_checkout_test begin
+    d = tempdir()
+    try
+        checkout_tree!(test_bare, "HEAD", 
+                       {:strategy => :safe_create, :target_directory => d})
+        @test isfile(joinpath(d, "README"))
+        @test isfile(joinpath(d, "new.txt"))
+    finally
+       #TODO:
+       # run(`rm -r -f $d`)
+    end
+end
+
+@sandboxed_checkout_test begin
+    checkout!(test_repo, "dir", {:strategy => :force})
+    @test head(test_repo) |> name == "refs/heads/dir"
+end
+
+# test_checkout_with_HEAD
+@sandboxed_checkout_test begin
+    checkout!(test_repo, "dir", {:strategy => :force})
+    rm(joinpath(repo_workdir(test_repo), "README"))
+
+    checkout!(test_repo, "HEAD", {:strategy => :force})
+    @test isfile(joinpath(repo_workdir(test_repo), "README"))
+    @test name(head(test_repo)) == "refs/heads/dir"
+end
+
+# test_checkout_with_commit_detaches_HEAD
+@sandboxed_checkout_test begin
+    checkout!(test_repo, rev_parse_oid(test_repo, "refs/heads/dir"), 
+              {:strategy => :force})
+    @test ishead_detached(test_repo)
+    @test rev_parse_oid(test_repo, "refs/heads/dir") == target(head(test_repo))
+end
+
+# test_checkout_with_remote_branch_detaches_HEAD
+@sandboxed_checkout_test begin
+    checkout!(test_clone, "origin/dir", {:strategy => :force})
+    @test ishead_detached(test_clone)
+    @test rev_parse_oid(test_clone, "refs/remotes/origin/dir") == target(head(test_clone))
+end

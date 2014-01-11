@@ -152,6 +152,25 @@ macro sandboxed_test(reponame, body)
     end
 end
 
+macro sandboxed_checkout_test(body)
+    quote
+        sbt = setup(SandBoxedTest, "testrepo")
+        test_repo = sbt.repo
+        test_clone = clone(sbt, "testrepo", "cloned_testrepo")
+        _bare = setup(SandBoxedTest, "testrepo.git")
+        test_bare = repo_init(repo_path(_bare.repo), bare=true)
+        try
+            $body
+        finally
+            close(test_repo)
+            close(test_clone)
+            close(test_bare)
+            teardown(sbt)
+            teardown(_bare)
+        end
+    end
+end
+
 type RepoAccess
     path::String
     repo::Repository

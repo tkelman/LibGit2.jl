@@ -9,7 +9,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk,
        branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
-       remote_names, remote_add!
+       remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, ishead_detached
 
 type Repository
     ptr::Ptr{Void}
@@ -214,7 +214,9 @@ end
 function repo_head_orphaned(r::Repository)
 end
 
-function repo_head_detached(r::Repository)
+function ishead_detached(r::Repository)
+    @assert r.ptr != C_NULL
+    return bool(api.git_repository_head_detached(r.ptr))
 end
 
 function repo_open(path::String)
@@ -735,7 +737,12 @@ function merge_base(r::Repository, args...)
 end
     
 function rev_parse_oid(r::Repository, rev::String)
-    oid(rev_parse(r::Repository, rev::String))
+    oid(rev_parse(r, rev))
+end
+
+#TODO: this could be more efficient
+function rev_parse_oid(r::Repository, rev::Oid)
+    return oid(rev_parse(r, string(rev)))
 end
 
 function config(r::Repository)
@@ -976,6 +983,10 @@ end
 lookup_branch(r::Repository, branch_name::String, branch_type=:local) = 
         lookup(GitBranch, r, branch_name, branch_type)
 
+#lookup_branch(r::Repository, branch_id::Oid, branch_type=:local) = 
+#        lookup(GitBranch, r, string(branch_id), branch_type)
+
+
 function create_branch(r::Repository, n::String, target::Oid, force::Bool=false)
     @assert r.ptr != C_NULL
     #TODO: give intelligent error msg when target
@@ -1122,6 +1133,254 @@ Base.merge!(r::Repository, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=not
                  idx_ptr, r.ptr, ancestor.ptr, t1.ptr, t2.ptr, &gopts)
     @check_null idx_ptr
     return GitIndex(idx_ptr[1])
+end
+
+#------- Repo Checkout -------
+function cb_checkout_progress(path_ptr::Ptr{Cchar}, 
+                              completed_steps::Csize_t,
+                              total_steps::Csize_t,
+                              payload::Ptr{Void})
+    callback = unsafe_pointer_to_objref(payload)::Function
+    path = path_ptr != C_NULL ? bytestring(path_ptr) : nothing
+    callback(path, completed_steps, total_steps)
+    return
+end
+
+const c_cb_checkout_progress = cfunction(cb_checkout_progress, Void,
+                                         (Ptr{Cchar}, Csize_t, Csize_t, Ptr{Void}))
+
+function cb_checkout_notify(why::Cint, 
+                            path_ptr::Ptr{Cchar}, 
+                            baseline::Ptr{api.GitDiffFile}, 
+                            target::Ptr{api.GitDiffFile},
+                            workdir::Ptr{api.GitDiffFile},
+                            payload::Ptr{Void})
+    callback = unsafe_pointer_to_objref(payload)::Function
+    path = path_ptr != C_NULL ? bytestring(path_ptr) : nothing
+    local reason::Symbol
+    if why == api.CHECKOUT_NOTIFY_CONFLICT
+        reason = :conflict
+    elseif why == api.CHECKOUT_NOTIFY_DIRTY
+        reason = :dirty
+    elseif why == api.CHECKOUT_NOTIFY_UPDATED
+        reason = :updated
+    elseif why == api.CHECKOUT_NOTIFY_UNTRACKED
+        reason = :untracked
+    elseif why == api.CHECKOUT_NOTIFY_IGNORED
+        reason = :ignored
+    else
+        reason = :unknown
+    end
+    try
+        callback(why, path, 
+                 DiffFile(baseline),
+                 DiffFile(target), 
+                 DiffFile(workdir))
+        return api.GIT_OK
+    catch
+        return api.ERROR
+    end
+end
+
+const c_cb_checkout_notify = cfunction(cb_checkout_notify, Cint,
+                                       (Cint,
+                                        Ptr{Cchar}, 
+                                        Ptr{api.GitDiffFile}, 
+                                        Ptr{api.GitDiffFile}, 
+                                        Ptr{api.GitDiffFile},
+                                        Ptr{Void}))
+
+function parse_checkout_options(opts::Nothing)
+    return api.GitCheckoutOpts()
+end
+
+function parse_checkout_options(opts::Dict)
+    gopts = api.GitCheckoutOpts()
+    @assert gopts.version == 1
+    if haskey(opts, :progress)
+        if !isa(opts[:progress], Function)
+            throw(ArgumentError("opts[:progress] must be a Function object"))
+        end
+        gopts.progress_payload = pointer_from_objref(opts[:progress])
+        gopts.progress_cb = c_cb_checkout_progress
+    end
+    if haskey(opts, :notify)
+        if !isa(opts[:notify], Function)
+            throw(ArgumentError("opts[:notify] must be a Function object"))
+        end
+        gopts.notify_payload = pointer_from_objref(opts[:notify])
+        gopts.notify_cb = c_cb_checkout_notify
+    end
+    if haskey(opts, :strategy)
+        local strategy::Vector{Symbol}
+        if isa(opts[:strategy], Symbol)
+            strategy = [opts[:strategy]]
+        else
+            strategy = opts[:strategy]
+        end
+        for s in strategy
+            if s == :safe
+                gopts.checkout_strategy |= api.CHECKOUT_SAFE
+            elseif s == :safe_create
+                gopts.checkout_strategy |= api.CHECKOUT_SAFE_CREATE
+            elseif s == :force
+                gopts.checkout_strategy |= api.CHECKOUT_FORCE
+            elseif s == :allow_conflicts
+                gopts.checkout_strategy |= api.CHECKOUT_ALLOW_CONFLICTS
+            elseif s == :remove_untracked
+                gopts.checkout_strategy |= api.CHECKOUT_REMOVE_UNTRACKED
+            elseif s == :remove_ignored
+                gopts.checkout_strategy |= api.CHECKOUT_REMOVE_IGNORED
+            elseif s == :update_only
+                gopts.checkout_strategy |= api.CHECKOUT_UPDATE_ONLY
+            elseif s == :dont_update_index
+                gopts.checkout_strategy |= api.CHECKOUT_DONT_UPDATE_INDEX
+            elseif s == :no_refresh
+                gopts.checkout_strategy |= api.CHECKOUT_NO_REFRESH
+            elseif s == :disable_pathspec_match
+                gopts.checkout_strategy |= api.CHECKOUT_DISABLE_PATHSPEC_MATCH
+            elseif s == :skip_locked_directories
+                gopts.checkout_strategy |= api.CHECKOUT_SKIP_LOCKED_DIRECTORIES
+            elseif s == :skip_unmerged
+                gopts.checkout_strategy |= api.CHECKOUT_SKIP_UNMERGED
+            elseif s == :use_ours
+                gopts.checkout_strategy |= api.CHECKOUT_USE_OURS
+            elseif s == :use_theirs
+                gopts.checkout_strategy |= api.CHECKOUT_USE_THEIRS
+            elseif s == :update_submodules
+                gopts.checkout_strategy |= api.CHECKOUT_UPDATE_SUBMODULES
+            elseif s == :update_submodules_if_changed
+                gopts.checkout_strategy |= api.CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED
+            else
+                throw(ArgumentError("unknown checkout strategy flag :$s"))
+            end
+        end
+    end
+
+    if haskey(opts, :notify_flags)
+        local flags::Vector{Symbol}
+        if isa(opts[:notify_flags], Symbol)
+            flags = [opts[:notify_flags]]
+        else
+            flags = opts[:notify_flags]
+        end
+        for f in flags
+            if f == :conflict
+                gopts.notify_flags |= api.CHECKOUT_NOTIFY_CONFLICT
+            elseif f == :dirty
+                gopts.notify_flags |= api.CHECKOUT_NOTIFY_DIRTY
+            elseif f == :updated
+                gopts.notify_flags |= api.CHECKOUT_NOTIFY_UPDATED
+            elseif f == :untracked
+                gopts.notify_flags |= api.CHECKOUT_NOTIFY_UNTRACKED
+            elseif f == :ignored
+                gopts.notify_flags |= api.CHECKOUT_NOTIFY_IGNORED
+            elseif f == :all
+                gopts.notify_flags |= api.CHECKOUT_NOTIFY_ALL
+            else
+                throw(ArgumentError("unknown checkout notify flag :$f"))
+            end
+        end
+    end
+
+    gopts.disable_filters = convert(Cint, get(opts, :disable_filters, false) ? 1 : 0)
+    
+    if haskey(opts, :dir_mode)
+        gopts.dir_mode = convert(Cuint, opts[:dir_mode])
+    end
+    if haskey(opts, :file_mode)
+        gopts.file_mode = convert(Cuint, opts[:file_mode])
+    end
+    if haskey(opts, :file_open_flags)
+        gopts.file_open_flags = convert(Cint, opts[:file_open_flags])
+    end
+    if haskey(opts, :target_directory)
+        gopts.target_directory = convert(Ptr{Cchar}, bytestring(opts[:target_directory]))
+    end
+    if haskey(opts, :baseline)
+        if isa(opts[:baseline], GitTree)
+            gopts.baseline = opts[:baseline].ptr
+        else
+            throw(ArgumentError("checkout options :baseline should be a GitTree"))
+        end
+    end
+    if haskey(opts, :paths)
+        paths = opts[:paths]
+        if isa(paths, String)
+            paths = [paths]
+        end
+        npaths = length(paths)
+        cpaths = Array(Ptr{Cchar}, npaths)
+        gopts.paths_count = convert(Csize_t, npaths)
+        for i in 1:npaths
+            cpaths[i] = convert(Ptr{Cchar}, paths[i])
+        end
+        gopts.paths_strings = convert(Ptr{Ptr{Cchar}}, cpaths)
+    end
+    return gopts
+end
+
+typealias Treeish Union(GitCommit, GitTag, GitTree)
+
+function checkout_tree!(r::Repository, tree::String, opts=nothing)
+    t = rev_parse(r, tree)
+    return checkout_tree!(r, t, opts)
+end
+
+function checkout_tree!(r::Repository, tree::Treeish, opts=nothing)
+    gopts = parse_checkout_options(opts)
+    err = ccall((:git_checkout_tree, api.libgit2), Cint,
+                (Ptr{Void}, Ptr{Void}, Ptr{api.GitCheckoutOpts}),
+                r.ptr, tree.ptr, &gopts)
+    #TODO: memory leak with option strings
+    if err != api.GIT_OK
+        throw(GitError(err))
+    end
+    return r 
+end
+
+function checkout_head!(r::Repository, opts=nothing)
+    @assert r.ptr != C_NULL
+    gopts = parse_checkout_options(opts)
+    err = ccall((:git_checkout_head, api.libgit2), Cint,
+                (Ptr{Void}, Ptr{api.GitCheckoutOpts}),
+                r.ptr, &gopts)
+    #TODO: memory leak with option strings
+    if err != api.GIT_OK
+        throw(GitError(err))
+    end
+    return r
+end
+
+function checkout!(r::Repository, target, opts={})
+    if !haskey(opts, :strategy)
+        opts[:strategy] = :safe
+    end
+    delete!(opts, :paths)
+    if target == "HEAD"
+        return checkout_head!(r, opts)
+    end
+    local branch
+    if isa(target, GitBranch)
+        branch = target
+    else
+        branch = lookup_branch(r, string(target), :local)
+        if branch == nothing
+            branch = lookup_branch(r, string(target), :remote)
+        end
+    end
+    if branch != nothing
+        checkout_tree!(r, tip(branch), opts)
+        if isremote(branch)
+            create_ref(r, "HEAD", oid(tip(branch)), true)
+        else
+            create_ref(r, "HEAD", canonical_name(branch), true)
+        end
+    else
+        commit = lookup_commit(r, rev_parse_oid(r, target))
+        create_ref(r, "HEAD", oid(commit), true)
+        checkout_tree!(r, commit, opts)
+    end
 end
 
 #------- Tree Builder -------

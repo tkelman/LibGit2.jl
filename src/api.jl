@@ -84,6 +84,17 @@ const CHECKOUT_DISABLE_PATHSPEC_MATCH  = cuint(1) << cint(13)
 const CHECKOUT_SKIP_LOCKED_DIRECTORIES = cuint(1) << cint(18)
 const CHECKOUT_DONT_OVERWRITE_IGNORED  = cuint(1) << cint(19)
 
+const CHECKOUT_UPDATE_SUBMODULES       = cuint(1) << cint(16)
+const CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED = cuint(1) << cint(17)
+
+const CHECKOUT_NOTIFY_NONE      = cint(0)
+const CHECKOUT_NOTIFY_CONFLICT  = cuint(1) << cint(0)
+const CHECKOUT_NOTIFY_DIRTY     = cuint(1) << cint(1)
+const CHECKOUT_NOTIFY_UPDATED   = cuint(1) << cint(2)
+const CHECKOUT_NOTIFY_UNTRACKED = cuint(1) << cint(3)
+const CHECKOUT_NOTIFY_IGNORED   = cuint(1) << cint(4)
+const CHECKOUT_NOTIFY_ALL       = 0x0FFFF
+
 const SUBMODULE_UPDATE_RESET    = cint(-1)
 const SUBMODULE_UPDATE_CHECKOUT = cint(1)
 const SUBMODULE_UPDATE_REBASE   = cint(2)
@@ -295,6 +306,7 @@ end
 @libgit(git_repository_is_empty, Cint, (Ptr{Void},))
 @libgit(git_repository_is_shallow, Cint, (Ptr{Void},))
 @libgit(git_repository_is_bare, Cint, (Ptr{Void},))
+@libgit(git_repository_head_detached, Cint, (Ptr{Void},))
 
 # ----- libgit index ------
 
@@ -782,35 +794,40 @@ type GitCheckoutOpts
     version::Cuint
     checkout_strategy::Cuint
     disable_filters::Cint
-    dir_mode::Cint
-    file_mode::Cint
+    dir_mode::Cuint
+    file_mode::Cuint
     file_open_flags::Cint
+    
     notify_flags::Cuint 
     notify_cb::Ptr{Void}
     notify_payload::Ptr{Void}
+    
     progress_cb::Ptr{Void}
     progress_payload::Ptr{Void}
-    paths_strings::Ptr{Ptr{Void}}
+
+    paths_strings::Ptr{Ptr{Cchar}}
     paths_count::Csize_t
+
     baseline::Ptr{Void}
+
     target_directory::Ptr{Cchar}
     our_label::Ptr{Cchar}
     their_label::Ptr{Cchar}
 
     function GitCheckoutOpts()
-        return new(cuint(0),
-                   cuint(0),
-                   cint(0),
-                   cint(0),
-                   cint(0),
-                   cint(0),
-                   cuint(0),
+        return new(1,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
                    C_NULL,
                    C_NULL,
                    C_NULL,
                    C_NULL,
                    C_NULL,
-                   convert(Csize_t, 0),
+                   0,
                    C_NULL,
                    C_NULL,
                    C_NULL,

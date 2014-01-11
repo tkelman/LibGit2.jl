@@ -80,6 +80,11 @@ function ishead(b::GitBranch)
     return bool(api.git_branch_is_head(b.ptr))
 end
 
+function isremote(b::GitBranch)
+    @assert b.ptr != C_NULL
+    return bool(api.git_reference_is_remote(b.ptr))
+end
+
 function move(b::GitBranch, new_name::String, force::Bool=false)
     @assert b.ptr != C_NULL
     branch_ptr = Array(Ptr{Void}, 1)
