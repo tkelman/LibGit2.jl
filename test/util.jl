@@ -5,6 +5,23 @@ const TESTDIR = joinpath(PKGDIR, "test")
 const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 
 
+macro remote_transport_test(body)
+    local tmp_dir = joinpath(tempname(), "dir")
+    quote
+        mkpath($tmp_dir)
+        let test_repo = repo_init($tmp_dir, bare=false),
+            test_repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", ".")),
+            test_remote = remote_add!(test_repo, "origin", test_repo_dir)
+            try
+                $body
+            finally
+                close(test_repo)
+                run($(`rm -r -f $tmp_dir`))
+            end
+        end
+    end
+end
+
 macro with_test_index(body)
     quote
         let test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index"),

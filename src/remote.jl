@@ -1,5 +1,7 @@
-export GitRemote, name, isconnected, disconnect, url, set_url!, push_url, set_push_url!,
-       fetch_refspecs, push_refspecs, add_fetch!, add_push!, clear_refspecs!, save!, rename!
+export GitRemote, name, isconnected, disconnect, url, set_url!, 
+       push_url, set_push_url!, fetch_refspecs, push_refspecs, 
+       add_fetch!, add_push!, clear_refspecs!, save!, rename!,
+       update_tips!
 
 type GitRemote
     ptr::Ptr{Void}
@@ -155,6 +157,57 @@ function rename!(r::GitRemote, name::String)
                   (Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
                   r.ptr, bytestring(name), c_cb_remote_rename, &errs)
     return length(errs) == 0 ? nothing : errs
+end
+
+type RemoteHead
+    islocal::Bool
+    oid::Oid
+    loid::Union(Nothing, Oid)
+    name::String
+end
+
+RemoteHead(ghead::api.GitRemoteHead) = begin
+    #TODO: these should be macros
+    oid_arr = Array(Uint8, api.OID_RAWSZ)
+    for i in 1:api.OID_RAWSZ
+        oid_arr[i] = getfield(ghead, symbol("oid$i"))
+    end
+    oid = Oid(oid_arr)
+    loid_arr = Array(Uint8, api.OID_RAWSZ)
+    for i in 1:api.OID_RAWSZ
+        loid_arr[i] = getfield(ghead, symbol("loid$i"))
+    end
+    loid = Oid(loid_arr)
+    return RemoteHead(bool(ghead.islocal),
+                      oid,
+                      iszero(loid)? nothing : loid,
+                      ghead.name == C_NULL ? "" : bytestring(ghead.name))
+end
+
+Base.ls(r::GitRemote) = begin
+    @assert r.ptr != C_NULL
+    nheads = Csize_t[0]
+    head_ptrs = Array(Ptr{Ptr{api.GitRemoteHead}}, 1)
+    err = api.git_remote_ls(head_ptrs, nheads, r.ptr)
+    head_ptr = head_ptrs[1]
+    remote_heads = RemoteHead[]
+    for i in 1:nheads[1]
+        ghead = unsafe_load(unsafe_load(head_ptr, i))
+        push!(remote_heads, RemoteHead(ghead))
+    end
+    return remote_heads
+end
+
+Base.download(r::GitRemote) = begin
+    @assert r.ptr != C_NULL
+    @check api.git_remote_download(r.ptr)
+    return r
+end
+
+function update_tips!(r::GitRemote)
+    @assert r.ptr != C_NULL
+    @check api.git_remote_update_tips(r.ptr)
+    return r
 end
 
 function check_valid_url(s::String)

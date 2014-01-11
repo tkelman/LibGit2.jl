@@ -624,6 +624,58 @@ end
 @libgit(git_remote_add_fetch, Cint, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_remote_clear_refspecs, Void, (Ptr{Void},))
 @libgit(git_remote_save, Cint, (Ptr{Void},))
+@libgit(git_remote_download, Cint, (Ptr{Void},))
+@libgit(git_remote_update_tips, Cint, (Ptr{Void},))
+
+type GitRemoteHead
+    islocal::Cint
+    # oid
+    oid1::Uint8
+    oid2::Uint8
+    oid3::Uint8
+    oid4::Uint8
+    oid5::Uint8
+    oid6::Uint8
+    oid7::Uint8
+    oid8::Uint8
+    oid9::Uint8
+    oid10::Uint8
+    oid11::Uint8
+    oid12::Uint8
+    oid13::Uint8
+    oid14::Uint8
+    oid15::Uint8
+    oid16::Uint8
+    oid17::Uint8
+    oid18::Uint8
+    oid19::Uint8
+    oid20::Uint8
+    
+    #loid
+    loid1::Uint8
+    loid2::Uint8
+    loid3::Uint8
+    loid4::Uint8
+    loid5::Uint8
+    loid6::Uint8
+    loid7::Uint8
+    loid8::Uint8
+    loid9::Uint8
+    loid10::Uint8
+    loid11::Uint8
+    loid12::Uint8
+    loid13::Uint8
+    loid14::Uint8
+    loid15::Uint8
+    loid16::Uint8
+    loid17::Uint8
+    loid18::Uint8
+    loid19::Uint8
+    loid20::Uint8
+    name::Ptr{Cchar}
+end
+
+@libgit(git_remote_ls, Cint, (Ptr{Ptr{Ptr{GitRemoteHead}}}, Ptr{Csize_t}, Ptr{Void}))
 
 # ------ libgit remote ------
 @libgit(git_push_new, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))

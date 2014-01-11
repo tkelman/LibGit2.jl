@@ -232,3 +232,33 @@ end
             == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
 end
 
+# test_remote_disconnect
+@remote_transport_test begin
+    connect(test_remote, :fetch)
+    @test isconnected(test_remote) == true
+
+    disconnect(test_remote)
+    @test isconnected(test_remote) == false
+end
+
+#test_remote_ls
+@remote_transport_test begin
+    connect(test_remote, :fetch) do r
+        rheads = ls(r)
+        @test length(rheads) == 7
+        rhead = first(rheads)
+        @test rhead.islocal == false
+        @test rhead.oid != nothing
+        @test rhead.loid == nothing
+    end
+end
+
+# test git remote fetch
+@remote_transport_test begin
+    connect(test_remote, :fetch) do r
+        download(r) |> update_tips!
+    end
+    @test rev_parse(test_repo, "origin/master") |> oid == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test lookup(test_repo, "36060c5") != nothing
+end
+
