@@ -210,6 +210,8 @@ const MERGE_FASTFORWARD_ONLY = cint(2)
 const DIRECTION_FETCH = cint(0)
 const DIRECTION_PUSH  = cint(1)
 
+const BLAME_NORMAL = cint(0)
+
 type GitMergeOpts
     version::Cuint
     merge_flags::Cint
@@ -410,6 +412,7 @@ type GitDiffDelta
     similarity::Uint16
     nfiles::Uint16
     
+    #TODO: why is padding necessary?
     pad1::Cuint
 
     old_file_oid1::Uint8
@@ -840,7 +843,57 @@ end
 @libgit(git_config_free, Void, (Ptr{Void},)) 
 @libgit(git_config_foreach, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void})) 
 
-# --- libgit remote ----
+# --- libgit blame ----
+type GitBlameOptions
+    version::Cuint
+    flags::Uint32
+    min_match_characters::Uint16
+
+    newest_commit_oid1::Uint8
+    newest_commit_oid2::Uint8
+    newest_commit_oid3::Uint8
+    newest_commit_oid4::Uint8
+    newest_commit_oid5::Uint8
+    newest_commit_oid6::Uint8
+    newest_commit_oid7::Uint8
+    newest_commit_oid8::Uint8
+    newest_commit_oid9::Uint8
+    newest_commit_oid10::Uint8
+    newest_commit_oid11::Uint8
+    newest_commit_oid12::Uint8
+    newest_commit_oid13::Uint8
+    newest_commit_oid14::Uint8
+    newest_commit_oid15::Uint8
+    newest_commit_oid16::Uint8
+    newest_commit_oid17::Uint8
+    newest_commit_oid18::Uint8
+    newest_commit_oid19::Uint8
+    newest_commit_oid20::Uint8
+
+    oldest_commit_oid1::Uint8
+    oldest_commit_oid2::Uint8
+    oldest_commit_oid3::Uint8
+    oldest_commit_oid4::Uint8
+    oldest_commit_oid5::Uint8
+    oldest_commit_oid6::Uint8
+    oldest_commit_oid7::Uint8
+    oldest_commit_oid8::Uint8
+    oldest_commit_oid9::Uint8
+    oldest_commit_oid10::Uint8
+    oldest_commit_oid11::Uint8
+    oldest_commit_oid12::Uint8
+    oldest_commit_oid13::Uint8
+    oldest_commit_oid14::Uint8
+    oldest_commit_oid15::Uint8
+    oldest_commit_oid16::Uint8
+    oldest_commit_oid17::Uint8
+    oldest_commit_oid18::Uint8
+    oldest_commit_oid19::Uint8
+    oldest_commit_oid20::Uint8
+
+    min_line::Uint32
+    max_line::Uint32
+end
 
 # --- libgit diff hunk ----
 type GitDiffHunk
@@ -995,5 +1048,6 @@ end
 
 @libgit(git_patch_get_line_in_hunk, Cint, 
         (Ptr{Ptr{GitDiffLine}}, Ptr{Void}, Csize_t, Csize_t))
+
 
 end # module api
