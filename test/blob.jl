@@ -203,4 +203,34 @@ end
     @test "new_readme.txt" == delta(p).new_file.path
 end
 
-#TODO; blob io
+# test write blob from io with hintpath
+@with_tmp_repo_access begin
+    file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
+    open(file_path, "r") do io
+        id = blob_from_stream(test_repo, io, "archive.tar.gz2")
+        seekstart(io)
+        blob = lookup(test_repo, id)
+        c = readall(io)
+        rc  = raw_content(blob)
+        @test length(c) == length(rc)
+        for i in length(rc)
+            @assert c[i] == rc[i]
+        end
+    end
+end
+
+# test write blob from io without hintpath
+@with_tmp_repo_access begin
+    file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
+    open(file_path, "r") do io
+        id = blob_from_stream(test_repo, io)
+        seekstart(io)
+        blob = lookup(test_repo, id)
+        c = readall(io)
+        rc  = raw_content(blob)
+        @test length(c) == length(rc)
+        for i in length(rc)
+            @assert c[i] == rc[i]
+        end
+    end
+end

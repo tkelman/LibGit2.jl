@@ -261,4 +261,3 @@ end
     @test rev_parse(test_repo, "origin/master") |> oid == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test lookup(test_repo, "36060c5") != nothing
 end
-

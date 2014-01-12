@@ -7,7 +7,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        ahead_behind, merge_base, merge_commits, oid, blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
-       blob_from_buffer, blob_from_workdir, blob_from_disk,
+       blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
        branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
        ishead_detached, repo_clone 
@@ -663,6 +663,48 @@ function blob_from_disk(r::Repository, path::String)
     return blob_id
 end
 
+function cb_blob_get_chunk(content_ptr::Ptr{Uint8}, 
+                           max_len::Csize_t, 
+                           payload::Ptr{Void})
+    payload = unsafe_pointer_to_objref(payload)::Array{Any,1}
+    stream = payload[1]
+    local buff::Array{Uint8,1}
+    try
+        buff = readbytes(stream, max_len)
+    catch err
+        payload[2] = err
+        return api.ERROR
+    end
+    len = length(buff)
+    len = len > max_len ? max_len : len
+    unsafe_copy!(content_ptr, convert(Ptr{Uint8}, buff), len)
+    return convert(Cint, len)
+end
+
+const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
+                                         (Ptr{Uint8}, Csize_t, Ptr{Void}))
+
+function blob_from_stream(r::Repository, stream, hintpath=nothing)
+    @assert r.ptr != C_NULL
+    blob_id = Oid()
+    local path_ptr::Ptr{Cchar}
+    if hintpath != nothing
+        path_ptr = convert(Ptr{Cchar}, bytestring(hintpath))
+    else
+        path_ptr = C_NULL
+    end
+    payload = {stream, nothing}
+    err = ccall((:git_blob_create_fromchunks, api.libgit2), Cint,
+                (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
+                blob_id.oid, r.ptr, path_ptr, c_cb_blob_get_chunk, &payload)
+    if isa(payload[2], Exception)
+        throw(payload[2])
+    end
+    if err != api.GIT_OK
+        throw(GitError(err))
+    end
+    return blob_id
+end
 
 #TODO: consolidate with odb
 function write!{T<:GitObject}(::Type{T}, r::Repository, buf::ByteString)

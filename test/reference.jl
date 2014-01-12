@@ -280,6 +280,8 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
+# TODO: travis has problems with these tests for some reason
+# (they pass locally)
 #@with_tmp_repo_access begin
 #    ref = create_ref(test_repo,
 #                     "refs/heads/test-reflog",
