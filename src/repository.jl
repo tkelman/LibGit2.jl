@@ -1493,25 +1493,25 @@ free!(t::TreeBuilder) = begin
     end
 end
 
-function insert!(t::TreeBuilder, filename::String,
-                 id::Oid, filemode::Int)
+Base.insert!(t::TreeBuilder, filename::String,
+                 id::Oid, filemode::Int) = begin
     @assert t.ptr != C_NULL
-    bfilename = bytstring(filename)
+    bfilename = bytestring(filename)
     cfilemode = convert(Cint, filemode)
     @check api.git_treebuilder_insert(C_NULL,
                                       t.ptr,
                                       bfilename, 
-                                      id, 
+                                      id.oid, 
                                       cfilemode)
     return t
 end
 
 function write!(t::TreeBuilder)
     @assert t.ptr != C_NULL
-    oid_ptr = Array(Ptr{Void}, 1)
-    @check api.git_treebuilder_write(oid, t.repo.ptr, t.ptr)
-    @check_null oid_ptr
-    return Oid(oid_ptr[1])
+    @assert t.repo.ptr != C_NULL
+    oid_arr = Array(Uint8, api.OID_RAWSZ)
+    @check api.git_treebuilder_write(oid_arr, t.repo.ptr, t.ptr)
+    return Oid(oid_arr)
 end
 
 function repo_treebuilder(r::Repository)
@@ -1522,6 +1522,7 @@ function repo_treebuilder(r::Repository)
     return TreeBuilder(bld_ptr[1], r)
 end
 
+TreeBuilder(r::Repository) = repo_treebuilder(r)
 #-------- Reference Iterator --------
 #TODO: handle error's when iterating (see branch)
 type ReferenceIterator
