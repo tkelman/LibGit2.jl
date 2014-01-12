@@ -16,8 +16,8 @@ try
     c1 = lookup(GitCommit, repo, cid)
     c2 = lookup_commit(repo, cid)
     @test c1 == c2
-    @test git_otype(c1) == api.OBJ_COMMIT
-    @test git_otype(c2) == api.OBJ_COMMIT
+    @test git_otype(c1) == 1#api.OBJ_COMMIT
+    @test git_otype(c2) == 1#api.OBJ_COMMIT
     
     # test repo has one commit
     ctree = GitTree(c1)
@@ -29,7 +29,7 @@ try
     entry = entry_byname(t, "README")
     @test entry != nothing
     
-    @test filemode(entry) == api.FILEMODE_BLOB
+    @test filemode(entry) == 33188 #api.FILEMODE_BLOB
     obj = lookup(repo, oid(t))
     @test isa(obj, GitTree)
 

@@ -17,11 +17,11 @@ try
     
     _ = create_ref(repo, "refs/tags/tree", tid, true)
     tag = lookup_ref(repo, "refs/tags/tree")
-    @test git_reftype(tag) == api.REF_OID 
+    @test git_reftype(tag) == 1 #api.REF_OID 
     @test isa(tag, GitReference{Oid})
     
     ref = lookup_ref(repo, "HEAD")
-    @test git_reftype(ref) == api.REF_SYMBOLIC
+    @test git_reftype(ref) == 2 #api.REF_SYMBOLIC
     @test isa(ref, GitReference{Sym})
 
     @test target(ref) == nothing

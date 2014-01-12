@@ -1,7 +1,6 @@
 module LibGit2
 
 include("api.jl")
-export api
 
 include("error.jl")
 include("types.jl")
