@@ -279,8 +279,33 @@ end
 #---------------------------
 # Merge Commits Repo Test
 #---------------------------
-#@sandboxed_test "merge-resolve" begin
-#end
+@sandboxed_test "merge-resolve" begin
+    our_commit = lookup_branch(test_repo, "master") |> tip
+    their_commit = lookup_branch(test_repo, "branch") |> tip
+
+    index = merge_commits(test_repo, our_commit, their_commit)
+    @test length(index) == 8
+
+    @test (Oid("233c0919c998ed110a4b6ff36f353aec8b713487") == 
+            oid(getentry(index, "added-in-master.txt", 0)))
+    @test (Oid("f2e1550a0c9e53d5811175864a29536642ae3821") ==
+            oid(getentry(index, "automergeable.txt", 0)))
+    @test (Oid("4eb04c9e79e88f6640d01ff5b25ca2a60764f216") ==
+            oid(getentry(index, "changed-in-branch.txt", 0)))
+    @test (Oid("11deab00b2d3a6f5a3073988ac050c2d7b6655e2") ==
+            oid(getentry(index, "changed-in-master.txt", 0)))
+
+    @test (Oid("d427e0b2e138501a3d15cc376077a3631e15bd46") == 
+            oid(getentry(index, "conflicting.txt", 1)))
+    @test (Oid("4e886e602529caa9ab11d71f86634bd1b6e0de10") ==
+            oid(getentry(index, "conflicting.txt", 2)))
+    @test (Oid("2bd0a343aeef7a2cf0d158478966a6e587ff3863") == 
+            oid(getentry(index, "conflicting.txt", 3)))
+
+    @test (Oid("c8f06f2e3bb2964174677e91f0abead0e43c9e5d") ==
+            oid(getentry(index, "unchanged.txt", 0)))
+    @test has_conflicts(index) 
+end
 
 #---------------------------
 # Shallow Repo Test

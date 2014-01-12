@@ -4,7 +4,7 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
-       ahead_behind, merge_base, oid, blob_at, is_shallow, hash_data,
+       ahead_behind, merge_base, merge_commits, oid, blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk,
@@ -1131,6 +1131,28 @@ Base.merge!(r::Repository, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=not
     return GitIndex(idx_ptr[1])
 end
 
+#------- Merge Commits -----
+function merge_commits(r::Repository, 
+                       ours::Union(GitCommit, Oid), 
+                       theirs::Union(GitCommit, Oid), 
+                       opts=nothing)
+    @assert r.ptr != C_NULL && ours.ptr != C_NULL && theirs.ptr != C_NULL
+    gopts = parse_merge_options(opts)
+    if isa(ours, Oid)
+        ours = lookup_commit(r, ours)
+    end
+    if isa(theirs, Oid)
+        theirs = lookup_commit(r, theirs)
+    end
+    index_ptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_merge_commits, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void},
+                  Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
+                  index_ptr, r.ptr, ours.ptr, theirs.ptr, &gopts)
+    @check_null index_ptr
+    return GitIndex(index_ptr[1])
+end
+
 #------- Repo Checkout -------
 function cb_checkout_progress(path_ptr::Ptr{Cchar}, 
                               completed_steps::Csize_t,
@@ -1389,7 +1411,6 @@ function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
     callback_dict = unsafe_pointer_to_objref(payload)::Dict
     callback = callback_dict[:transfer_progress]
     try
-        #TODO; transfer progress?
         callback(stats.total_objects,
                  stats.indexed_objects,
                  stats.received_objects,

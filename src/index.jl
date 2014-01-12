@@ -195,6 +195,9 @@ function add!(idx::GitIndex, path::String)
     return idx
 end
 
+Base.getindex(idx::GitIndex, path::String, stage::Int=0) = begin
+    return getentry(idx, path, stage)
+end
 
 function getentry(idx::GitIndex, path::String, stage=0)
     @assert idx.ptr != C_NULL
