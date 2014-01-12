@@ -839,6 +839,98 @@ end
 @libgit(git_checkout_head, Cint, (Ptr{Void}, Ptr{Void})) 
 @libgit(git_checkout_index, Cint, (Ptr{Void}, Ptr{Void}, Ptr{Void}))
 
+
+# ------ libgit clone------
+type GitTransferProgress
+    total_objects::Cuint
+    indexed_objects::Cuint
+    received_objects::Cuint
+    local_objects::Cuint
+    total_deltas::Cuint
+    indexed_deltas::Cuint
+    received_bytes::Csize_t
+end
+
+type GitCloneOpts
+    version::Cuint
+    
+    pad::Cuint
+    
+    # git checkout options
+    checkout_version::Cuint
+    checkout_strategy::Cuint
+    disable_filters::Cint
+    dir_mode::Cuint
+    file_mode::Cuint
+    file_open_flags::Cint
+    
+    notify_flags::Cuint 
+    notify_cb::Ptr{Void}
+    notify_payload::Ptr{Void}
+    
+    progress_cb::Ptr{Void}
+    progress_payload::Ptr{Void}
+
+    paths_strings::Ptr{Ptr{Cchar}}
+    paths_count::Csize_t
+
+    baseline::Ptr{Void}
+
+    target_directory::Ptr{Cchar}
+    our_label::Ptr{Cchar}
+    their_label::Ptr{Cchar}
+
+    # git remote callback options
+    remote_version::Cuint
+    remote_progress_cb::Ptr{Void}
+    remote_completion_cb::Ptr{Void}
+    remote_credentials_cb::Ptr{Void}
+    remote_transfer_progress_cb::Ptr{Void}
+    remote_update_tips_cb::Ptr{Void}
+    remote_payload::Ptr{Void}
+
+    bare::Cint
+    ignore_cert_errors::Cint
+    remote_name::Ptr{Cchar}
+    checkout_branch::Ptr{Cchar}
+
+    function GitCloneOpts()
+        return new(1,
+                   0, # padding
+                   1,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   0,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   
+                   1,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+                   C_NULL,
+
+                   0,
+                   0,
+                   C_NULL,
+                   C_NULL)
+    end
+end
+
+
 # ------ libgit config  ------
 type GitConfigEntry
     name::Ptr{Cchar}

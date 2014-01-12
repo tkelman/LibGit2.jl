@@ -9,7 +9,8 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk,
        branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
-       remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, ishead_detached
+       remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
+       ishead_detached, repo_clone 
 
 type Repository
     ptr::Ptr{Void}
@@ -235,14 +236,6 @@ function repo_init(path::String; bare::Bool=false)
     end
     @check_null repo_ptr
     return Repository(repo_ptr[1])
-end
-
-
-function repo_clone(url::String; 
-                    repobare::Bool=false,
-                    ignore_cert_errors::Bool=false,
-                    remote_name::String="origin",
-                    checkout_branch=nothing)
 end
 
 
@@ -1086,6 +1079,9 @@ end
 
 function parse_merge_options(opts::Dict)
     merge_opts = api.GitMergeTreeOpts()
+    if isempty(opts)
+        return merge_opts
+    end
     if haskey(opts, :rename_threshold)
         merge_opts.rename_threshold = convert(Cuint, opts[:rename_threshold])
     end
@@ -1196,7 +1192,9 @@ end
 
 function parse_checkout_options(opts::Dict)
     gopts = api.GitCheckoutOpts()
-    @assert gopts.version == 1
+    if isempty(opts)
+        return gopts
+    end
     if haskey(opts, :progress)
         if !isa(opts[:progress], Function)
             throw(ArgumentError("opts[:progress] must be a Function object"))
@@ -1345,7 +1343,7 @@ function checkout_head!(r::Repository, opts=nothing)
     err = ccall((:git_checkout_head, api.libgit2), Cint,
                 (Ptr{Void}, Ptr{api.GitCheckoutOpts}),
                 r.ptr, &gopts)
-    #TODO: memory leak with option strings
+    #TODO: memory leak with option strings??, cleanup on exceptions, etc...
     if err != api.GIT_OK
         throw(GitError(err))
     end
@@ -1382,6 +1380,77 @@ function checkout!(r::Repository, target, opts={})
         checkout_tree!(r, commit, opts)
     end
 end
+
+
+#------- Repo Clone -------
+function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
+                            payload::Ptr{Void})
+    stats = unsafe_load(stats_ptr)
+    callback_dict = unsafe_pointer_to_objref(payload)::Dict
+    callback = callback_dict[:transfer_progress]
+    try
+        #TODO; transfer progress?
+        callback(stats.total_objects,
+                 stats.indexed_objects,
+                 stats.received_objects,
+                 stats.received_bytes)
+        return api.GIT_OK
+    catch err
+        callback_dict[:exception] = err
+        return api.ERROR
+    end
+end
+
+const c_cb_remote_transfer = cfunction(cb_remote_transfer, Cint,
+                                       (Ptr{api.GitTransferProgress}, Ptr{Void}))
+
+function parse_clone_options(opts::Nothing)
+    return api.GitCloneOpts()
+end
+
+function parse_clone_options(opts::Dict)
+    gopts = api.GitCloneOpts()
+    if isempty(opts)
+        return gopts
+    end
+    if get(opts, :bare, false)
+        gopts.bare = convert(Cint, 1)
+    end
+    if haskey(opts, :credentials)
+        #TODO:
+    end
+    if haskey(opts, :callbacks)
+        callbacks = opts[:callbacks]
+        if haskey(callbacks, :transfer_progress)
+            if !isa(callbacks[:transfer_progress], Function)
+                throw(ArgumentError("callback :transfer_progress must be a Function"))
+            end
+            gopts.remote_payload = pointer_from_objref(callbacks)
+            gopts.remote_transfer_progress_cb = c_cb_remote_transfer 
+        end
+    end
+    return gopts
+end
+
+function repo_clone(url::String, path::String, opts=nothing)
+    gopts = parse_clone_options(opts)
+    repo_ptr = Array(Ptr{Void}, 1)
+    err = ccall((:git_clone, api.libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),
+                 repo_ptr, bytestring(url), bytestring(path), &gopts)
+    #TODO: cleanup
+    if err != api.GIT_OK
+        payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
+        if haskey(payload, :exception)
+            throw(payload[:exception])
+        else
+            throw(GitError(err))
+        end
+    end
+    @check_null repo_ptr
+    return Repository(repo_ptr[1])
+end
+
 
 #------- Tree Builder -------
 type TreeBuilder
