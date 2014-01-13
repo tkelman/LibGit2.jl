@@ -223,6 +223,11 @@ const DIRECTION_PUSH  = cint(1)
 
 const BLAME_NORMAL = cint(0)
 
+const CREDTYPE_USERPASS_PLAINTEXT = cuint(1) << cint(0)
+const CREDTYPE_SSH_KEY = cuint(1) << cint(1)
+const CREDTYPE_SSH_CUSTOM = cuint(1) << cint(2)
+const CREDTYPE_DEFAULT = cuint(1) << cint(3)
+
 type GitMergeOpts
     version::Cuint
     merge_flags::Cint

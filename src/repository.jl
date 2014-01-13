@@ -1447,11 +1447,27 @@ end
 
 
 #------- Repo Clone -------
+abstract GitCredential
+
+type CredDefault <: GitCredential end
+
+type CredPlainText <: GitCredential
+    username::String
+    password::String
+end
+
+type CredSSHKey <: GitCredential
+    username::Union(Nothing, String)
+    publickey::Union(Nothing, String)
+    privatekey::String
+    passphrase::Union(Nothing, String)
+end
+
 function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
-                            payload::Ptr{Void})
+                            payload_ptr::Ptr{Void})
     stats = unsafe_load(stats_ptr)
-    callback_dict = unsafe_pointer_to_objref(payload)::Dict
-    callback = callback_dict[:transfer_progress]
+    payload = unsafe_pointer_to_objref(payload_ptr)::Dict
+    callback = payload[:callbacks][:transfer_progress]
     try
         callback(stats.total_objects,
                  stats.indexed_objects,
@@ -1459,7 +1475,7 @@ function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
                  stats.received_bytes)
         return api.GIT_OK
     catch err
-        callback_dict[:exception] = err
+        payload[:exception] = err
         return api.ERROR
     end
 end
@@ -1467,12 +1483,72 @@ end
 const c_cb_remote_transfer = cfunction(cb_remote_transfer, Cint,
                                        (Ptr{api.GitTransferProgress}, Ptr{Void}))
 
+function cb_default_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
+                                       url::Ptr{Cchar},
+                                       username_from_url::Ptr{Cchar},
+                                       allowed_types::Cuint,
+                                       payload_ptr::Ptr{Void})
+    
+    payload = unsafe_pointer_to_objref(payload_ptr)::Dict
+    try
+        cred = payload[:credentials]
+        if cred <: CredPlainText
+            if !bool(allowed_types & api.CREDTYPE_USERPASS_PLAINTEXT)
+                error("invalid credential type")
+            end
+            #@check api.git_cred_userpass_plaintext_new(cred_ptr,
+            #                                           bytestring(cred.username),
+            #                                           bytestring(cred.password))
+        elseif cred <: CredSSHKey
+            if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
+                error("invalid credential type")
+            end
+            #@check api.git_cred_ssh_key_new(cred_ptr,
+            #                                cred.username != nothing? cred.username : C_NULL,
+            #                                cred.publickey != nothing? cred.publickey : C_NULL,
+            #                                cred.privatekey != nothing? cred.privatekey : C_NULL,
+            #                                cred.passphrase != nothing? cred.passphrase : C_NULL)
+        elseif cred <: CredDefault
+            if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
+                error("invalid credential type")
+            end
+            ptr = unsafe_load(cred_ptr)
+            boxed_ptr = [ptr]
+            @check ccall((:git_cred_default_new, api.libgit2), Cint,
+                         (Ptr{Ptr{Void}},), boxed_ptr)
+
+        else
+            error("invalid credential type")
+        end
+        return api.GIT_OK
+    catch err
+        payload[:exception] = err
+        return api.ERROR
+    end
+end
+
+const c_cb_default_remote_credentials = cfunction(cb_default_remote_credentials, Cint,
+                                                  (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Cuint, Ptr{Void}))
+
+function cb_remote_credentials(cred::Ptr{Ptr{Void}},
+                               url::Ptr{Cchar},
+                               username_from_url::Ptr{Cchar},
+                               allowed_types::Cuint,
+                               payload_ptr::Ptr{Void})
+    return api.GIT_OK
+end
+
+const c_cb_remote_credential = cfunction(cb_remote_credentials, Cint,
+                                         (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Cuint, Ptr{Void}))
+
+
 function parse_clone_options(opts::Nothing)
     return api.GitCloneOpts()
 end
 
 function parse_clone_options(opts::Dict)
     gopts = api.GitCloneOpts()
+    payload = Dict() 
     if isempty(opts)
         return gopts
     end
@@ -1480,18 +1556,28 @@ function parse_clone_options(opts::Dict)
         gopts.bare = convert(Cint, 1)
     end
     if haskey(opts, :credentials)
-        #TODO:
+        cred = opts[:credentials]
+        if cred <: GitCredential
+            payload[:credentials] = cred
+            gopts.remote_credentials_cb = c_cb_default_remote_credentials
+        elseif cred <: Function
+            payload[:credentials] = cred
+            gopts.remote_credentials_cb = c_cb_remote_credential
+        else
+            throw(ArgumentError("clone option :credentials must be a GitCredential or Function type"))
+        end
     end
     if haskey(opts, :callbacks)
         callbacks = opts[:callbacks]
         if haskey(callbacks, :transfer_progress)
             if !isa(callbacks[:transfer_progress], Function)
-                throw(ArgumentError("callback :transfer_progress must be a Function"))
+                throw(ArgumentError("clone callback :transfer_progress must be a Function"))
             end
-            gopts.remote_payload = pointer_from_objref(callbacks)
+            payload[:callbacks] = callbacks
             gopts.remote_transfer_progress_cb = c_cb_remote_transfer 
         end
     end
+    gopts.remote_payload = pointer_from_objref(payload)
     return gopts
 end
 
