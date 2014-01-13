@@ -284,6 +284,7 @@ end
     their_commit = lookup_branch(test_repo, "branch") |> tip
 
     index = merge_commits(test_repo, our_commit, their_commit)
+    @show length(index)
     @test length(index) == 8
 
     @test (Oid("233c0919c998ed110a4b6ff36f353aec8b713487") == 
