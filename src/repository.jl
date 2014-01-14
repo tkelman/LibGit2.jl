@@ -10,7 +10,8 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
        branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
-       ishead_detached, repo_clone 
+       ishead_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
+       repo_clone
 
 type Repository
     ptr::Ptr{Void}
@@ -1484,31 +1485,32 @@ const c_cb_remote_transfer = cfunction(cb_remote_transfer, Cint,
                                        (Ptr{api.GitTransferProgress}, Ptr{Void}))
 
 function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_types::Cuint)
-    if cred <: CredPlainText
+    if isa(cred, CredPlainText)
         if !bool(allowed_types & api.CREDTYPE_USERPASS_PLAINTEXT)
             error("invalid credential type")
         end
-        #@check api.git_cred_userpass_plaintext_new(cred_ptr,
-        #                                           bytestring(cred.username),
-        #                                           bytestring(cred.password))
-    elseif cred <: CredSSHKey
+        @check ccall((:git_cred_userpass_plaintext_new, api.libgit2), Cint,
+                      (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}),
+                       cred_ptr,
+                       bytestring(cred.username),
+                       bytestring(cred.password))
+    elseif isa(cred, CredSSHKey)
         if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
-        #@check api.git_cred_ssh_key_new(cred_ptr,
-        #                                cred.username != nothing? cred.username : C_NULL,
-        #                                cred.publickey != nothing? cred.publickey : C_NULL,
-        #                                cred.privatekey != nothing? cred.privatekey : C_NULL,
-        #                                cred.passphrase != nothing? cred.passphrase : C_NULL)
-    elseif cred <: CredDefault
+        @check ccall((:git_cred_ssh_key_new, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Cchar}),
+                     cred_ptr,
+                     cred.username != nothing ? cred.username : C_NULL,
+                     cred.publickey != nothing ? cred.publickey : C_NULL,
+                     cred.privatekey != nothing ? cred.privatekey : C_NULL,
+                     cred.passphrase != nothing ? cred.passphrase : C_NULL)
+    elseif (cred, CredDefault)
         if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
-        ptr = unsafe_load(cred_ptr)
-        boxed_ptr = [ptr]
         @check ccall((:git_cred_default_new, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}},), boxed_ptr)
-
+                     (Ptr{Ptr{Void}},), cred_ptr)
     else
         error("invalid credential type")
     end
@@ -1524,7 +1526,7 @@ function cb_default_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
     cred = payload[:credentials]
     try
-        extract_cred!(cred, allowed_types)
+        extract_cred!(cred, cred_ptr, allowed_types)
         return api.GIT_OK
     catch err
         payload[:exception] = err
@@ -1535,9 +1537,9 @@ end
 const c_cb_default_remote_credentials = cfunction(cb_default_remote_credentials, Cint,
                                                   (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Cuint, Ptr{Void}))
 
-function cb_remote_credentials(cred::Ptr{Ptr{Void}},
+function cb_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
                                url::Ptr{Cchar},
-                               username_from_url::Ptr{Cchar},
+                               username::Ptr{Cchar},
                                allowed_types::Cuint,
                                payload_ptr::Ptr{Void})
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
@@ -1555,9 +1557,9 @@ function cb_remote_credentials(cred::Ptr{Ptr{Void}},
     try
         cred = cred_func(url != C_NULL ? bytestring(url) : nothing,
                          username != C_NULL ? bytestring(username) : nothing,
-                         allowed_types)
+                         types)
         #TODO: better error msg
-        if !(cred <: GitCredential)
+        if !(isa(cred, GitCredential))
             error("returned credential is not a git credential subtype")
         end
         extract_cred!(cred, cred_ptr, allowed_types)
@@ -1586,10 +1588,10 @@ function parse_clone_options(opts::Dict)
     end
     if haskey(opts, :credentials)
         cred = opts[:credentials]
-        if cred <: GitCredential
+        if isa(cred, GitCredential)
             payload[:credentials] = cred
             gopts.remote_credentials_cb = c_cb_default_remote_credentials
-        elseif cred <: Function
+        elseif isa(cred, Function)
             payload[:credentials] = cred
             gopts.remote_credentials_cb = c_cb_remote_credential
         else
@@ -1616,7 +1618,6 @@ function repo_clone(url::String, path::String, opts=nothing)
     err = ccall((:git_clone, api.libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),
                  repo_ptr, bytestring(url), bytestring(path), &gopts)
-    #TODO: cleanup
     if err != api.GIT_OK
         payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
         if haskey(payload, :exception)
@@ -1680,6 +1681,7 @@ function repo_treebuilder(r::Repository)
 end
 
 TreeBuilder(r::Repository) = repo_treebuilder(r)
+
 #-------- Reference Iterator --------
 #TODO: handle error's when iterating (see branch)
 type ReferenceIterator

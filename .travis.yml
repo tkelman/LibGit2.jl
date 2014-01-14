@@ -48,3 +48,5 @@ script:
   - julia runtests.jl patch
   - julia runtests.jl merge
   - julia runtests.jl remote
+  
+  - sh run_remote_clone.sh
