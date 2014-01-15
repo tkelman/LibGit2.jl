@@ -1,9 +1,9 @@
 macro get_oid_fieldnames(arr, obj, fieldname)
-    args = {}
+    expr = Expr(:block)
     for i in 1:api.OID_RAWSZ
-        push!(args, :($arr[$i] = $obj.$(symbol(string(fieldname, i)))))
+        push!(expr.args, :($arr[$i] = $obj.$(symbol(string(fieldname, i)))))
     end
-    return Expr(:block, args...)
+    return expr 
 end
 
 macro get_header_fieldnames(arr, obj)
