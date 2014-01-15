@@ -113,10 +113,8 @@ type DiffHunk
                       lc::Integer)
         @assert ptr != C_NULL
         h = unsafe_load(ptr)
-        head_arr = zeros(Cchar, h.header_len)
-        for i in 1:h.header_len
-            head_arr[i] = getfield(h, symbol("header$i"))
-        end
+        head_arr = zeros(Cchar, 128)
+        @get_header_fieldnames(head_arr, h)
         return new(p,
                    bytestring(convert(Ptr{Cchar}, head_arr)),
                    lc,

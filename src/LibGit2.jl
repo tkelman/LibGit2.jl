@@ -4,6 +4,7 @@ include("api.jl")
 
 include("error.jl")
 include("types.jl")
+include("macros.jl")
 include("oid.jl")
 include("config.jl")
 include("object.jl")

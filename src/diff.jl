@@ -115,6 +115,7 @@ function delta_status_symbol(s::Integer)
     return :unknown
 end
 
+
 type DiffDelta
     old_file::DiffFile
     new_file::DiffFile
@@ -127,9 +128,7 @@ type DiffDelta
         d = unsafe_load(ptr)
         
         arr = Array(Uint8, api.OID_RAWSZ)
-        for i in 1:api.OID_RAWSZ
-            arr[i] = getfield(d, symbol("old_file_oid$i"))
-        end
+        @get_oid_fieldnames(arr, d, old_file_oid)
         old_file_oid = Oid(arr)
         
         fold = DiffFile(old_file_oid,
@@ -139,9 +138,7 @@ type DiffDelta
                         int(d.old_file_mode))
         
         arr = Array(Uint8, api.OID_RAWSZ)
-        for i in 1:api.OID_RAWSZ
-            arr[i] = getfield(d, symbol("new_file_oid$i"))
-        end
+        @get_oid_fieldnames(arr, d, new_file_oid)
         new_file_oid = Oid(arr)
                         
         fnew = DiffFile(new_file_oid,

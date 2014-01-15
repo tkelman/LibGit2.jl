@@ -170,9 +170,7 @@ function IndexEntry(ptr::Ptr{api.GitIndexEntry})
     
     #TODO: refactor 
     arr = Array(Uint8, api.OID_RAWSZ)
-    for i in 1:api.OID_RAWSZ
-        arr[i] = getfield(gentry, symbol("oid$i"))
-    end
+    @get_oid_fieldnames(arr, gentry, oid)
     oid = Oid(arr)
 
     return IndexEntry(path, oid, ctime, mtime, file_size,

@@ -167,17 +167,14 @@ type RemoteHead
 end
 
 RemoteHead(ghead::api.GitRemoteHead) = begin
-    #TODO: these should be macros
     oid_arr = Array(Uint8, api.OID_RAWSZ)
-    for i in 1:api.OID_RAWSZ
-        oid_arr[i] = getfield(ghead, symbol("oid$i"))
-    end
+    @get_oid_fieldnames(oid_arr, ghead, oid)
     oid = Oid(oid_arr)
+    
     loid_arr = Array(Uint8, api.OID_RAWSZ)
-    for i in 1:api.OID_RAWSZ
-        loid_arr[i] = getfield(ghead, symbol("loid$i"))
-    end
+    @get_oid_fieldnames(loid_arr, ghead, loid)
     loid = Oid(loid_arr)
+    
     return RemoteHead(bool(ghead.islocal),
                       oid,
                       iszero(loid)? nothing : loid,
