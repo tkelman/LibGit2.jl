@@ -1437,13 +1437,13 @@ function checkout!(r::Repository, target, opts={})
     if branch != nothing
         checkout_tree!(r, tip(branch), opts)
         if isremote(branch)
-            create_ref(r, "HEAD", oid(tip(branch)), true)
+            create_ref(r, "HEAD", oid(tip(branch)), force=true)
         else
-            create_ref(r, "HEAD", canonical_name(branch), true)
+            create_ref(r, "HEAD", canonical_name(branch), force=true)
         end
     else
         commit = lookup_commit(r, rev_parse_oid(r, target))
-        create_ref(r, "HEAD", oid(commit), true)
+        create_ref(r, "HEAD", oid(commit), force=true)
         checkout_tree!(r, commit, opts)
     end
 end

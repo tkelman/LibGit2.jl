@@ -5,7 +5,7 @@ include("util.jl")
 
 testnames = ["oid", 
              "blob",
-             #"repository", 
+             "repository", 
              "config", 
              "signature", 
              "index", 
