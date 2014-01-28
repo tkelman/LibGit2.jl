@@ -378,7 +378,6 @@ end
 #    @test_throws repo_discover(tmpdir)
 #end
 
-#@show :here
 # test discover nested false
 #@discover_test begin
 #    @test_throws repo_disover(joinpath(tmpdir, "foo"))
@@ -532,7 +531,6 @@ end
 #---------------------------
 # Repo Namespace Test
 #---------------------------
-@show :here
 @sandboxed_test "testrepo.git" begin 
     @test namespace(test_repo) == nothing
 end
