@@ -304,16 +304,12 @@ end
 
 GitBuffer() = begin
     buf = GitBuffer(C_NULL, 0, 0)
-    #ccall((:git_buf_init, libgit), Void,
-    #      (Ptr{GitBuffer}, Csize_t),
-    #       &buf, 0)
     return buf
 end
 
 free!(b::GitBuffer) = begin
     # this does not free the git_buf
-    # itself but memory pointed to by
-    # buf-> ptr
+    # itself but memory pointed to by buf-> ptr
     if b.ptr != C_NULL
         ccall((:git_buf_free, libgit2), Void,
               (Ptr{GitBuffer},), &buf)
@@ -890,9 +886,8 @@ end
 
 type GitCloneOpts
     version::Cuint
-    
-    #pad::Cuint
-    
+    pad1::Cuint
+     
     # git checkout options
     checkout_version::Cuint
     checkout_strategy::Cuint
@@ -917,8 +912,9 @@ type GitCloneOpts
     our_label::Ptr{Cchar}
     their_label::Ptr{Cchar}
 
-    pad::Cuint
-    
+    pad2::Cuint
+    pad3::Cuint
+
     # git remote callback options
     remote_version::Cuint
     remote_progress_cb::Ptr{Void}
@@ -935,7 +931,8 @@ type GitCloneOpts
 
     function GitCloneOpts()
         return new(1,
-                   #1, # padding
+                   0, # padding
+                   
                    1,
                    0,
                    0,
@@ -954,6 +951,9 @@ type GitCloneOpts
                    C_NULL,
                    C_NULL,
                    
+                   0, #padding
+                   0, #padding
+
                    1,
                    C_NULL,
                    C_NULL,
@@ -966,6 +966,7 @@ type GitCloneOpts
                    0,
                    C_NULL,
                    C_NULL)
+                   #convert(Ptr{Cchar}, "a")) useful for testing
     end
 end
 

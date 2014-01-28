@@ -460,73 +460,72 @@ end
 #---------------------------
 # test clone repo
 @repo_clone_test begin
-#    repo = repo_clone(source_path, tmppath)
-#    try
+    repo = repo_clone(source_path, tmppath)
+    try
 #      @test open(readline, joinpath(tmppath, "README")) |> chomp == "hey"
-#
-#      @test (target(head(repo)) 
-#                == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-#      @test (target(ref(repo, "refs/heads/master")) 
-#                == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-#      @test (target(ref(repo, "refs/remotes/origin/master"))
-#                == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-#      @test (target(ref(repo, "refs/remotes/origin/packed")) 
-#                == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9"))
-#    finally
-#      close(repo)
-#    end
+      @test (target(head(repo)) 
+                == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+      @test (target(lookup_ref(repo, "refs/heads/master")) 
+                == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+      @test (target(lookup_ref(repo, "refs/remotes/origin/master"))
+                == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+      @test (target(lookup_ref(repo, "refs/remotes/origin/packed")) 
+                == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9"))
+    finally
+      close(repo)
+    end
 end
-#
+
 ## test clone bare
-#@repo_clone_test begin
-#    repo = repo_clone(source_path, tmppath, {:bare => true})
-#    try
-#        @test is_bare(repo)
-#    catch
-#        close(repo)
-#    end
-#end
-#
+@repo_clone_test begin
+    repo = repo_clone(source_path, tmppath, {:bare => true})
+    try
+        @test is_bare(repo)
+    catch
+        close(repo)
+    end
+end
+
 ## test_clone_with_progress
-#@repo_clone_test begin
-#    total_objects = indexed_objects = received_objects = received_bytes = 0
-#    callsback = 0
-#    repo = repo_clone(source_path, tmppath, {
-#      :callbacks => {
-#        :transfer_progress => (args...) -> begin
-#          total_objects, indexed_objects, received_objects, received_bytes = args
-#          callsback += 1
-#          end
-#        }
-#      }
-#    )
-#    close(repo)
-#    @test 22 == callsback
-#    @test 19 == total_objects
-#    @test 19 == indexed_objects
-#    @test 19 == received_objects
-#    @test 1563 == received_bytes
-#end
-#
+@repo_clone_test begin
+    total_objects = indexed_objects = received_objects = received_bytes = 0
+    callsback = 0
+    repo = repo_clone(source_path, tmppath, {
+      :callbacks => {
+        :transfer_progress => (args...) -> begin
+          total_objects, indexed_objects, received_objects, received_bytes = args
+          callsback += 1
+          end
+        }
+      }
+    )
+    close(repo)
+    @test 22 == callsback
+    @test 19 == total_objects
+    @test 19 == indexed_objects
+    @test 19 == received_objects
+    @test 1563 == received_bytes
+end
+
 ## test_clone_quits_on_error
-#@repo_clone_test begin
-#    try
-#      repo_clone(source_path, tmppath, {:callbacks => {
-#        :transfer_progress => (args...) -> error("boom")
-#      }})
-#    catch err
-#      @test err.msg == "boom"
-#    end
-#    @test isdir(joinpath(tmppath, ".git")) == false
-#end
-#
+@repo_clone_test begin
+    try
+      repo_clone(source_path, tmppath, {:callbacks => {
+        :transfer_progress => (args...) -> error("boom")
+      }})
+    catch err
+      @test err.msg == "boom"
+    end
+    @test isdir(joinpath(tmppath, ".git")) == false
+end
+
 # test_clone_with_bad_progress_callback
-#@repo_clone_test begin
-#    @test_throws repo_clone(source_path, tmppath, {:callbacks => {
-#        :transfer_progress => ()
-#      }})
-#    @test isdir(joinpath(tmppath, ".git")) == false
-#end
+@repo_clone_test begin
+    @test_throws repo_clone(source_path, tmppath, {:callbacks => {
+        :transfer_progress => ()
+      }})
+    @test isdir(joinpath(tmppath, ".git")) == false
+end
 
 #---------------------------
 # Repo Namespace Test

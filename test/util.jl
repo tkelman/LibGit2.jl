@@ -14,7 +14,7 @@ macro repo_clone_test(body)
             try
                $body
             finally
-               run($(`rm -r -f $tmp_dir`))
+               #run($(`rm -r -f $tmp_dir`))
            end
         end
     end

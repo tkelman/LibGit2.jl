@@ -730,7 +730,6 @@ function references(r::Repository)
     return nothing
 end
 
-
 function repo_discover(p::String="", acrossfs::Bool=true)
     if isempty(p); p = pwd(); end
     brepo = Array(Cchar, api.GIT_PATH_MAX)
@@ -1623,12 +1622,12 @@ function repo_clone(url::String, path::String, opts=nothing)
                 (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),
                  repo_ptr, bytestring(url), bytestring(path), &gopts)
     if err != api.GIT_OK
-        #payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
-        #if haskey(payload, :exception)
-        #    throw(payload[:exception])
-        #else
+        payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
+        if haskey(payload, :exception)
+            throw(payload[:exception])
+        else
             throw(GitError(err))
-        #end
+        end
     end
     @check_null repo_ptr
     return Repository(repo_ptr[1])
