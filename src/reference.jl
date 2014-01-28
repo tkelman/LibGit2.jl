@@ -39,14 +39,22 @@ function set_symbolic_target(r::GitReference, target::String;
     @assert r.ptr != C_NULL
     btarget = bytestring(target)
     bmsg = msg != nothing ? bytestring(msg) : C_NULL
-    #gsig = sig != nothing ? git_signature(sig) : git_signature_default()
     ref_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_reference_set_symbolic_target, api.libgit2), Cint,
-                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, 
-                   Ptr{Void}, Ptr{Cchar}),
-                   ref_ptr, r.ptr, btarget, 
-                   C_NULL, bmsg)
-    #@check api.git_reference_symbolic_target(ref_ptr, r.ptr, btarget)
+    if sig == nothing
+        @check ccall((:git_reference_set_symbolic_target, api.libgit2), Cint,
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, 
+                       Ptr{Void}, Ptr{Cchar}),
+                       ref_ptr, r.ptr, btarget, 
+                       C_NULL, bmsg)
+    else
+        @assert isa(sig, Signature)
+        gsig = git_signature(sig)
+        @check ccall((:git_reference_set_symbolic_target, api.libgit2), Cint,
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, 
+                       Ptr{api.GitSignature}, Ptr{Cchar}),
+                       ref_ptr, r.ptr, btarget, 
+                       &gsig, bmsg)
+    end
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
@@ -55,14 +63,22 @@ function set_target(r::GitReference, id::Oid;
                     msg=nothing, sig=nothing)
     @assert r.ptr != C_NULL
     bmsg = msg != nothing ? bytestring(msg) : C_NULL
-    #gsig = sig != nothing ? git_signature(sig) : git_signature_default()
     ref_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_reference_set_target, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
-                  Ptr{Void}, Ptr{Cchar}),
-                  ref_ptr, r.ptr, id.oid,
-                  C_NULL, bmsg)
-    #@check api.git_reference_set_target(ref_ptr, r.ptr, id.oid)
+    if sig == nothing
+        @check ccall((:git_reference_set_target, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
+                      Ptr{Void}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, id.oid,
+                      C_NULL, bmsg)
+    else
+        @assert isa(sig, Signature)
+        gsig = git_signature(sig)
+        @check ccall((:git_reference_set_target, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
+                      Ptr{api.GitSignature}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, id.oid,
+                      &gsig, bmsg)
+    end
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end

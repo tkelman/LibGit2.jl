@@ -218,13 +218,11 @@ end
     @test target(resolved) == peel(ref)
 end
 
-@show :test_looking_up_missing_ref_returns_nil
 @with_tmp_repo_access begin
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
 end
 
-@show :test_create_ref_from_oid
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
    
@@ -237,7 +235,6 @@ end
    delete!(test_repo, ref)
 end
 
-@show :test_rename_ref
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
       "refs/heads/unit_test",
@@ -252,7 +249,6 @@ end
     delete!(test_repo, new_ref)
 end
 
-@show :test_set_ref_target
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/unit_test",
@@ -261,17 +257,12 @@ end
     @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test isa(ref, GitReference{Oid})
     @test name(ref) == "refs/heads/unit_test"
-    @show :setting_target
     new_ref = set_target(ref, Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
-    @show :getting_target
     t = target(new_ref)
     @test t == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    @show :deleting_ref
     delete!(test_repo, new_ref)
-    @show :done
 end
 
-@show :one
 @with_tmp_repo_access begin
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
     ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
@@ -279,7 +270,6 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
-@show :one
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
@@ -306,7 +296,6 @@ end
     @test email(rlog[end].committer) == "foo@bar"
 end
 
-@show :one
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
