@@ -4,7 +4,7 @@ using LibGit2
 include("util.jl")
 
 testnames = ["oid", 
-             "blob", 
+             "blob",
              #"repository", 
              "config", 
              "signature", 

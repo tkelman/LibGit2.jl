@@ -295,6 +295,32 @@ end
 @libgit(git_threads_init, Cint, ())
 @libgit(git_threads_shutdown, Cint, ())
 
+# ----- libgit buffer -----
+type GitBuffer
+    ptr::Ptr{Cchar}
+    asize::Csize_t
+    size::Csize_t
+end
+
+GitBuffer() = begin
+    buf = GitBuffer(C_NULL, 0, 0)
+    #ccall((:git_buf_init, libgit), Void,
+    #      (Ptr{GitBuffer}, Csize_t),
+    #       &buf, 0)
+    return buf
+end
+
+free!(b::GitBuffer) = begin
+    # this does not free the git_buf
+    # itself but memory pointed to by
+    # buf-> ptr
+    if b.ptr != C_NULL
+        ccall((:git_buf_free, libgit2), Void,
+              (Ptr{GitBuffer},), &buf)
+        b.ptr = C_NULL
+    end
+end
+
 # ----- libgit repo ------
 @libgit(git_repository_discover, Cint, 
         (Ptr{Cchar}, Csize_t, Ptr{Cchar}, Cint, Ptr{Void}))  
@@ -710,7 +736,7 @@ end
 @libgit(git_push_unpack_ok, Cint, (Ptr{Void},))
 @libgit(git_push_update_tips, Cint, (Ptr{Void},))
 
-# ------k libgit branch ------
+# ------ libgit branch ------
 @libgit(git_branch_create, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint))
 @libgit(git_branch_iterator_new, Cint, (Ptr{Void}, Ptr{Void}, Cint))
@@ -722,7 +748,7 @@ end
 @libgit(git_branch_is_head, Cint, (Ptr{Void},))
 @libgit(git_branch_move, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_branch_remote_name, Cint, 
-        (Ptr{Cchar}, Csize_t, Ptr{Void}, Ptr{Cchar}))
+        (Ptr{Cchar}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_branch_upstream, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_branch_set_upstream, Cint, (Ptr{Void}, Ptr{Cchar}))
 

@@ -56,7 +56,6 @@ end
     @test new_branch == retrieved_branch
 end
 
-
 # test_delete_branch
 @with_tmp_repo_access begin
     b = create_branch(test_repo, "test_branch")
