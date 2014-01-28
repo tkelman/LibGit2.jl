@@ -735,9 +735,11 @@ function repo_discover(p::String="", acrossfs::Bool=true)
     if isempty(p); p = pwd(); end
     brepo = Array(Cchar, api.GIT_PATH_MAX)
     bp = bytestring(p)
-    @check api.git_repository_discover(brepo, api.GIT_PATH_MAX, 
-                                       bp, acrossfs? 1 : 0, C_NULL)
-    return Repository(bytestring(convert(Ptr{Cchar}, brepo)))
+    buf = api.GitBuffer()
+    @check ccall((:git_repository_discover, api.libgit2), Cint,
+                 (Ptr{api.GitBuffer}, Ptr{Cchar}, Cint, Ptr{Cchar}),
+                  &buf, bp, acrossfs? 1 : 0, C_NULL)
+    return Repository(bytestring(buf.ptr))
 end
 
 function rev_parse(r::Repository, rev::String)
@@ -876,19 +878,21 @@ function lookup_ref(r::Repository, refname::String)
     return GitReference(ref_ptr[1])
 end
 
-function create_ref(r::Repository, refname::String,
-                    id::Oid, force::Bool=false)
+function create_ref(r::Repository, refname::String, id::Oid; 
+                    force::Bool=false, msg=nothing, sig=nothing)
     @assert r.ptr != C_NULL
     bname = bytestring(refname)
+    bmsg  = msg != nothing ? bytestring(msg) : C_NULL
+    gsig  = sig != nothing ? git_signature(sig) : C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
     @check api.git_reference_create(ref_ptr, r.ptr, bname,
-                                    id.oid, force? 1 : 0)
+                                    id.oid, force? 1 : 0, gsig, bmsg)
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
 function create_ref(r::Repository, refname::String, 
-                    target::String, force::Bool=false)
+                    target::String; force::Bool=false)
     create_sym_ref(r, refname, target, force)
 end
 
@@ -1435,13 +1439,13 @@ function checkout!(r::Repository, target, opts={})
     if branch != nothing
         checkout_tree!(r, tip(branch), opts)
         if isremote(branch)
-            create_ref(r, "HEAD", oid(tip(branch)), true)
+            create_ref(r, "HEAD", oid(tip(branch)), force=true)
         else
-            create_ref(r, "HEAD", canonical_name(branch), true)
+            create_ref(r, "HEAD", canonical_name(branch), force=true)
         end
     else
         commit = lookup_commit(r, rev_parse_oid(r, target))
-        create_ref(r, "HEAD", oid(commit), true)
+        create_ref(r, "HEAD", oid(commit), force=true)
         checkout_tree!(r, commit, opts)
     end
 end
@@ -1619,12 +1623,12 @@ function repo_clone(url::String, path::String, opts=nothing)
                 (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),
                  repo_ptr, bytestring(url), bytestring(path), &gopts)
     if err != api.GIT_OK
-        payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
-        if haskey(payload, :exception)
-            throw(payload[:exception])
-        else
+        #payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
+        #if haskey(payload, :exception)
+        #    throw(payload[:exception])
+        #else
             throw(GitError(err))
-        end
+        #end
     end
     @check_null repo_ptr
     return Repository(repo_ptr[1])

@@ -15,7 +15,7 @@ try
     repo = create_test_repo(test_path)
     cid, tid = seed_test_repo(repo)
     
-    _ = create_ref(repo, "refs/tags/tree", tid, true)
+    _ = create_ref(repo, "refs/tags/tree", tid, force=true)
     tag = lookup_ref(repo, "refs/tags/tree")
     @test git_reftype(tag) == 1 #api.REF_OID 
     @test isa(tag, GitReference{Oid})
@@ -58,9 +58,9 @@ try
   
     cid = commit(repo, "HEAD", sig, sig, message, tree)
 
-    _ = create_ref(repo, "refs/heads/one",   cid, true)
-    _ = create_ref(repo, "refs/heads/two",   cid, true)
-    _ = create_ref(repo, "refs/heads/three", cid, true)
+    _ = create_ref(repo, "refs/heads/one",   cid, force=true)
+    _ = create_ref(repo, "refs/heads/two",   cid, force=true)
+    _ = create_ref(repo, "refs/heads/three", cid, force=true)
 
     expected = [join(["refs/heads", x], "/") 
                 for x in ["master","one","two","three"]]
@@ -195,12 +195,12 @@ end
 @with_tmp_repo_access begin
     create_ref(test_repo, 
                "refs/heads/unit_test",
-              "refs/heads/master")
+               "refs/heads/master")
 
     create_ref(test_repo,
                "refs/heads/unit_test",
                "refs/heads/master",
-               true)
+               force=true)
 end
 
 :test_list_unicode_refs
@@ -280,62 +280,62 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
-# TODO: travis has problems with these tests for some reason
-# (they pass locally)
-#@with_tmp_repo_access begin
-#    ref = create_ref(test_repo,
-#                     "refs/heads/test-reflog",
-#                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-#    log!(ref, nothing, Signature("foo", "foo@bar"))
-#    log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
-#    rlog = reflog(ref)
-#    # TODO: this fails for travis (cannot reproduce in local tests)
-#    # travis states that length(rlog) == 3 with fist reflog entry
-#    # containing no information (unknown user/email) 
-#    @test length(rlog) == 2 
-#
-#    @test rlog[end-1].id_old == Oid("0000000000000000000000000000000000000000")
-#    @test rlog[end-1].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-#    @test rlog[end-1].message == ""
-#    @test name(rlog[end-1].committer) == "foo"
-#    @test email(rlog[end-1].committer) == "foo@bar"
-#
-#    @test rlog[end].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-#    @test rlog[end].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-#    @test rlog[end].message == "commit: bla bla"
-#    @test name(rlog[end].committer) == "foo"
-#    @test email(rlog[end].committer) == "foo@bar"
-#end
-#
-#@with_tmp_repo_access begin
-#    ref = create_ref(test_repo,
-#                     "refs/heads/test-reflog",
-#                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-#    testname = "Julia User"
-#    testemail = "user@julia.com"
-#    
-#    cfg = config(test_repo)
-#    cfg["user.name"] = testname
-#    cfg["user.email"] = testemail
-#
-#    log!(ref)
-#    log!(ref, "commit: bla bla")
-#    
-#    rlog = reflog(ref)
-#    # TODO: this fails for travis (cannot reproduce in local tests)
-#    # travis states that length(rlog) == 3 with fist reflog entry
-#    # containing no information (unknown user/email) 
-#    @test length(rlog) == 2
-#    
-#    @test rlog[end-1].id_old == Oid("0000000000000000000000000000000000000000")
-#    @test rlog[end-1].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-#    @test rlog[end-1].message == ""
-#    @test name(rlog[end-1].committer) == "Julia User"
-#    @test email(rlog[end-1].committer) == "user@julia.com"
-#
-#    @test rlog[end].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-#    @test rlog[end].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-#    @test rlog[end].message == "commit: bla bla"
-#    @test name(rlog[end].committer) == "Julia User"
-#    @test email(rlog[end].committer) == "user@julia.com"
-#end
+@with_tmp_repo_access begin
+    ref = create_ref(test_repo,
+                     "refs/heads/test-reflog",
+                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+    log!(ref, nothing, Signature("foo", "foo@bar"))
+    log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
+    rlog = reflog(ref)
+    # TODO: this fails for travis (cannot reproduce in local tests)
+    # travis states that length(rlog) == 3 with fist reflog entry
+    # containing no information (unknown user/email) 
+    @test length(rlog) == 3
+
+    #@test rlog[2].id_old == Oid("0000000000000000000000000000000000000000")
+    @test rlog[2].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[2].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[2].message == ""
+    @test name(rlog[2].committer) == "foo"
+    @test email(rlog[2].committer) == "foo@bar"
+
+    @test rlog[end].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[end].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[end].message == "commit: bla bla"
+    @test name(rlog[end].committer) == "foo"
+    @test email(rlog[end].committer) == "foo@bar"
+end
+
+@with_tmp_repo_access begin
+    ref = create_ref(test_repo,
+                     "refs/heads/test-reflog",
+                     Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
+    testname = "Julia User"
+    testemail = "user@julia.com"
+    
+    cfg = config(test_repo)
+    cfg["user.name"] = testname
+    cfg["user.email"] = testemail
+
+    log!(ref)
+    log!(ref, "commit: bla bla")
+    
+    rlog = reflog(ref)
+    # TODO: this fails for travis (cannot reproduce in local tests)
+    # travis states that length(rlog) == 3 with fist reflog entry
+    # containing no information (unknown user/email) 
+    @test length(rlog) == 3
+    
+    #@test rlog[end-1].id_old == Oid("0000000000000000000000000000000000000000")
+    @test rlog[2].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[2].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[2].message == ""
+    @test name(rlog[2].committer) == "Julia User"
+    @test email(rlog[2].committer) == "user@julia.com"
+
+    @test rlog[end].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[end].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test rlog[end].message == "commit: bla bla"
+    @test name(rlog[end].committer) == "Julia User"
+    @test email(rlog[end].committer) == "user@julia.com"
+end

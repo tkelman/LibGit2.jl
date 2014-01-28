@@ -1,6 +1,11 @@
 module api
 
-const libgit2 = "libgit2"
+@unix_only begin
+    const libgit2 = "libgit2"
+end
+@windows_only begin
+    const libgit2 = "git2"
+end
 
 macro libgit(func, ret_type, arg_types)
   local args_in = Symbol[symbol("arg$i::$T")
@@ -290,6 +295,32 @@ end
 @libgit(git_threads_init, Cint, ())
 @libgit(git_threads_shutdown, Cint, ())
 
+# ----- libgit buffer -----
+type GitBuffer
+    ptr::Ptr{Cchar}
+    asize::Csize_t
+    size::Csize_t
+end
+
+GitBuffer() = begin
+    buf = GitBuffer(C_NULL, 0, 0)
+    #ccall((:git_buf_init, libgit), Void,
+    #      (Ptr{GitBuffer}, Csize_t),
+    #       &buf, 0)
+    return buf
+end
+
+free!(b::GitBuffer) = begin
+    # this does not free the git_buf
+    # itself but memory pointed to by
+    # buf-> ptr
+    if b.ptr != C_NULL
+        ccall((:git_buf_free, libgit2), Void,
+              (Ptr{GitBuffer},), &buf)
+        b.ptr = C_NULL
+    end
+end
+
 # ----- libgit repo ------
 @libgit(git_repository_discover, Cint, 
         (Ptr{Cchar}, Csize_t, Ptr{Cchar}, Cint, Ptr{Void}))  
@@ -392,7 +423,7 @@ end
 # ----- libgit note ------
 @libgit(git_note_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}))
 @libgit(git_note_message, Ptr{Cchar}, (Ptr{Void},))
-@libgit(git_note_oid, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_note_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_note_free, Void, (Ptr{Void},))
 @libgit(git_note_default_ref, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void},))
 @libgit(git_note_foreach, Cint, (Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Void}))
@@ -600,7 +631,7 @@ end
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
 @libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_tree_entry_byindex, Ptr{Void}, (Ptr{Void}, Csize_t))
-@libgit(git_tree_entry_byoid, Ptr{Void}, (Ptr{Void}, Ptr{Uint8}))
+@libgit(git_tree_entry_byid, Ptr{Void}, (Ptr{Void}, Ptr{Uint8}))
 @libgit(git_tree_entry_free, Void, (Ptr{Void},))
 @libgit(git_tree_entry_name, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_tree_entry_id, Ptr{Uint8}, (Ptr{Void},))
@@ -705,7 +736,7 @@ end
 @libgit(git_push_unpack_ok, Cint, (Ptr{Void},))
 @libgit(git_push_update_tips, Cint, (Ptr{Void},))
 
-# ------k libgit branch ------
+# ------ libgit branch ------
 @libgit(git_branch_create, Cint,
         (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Cint))
 @libgit(git_branch_iterator_new, Cint, (Ptr{Void}, Ptr{Void}, Cint))
@@ -717,7 +748,7 @@ end
 @libgit(git_branch_is_head, Cint, (Ptr{Void},))
 @libgit(git_branch_move, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint))
 @libgit(git_branch_remote_name, Cint, 
-        (Ptr{Cchar}, Csize_t, Ptr{Void}, Ptr{Cchar}))
+        (Ptr{Cchar}, Ptr{Void}, Ptr{Cchar}))
 @libgit(git_branch_upstream, Cint, (Ptr{Ptr{Void}}, Ptr{Void}))
 @libgit(git_branch_set_upstream, Cint, (Ptr{Void}, Ptr{Cchar}))
 
@@ -754,7 +785,8 @@ end
 # ------ libgit reference  ------
 @libgit(git_reference_is_valid_name, Cint, (Ptr{Cchar},))
 @libgit(git_reference_create, Cint, 
-        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, 
+         Cint, Ptr{GitSignature}, Ptr{Cchar}))
 @libgit(git_reference_free, Void, (Ptr{Void},))
 @libgit(git_reference_peel, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cint))
 @libgit(git_reference_symbolic_create, Cint,
@@ -859,7 +891,7 @@ end
 type GitCloneOpts
     version::Cuint
     
-    pad::Cuint
+    #pad::Cuint
     
     # git checkout options
     checkout_version::Cuint
@@ -885,6 +917,8 @@ type GitCloneOpts
     our_label::Ptr{Cchar}
     their_label::Ptr{Cchar}
 
+    pad::Cuint
+    
     # git remote callback options
     remote_version::Cuint
     remote_progress_cb::Ptr{Void}
@@ -901,7 +935,7 @@ type GitCloneOpts
 
     function GitCloneOpts()
         return new(1,
-                   0, # padding
+                   #1, # padding
                    1,
                    0,
                    0,
