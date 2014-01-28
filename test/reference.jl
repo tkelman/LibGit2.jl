@@ -9,7 +9,6 @@ end
 # Tests adapted from Git2Go Library
 # ------------------------------------
 
-@show :TEST_REF_MODIFICATION
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -42,7 +41,6 @@ finally
 end
 
 
-@show :TEST_REF_ITERATION
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -94,7 +92,6 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
-@show :one
 @with_repo_access begin
     begin # test_reference validity
         valid = "refs/foobar"
@@ -123,8 +120,6 @@ end
     end
 end
 
-
-@show :one
 @with_repo_access begin
   begin :test_can_open_reference
     ref = lookup_ref(test_repo, "refs/heads/master")
@@ -193,7 +188,6 @@ end
   end
 end
 
-@show :test_create_force
 @with_tmp_repo_access begin
     create_ref(test_repo, 
                "refs/heads/unit_test",
@@ -205,7 +199,6 @@ end
                force=true)
 end
 
-@show :test_list_unicode_refs
 @with_tmp_repo_access begin
     UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
     create_ref(test_repo,
@@ -215,7 +208,6 @@ end
     @test "heads/$UNICODE_REF_NAME" in refs
 end
 
-@show :test_can_open_a_symbolic_reference
 @with_tmp_repo_access begin
     ref = lookup_ref(test_repo, "HEAD")
     @test symbolic_target(ref) == "refs/heads/master"
@@ -269,10 +261,14 @@ end
     @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test isa(ref, GitReference{Oid})
     @test name(ref) == "refs/heads/unit_test"
-
+    @show :setting_target
     new_ref = set_target(ref, Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
-    @test target(new_ref) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @show :getting_target
+    t = target(new_ref)
+    @test t == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @show :deleting_ref
     delete!(test_repo, new_ref)
+    @show :done
 end
 
 @show :one
