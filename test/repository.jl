@@ -459,7 +459,7 @@ end
 # Repo Clone Test
 #---------------------------
 # test clone repo
-#@repo_clone_test begin
+@repo_clone_test begin
 #    repo = repo_clone(source_path, tmppath)
 #    try
 #      @test open(readline, joinpath(tmppath, "README")) |> chomp == "hey"
@@ -472,10 +472,10 @@ end
 #                == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
 #      @test (target(ref(repo, "refs/remotes/origin/packed")) 
 #                == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9"))
-#    catch
+#    finally
 #      close(repo)
 #    end
-#end
+end
 #
 ## test clone bare
 #@repo_clone_test begin

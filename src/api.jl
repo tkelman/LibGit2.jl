@@ -891,7 +891,7 @@ end
 type GitCloneOpts
     version::Cuint
     
-    pad::Cuint
+    #pad::Cuint
     
     # git checkout options
     checkout_version::Cuint
@@ -917,6 +917,8 @@ type GitCloneOpts
     our_label::Ptr{Cchar}
     their_label::Ptr{Cchar}
 
+    pad::Cuint
+    
     # git remote callback options
     remote_version::Cuint
     remote_progress_cb::Ptr{Void}
@@ -933,7 +935,7 @@ type GitCloneOpts
 
     function GitCloneOpts()
         return new(1,
-                   0, # padding
+                   #1, # padding
                    1,
                    0,
                    0,
