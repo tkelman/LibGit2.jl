@@ -374,40 +374,40 @@ macro discover_test(body)
 end
 
 # test discover false
-#@discover_test begin
-#    @test_throws repo_discover(tmpdir)
-#end
+@discover_test begin
+    @test_throws repo_discover(tmpdir)
+end
 
 # test discover nested false
-#@discover_test begin
-#    @test_throws repo_disover(joinpath(tmpdir, "foo"))
-#end
+@discover_test begin
+    @test_throws repo_disover(joinpath(tmpdir, "foo"))
+end
 
 # test discover true
-#@discover_test begin
-#    repo = repo_init(tmpdir; bare=true)
-#    root = repo_discover(tmpdir)
-#    try 
-#        @test is_bare(root) == true
-#        @test path(root) == path(repo)
-#    finally
-#        close(root)
-#        close(repo)
-#    end
-#end
+@discover_test begin
+    repo = repo_init(tmpdir; bare=true)
+    root = repo_discover(tmpdir)
+    try 
+        @test is_bare(root) == true
+        @test path(root) == path(repo)
+    finally
+        close(root)
+        close(repo)
+    end
+end
 
 # test discover nested true
-#@discover_test begin
-#    repo = repo_init(tmpdir; bare=true)
-#    root = repo_discover(joinpath(tmpdir, "foo"))
-#    try 
-#        @test is_bare(root) == true
-#        @test path(root) == path(repo)
-#    finally
-#        close(root)
-#        close(repo)
-#    end
-#end
+@discover_test begin
+    repo = repo_init(tmpdir; bare=true)
+    root = repo_discover(joinpath(tmpdir, "foo"))
+    try 
+        @test is_bare(root) == true
+        @test path(root) == path(repo)
+    finally
+        close(root)
+        close(repo)
+    end
+end
 
 
 #---------------------------

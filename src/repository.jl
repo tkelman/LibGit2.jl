@@ -735,9 +735,11 @@ function repo_discover(p::String="", acrossfs::Bool=true)
     if isempty(p); p = pwd(); end
     brepo = Array(Cchar, api.GIT_PATH_MAX)
     bp = bytestring(p)
-    @check api.git_repository_discover(brepo, api.GIT_PATH_MAX, 
-                                       bp, acrossfs? 1 : 0, C_NULL)
-    return Repository(bytestring(convert(Ptr{Cchar}, brepo)))
+    buf = api.GitBuffer()
+    @check ccall((:git_repository_discover, api.libgit2), Cint,
+                 (Ptr{api.GitBuffer}, Ptr{Cchar}, Cint, Ptr{Cchar}),
+                  &buf, bp, acrossfs? 1 : 0, C_NULL)
+    return Repository(bytestring(buf.ptr))
 end
 
 function rev_parse(r::Repository, rev::String)
