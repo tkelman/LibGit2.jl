@@ -63,7 +63,7 @@ GitError(code::Integer) = begin
 end
 
 function last_error()
-    err = ccall((:giterr_last, :libgit2), 
+    err = ccall((:giterr_last, api.libgit2), 
                        Ptr{CGitError}, ())
     err_obj = unsafe_load(err)
     (err_obj.class, bytestring(err_obj.message))

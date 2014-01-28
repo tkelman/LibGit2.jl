@@ -72,7 +72,7 @@ Base.string(oid::Oid) = begin
 end
 
 Base.cmp(oid1::Oid, oid2::Oid) = begin
-    git_cmp = ccall((:git_oid_cmp, :libgit2),
+    git_cmp = ccall((:git_oid_cmp, api.libgit2),
                     Cint,
                     (Ptr{Uint8}, Ptr{Uint8}),
                     oid1.oid, oid2.oid)
