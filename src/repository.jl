@@ -876,19 +876,21 @@ function lookup_ref(r::Repository, refname::String)
     return GitReference(ref_ptr[1])
 end
 
-function create_ref(r::Repository, refname::String,
-                    id::Oid, force::Bool=false)
+function create_ref(r::Repository, refname::String, id::Oid; 
+                    force::Bool=false, msg=nothing, sig=nothing)
     @assert r.ptr != C_NULL
     bname = bytestring(refname)
+    bmsg  = msg != nothing ? bytestring(msg) : C_NULL
+    gsig  = sig != nothing ? git_signature(sig) : C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
     @check api.git_reference_create(ref_ptr, r.ptr, bname,
-                                    id.oid, force? 1 : 0)
+                                    id.oid, force? 1 : 0, gsig, bmsg)
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
 function create_ref(r::Repository, refname::String, 
-                    target::String, force::Bool=false)
+                    target::String; force::Bool=false)
     create_sym_ref(r, refname, target, force)
 end
 

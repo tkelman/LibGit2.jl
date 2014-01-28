@@ -15,7 +15,7 @@ try
     repo = create_test_repo(test_path)
     cid, tid = seed_test_repo(repo)
     
-    _ = create_ref(repo, "refs/tags/tree", tid, true)
+    _ = create_ref(repo, "refs/tags/tree", tid, force=true)
     tag = lookup_ref(repo, "refs/tags/tree")
     @test git_reftype(tag) == 1 #api.REF_OID 
     @test isa(tag, GitReference{Oid})
@@ -58,9 +58,9 @@ try
   
     cid = commit(repo, "HEAD", sig, sig, message, tree)
 
-    _ = create_ref(repo, "refs/heads/one",   cid, true)
-    _ = create_ref(repo, "refs/heads/two",   cid, true)
-    _ = create_ref(repo, "refs/heads/three", cid, true)
+    _ = create_ref(repo, "refs/heads/one",   cid, force=true)
+    _ = create_ref(repo, "refs/heads/two",   cid, force=true)
+    _ = create_ref(repo, "refs/heads/three", cid, force=true)
 
     expected = [join(["refs/heads", x], "/") 
                 for x in ["master","one","two","three"]]
@@ -195,12 +195,12 @@ end
 @with_tmp_repo_access begin
     create_ref(test_repo, 
                "refs/heads/unit_test",
-              "refs/heads/master")
+               "refs/heads/master")
 
     create_ref(test_repo,
                "refs/heads/unit_test",
                "refs/heads/master",
-               true)
+               force=true)
 end
 
 :test_list_unicode_refs
@@ -280,6 +280,7 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
+warn("failing tests in reference.jl")
 # TODO: travis has problems with these tests for some reason
 # (they pass locally)
 #@with_tmp_repo_access begin
@@ -292,7 +293,8 @@ end
 #    # TODO: this fails for travis (cannot reproduce in local tests)
 #    # travis states that length(rlog) == 3 with fist reflog entry
 #    # containing no information (unknown user/email) 
-#    @test length(rlog) == 2 
+#    @show rlog
+#    @test length(rlog) == 2
 #
 #    @test rlog[end-1].id_old == Oid("0000000000000000000000000000000000000000")
 #    @test rlog[end-1].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
