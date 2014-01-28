@@ -116,9 +116,9 @@ function entry_byindex(t::GitTree, idx::Integer)
     return te
 end
 
-function entry_byoid(t::GitTree, id::Oid)
+function entry_byid(t::GitTree, id::Oid)
     @assert t.ptr != C_NULL
-    entry_ptr = api.git_tree_entry_byoid(t.ptr, id.oid)
+    entry_ptr = api.git_tree_entry_byid(t.ptr, id.oid)
     if entry_ptr == C_NULL
         return nothing
     end
@@ -129,7 +129,7 @@ end
 
 Base.getindex(t::GitTree, entry::Integer) = entry_byindex(t, entry)
 Base.getindex(t::GitTree, entry::String) = entry_byname(t, entry)
-Base.getindex(t::GitTree, entry::Oid) = entry_byoid(t, entry)
+Base.getindex(t::GitTree, entry::Oid) = entry_byid(t, entry)
 
 Base.start(t::GitTree) = begin
     @assert t.ptr != C_NULL

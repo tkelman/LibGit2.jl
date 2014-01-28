@@ -22,7 +22,7 @@ let
 
     function git_note_oid(n_ptr::Ptr{Void})
         @assert n_ptr != C_NULL
-        oid_ptr = api.git_note_oid(n_ptr)
+        oid_ptr = api.git_note_id(n_ptr)
         return Oid(oid_ptr)
     end
 

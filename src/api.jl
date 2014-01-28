@@ -397,7 +397,7 @@ end
 # ----- libgit note ------
 @libgit(git_note_read, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}))
 @libgit(git_note_message, Ptr{Cchar}, (Ptr{Void},))
-@libgit(git_note_oid, Ptr{Uint8}, (Ptr{Void},))
+@libgit(git_note_id, Ptr{Uint8}, (Ptr{Void},))
 @libgit(git_note_free, Void, (Ptr{Void},))
 @libgit(git_note_default_ref, Cint, (Ptr{Ptr{Cchar}}, Ptr{Void},))
 @libgit(git_note_foreach, Cint, (Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Void}))
@@ -605,7 +605,7 @@ end
 @libgit(git_tree_entry_bypath, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar})) 
 @libgit(git_tree_entry_byname, Ptr{Void}, (Ptr{Void}, Ptr{Cchar}))
 @libgit(git_tree_entry_byindex, Ptr{Void}, (Ptr{Void}, Csize_t))
-@libgit(git_tree_entry_byoid, Ptr{Void}, (Ptr{Void}, Ptr{Uint8}))
+@libgit(git_tree_entry_byid, Ptr{Void}, (Ptr{Void}, Ptr{Uint8}))
 @libgit(git_tree_entry_free, Void, (Ptr{Void},))
 @libgit(git_tree_entry_name, Ptr{Cchar}, (Ptr{Void},))
 @libgit(git_tree_entry_id, Ptr{Uint8}, (Ptr{Void},))
@@ -759,7 +759,8 @@ end
 # ------ libgit reference  ------
 @libgit(git_reference_is_valid_name, Cint, (Ptr{Cchar},))
 @libgit(git_reference_create, Cint, 
-        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, Cint))
+        (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8}, 
+         Cint, Ptr{GitSignature}, Ptr{Cchar}))
 @libgit(git_reference_free, Void, (Ptr{Void},))
 @libgit(git_reference_peel, Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cint))
 @libgit(git_reference_symbolic_create, Cint,
