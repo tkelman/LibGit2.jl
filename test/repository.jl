@@ -202,7 +202,6 @@ end
 @sandboxed_test "testrepo.git" begin
     @test count(x -> true, test_repo) == 1687
 end
-
 # test_loading_alternates
 @sandboxed_test "testrepo.git" begin
     alt_path = joinpath(pwd(), "fixtures/alternate/objects")
@@ -284,6 +283,7 @@ end
     their_commit = lookup_branch(test_repo, "branch") |> tip
 
     index = merge_commits(test_repo, our_commit, their_commit)
+    #TODO: BUG versy rarely the length of the index is reported as 6??
     @test length(index) == 8
 
     @test (Oid("233c0919c998ed110a4b6ff36f353aec8b713487") == 
@@ -639,6 +639,7 @@ end
 #---------------------------
 # Repo Checkout Test
 #---------------------------
+
 # test_checkout_tree_with_revspec_string
 @sandboxed_checkout_test begin 
     checkout_tree!(test_repo, "refs/heads/dir", {:strategy => :force})
@@ -756,3 +757,4 @@ end
     @test ishead_detached(test_clone)
     @test rev_parse_oid(test_clone, "refs/remotes/origin/dir") == target(head(test_clone))
 end
+

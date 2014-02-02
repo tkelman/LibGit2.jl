@@ -282,10 +282,23 @@ function oid(r::Repository, val::String)
     end
     return oid(rev_parse(r, val))
 end
-        
-function set_head!(r::Repository, ref::String)
+
+#TODO: need to add tests for sig/logmsg
+function set_head!(r::Repository, ref::String; sig=nothing, logmsg=nothing)
     @assert r.ptr != C_NULL
-    @check api.git_repository_set_head(r.ptr, bytestring(ref))
+    bref = bytestring(ref)
+    bmsg = logmsg != nothing ? bytestring(logmsg) : C_NULL
+    if sig == nothing
+        @check ccall((:git_repository_set_head, api.libgit2), Cint,
+                     (Ptr{Void}, Ptr{Cchar}, Ptr{api.GitSignature}, Ptr{Cchar}),
+                      r.ptr, bref, C_NULL, bmsg)
+    else
+        @assert isa(sig, Signature)
+        gsig = git_signature(sig)
+        @check ccall((:git_repository_set_head, api.libgit2), Cint,
+                     (Ptr{Void}, Ptr{Cchar}, Ptr{api.GitSignature}, Ptr{Cchar}),
+                      r.ptr, bref, &gsig, bmsg)
+    end
     return r
 end
 
@@ -878,31 +891,53 @@ function lookup_ref(r::Repository, refname::String)
 end
 
 function create_ref(r::Repository, refname::String, id::Oid; 
-                    force::Bool=false, msg=nothing, sig=nothing)
+                    force::Bool=false, sig=nothing, msg=nothing)
     @assert r.ptr != C_NULL
     bname = bytestring(refname)
     bmsg  = msg != nothing ? bytestring(msg) : C_NULL
-    gsig  = sig != nothing ? git_signature(sig) : C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
-    @check api.git_reference_create(ref_ptr, r.ptr, bname,
-                                    id.oid, force? 1 : 0, gsig, bmsg)
+    if sig != nothing
+        @assert isa(sig, Signature)
+        gsig = git_signature(sig)
+        @check ccall((:git_reference_create, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
+                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, bname, id.oid, force? 1:0, &gsig, bmsg)
+    else
+        @check ccall((:git_reference_create, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
+                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, bname, id.oid, force? 1:0, C_NULL, bmsg)
+    end
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
-function create_ref(r::Repository, refname::String, 
-                    target::String; force::Bool=false)
-    create_sym_ref(r, refname, target, force)
+function create_ref(r::Repository, refname::String, target::String; 
+                    force::Bool=false, sig=nothing, logmsg=nothing)
+    create_sym_ref(r, refname, target; force=force, sig=sig, logmsg=logmsg)
 end
 
-function create_sym_ref(r::Repository, refname::String,
-                        target::String, force::Bool=false)
+function create_sym_ref(r::Repository, refname::String, target::String; 
+                        force::Bool=false, sig=sig, logmsg=logmsg)
     @assert r.ptr != C_NULL
-    bname = bytestring(refname)
+    bname   = bytestring(refname)
     btarget = bytestring(target)
+    bmsg    = logmsg != nothing ? bytestring(logmsg) : C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
-    @check api.git_reference_symbolic_create(ref_ptr, r.ptr, bname,
-                                             btarget, force? 1 : 0)
+    if sig != nothing
+        @assert isa(sig, Signature)
+        gsig = git_signature(sig)
+        @check ccall((:git_reference_symbolic_create, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
+                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, bname, btarget, force? 1:0, &gsig, bmsg)
+    else
+        @check ccall((:git_reference_symbolic_create, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Cchar},
+                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, bname, btarget, force? 1:0, C_NULL, bmsg)
+    end
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
