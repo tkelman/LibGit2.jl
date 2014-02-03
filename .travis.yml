@@ -29,25 +29,26 @@ script:
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
   - git submodule init
   - cd test/
+  - alias julia-dbg='cat script.gdb | gdb --args /usr/bin/julia-debug-readline'
   - git config --global user.name "testfirst testlast" 
-  - julia runtests.jl oid
-  - julia runtests.jl blob
-  - julia runtests.jl repository
-  - julia runtests.jl config
-  - julia runtests.jl signature
-  - julia runtests.jl index
-  - julia runtests.jl object
-  - julia runtests.jl odb
-  - julia runtests.jl reference
-  - julia runtests.jl tree
-  - julia runtests.jl walker
-  - julia runtests.jl tag
-  - julia runtests.jl note
-  - julia runtests.jl diff
-  - julia runtests.jl branch
-  - julia runtests.jl repository_pack 
-  - julia runtests.jl patch
-  - julia runtests.jl merge
-  - julia runtests.jl remote
+  - julia-dbg runtests.jl oid
+  - julia-dbg runtests.jl blob
+  - julia-dbg runtests.jl repository
+  - julia-dbg runtests.jl config
+  - julia-dbg runtests.jl signature
+  - julia-dbg runtests.jl index
+  - julia-dbg runtests.jl object
+  - julia-dbg runtests.jl odb
+  - julia-dbg runtests.jl reference
+  - julia-dbg runtests.jl tree
+  - julia-dbg runtests.jl walker
+  - julia-dbg runtests.jl tag
+  - julia-dbg runtests.jl note
+  - julia-dbg runtests.jl diff
+  - julia-dbg runtests.jl branch
+  - julia-dbg runtests.jl repository_pack 
+  - julia-dbg runtests.jl patch
+  - julia-dbg runtests.jl merge
+  - julia-dbg runtests.jl remote
   
   - sh run_remote_clone.sh

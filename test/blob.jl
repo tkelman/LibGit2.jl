@@ -7,7 +7,6 @@
     @test_throws lookup_blob(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
 end
 
-
 @with_repo_access begin
     begin :test_read_blob_data
         id = Oid("fa49b077972391ad58037050f2a75f74e3671e92")
