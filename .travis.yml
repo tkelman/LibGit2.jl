@@ -32,5 +32,6 @@ script:
   - git submodule init
   - cd test/
   - git config --global user.name "testfirst testlast" 
-  - cat script.gdb | sudo gdb --args /usr/bin/julia-debug-readline runtests.jl all
+  # - cat script.gdb | sudo gdb --args /usr/bin/julia-debug-readline runtests.jl all
+  - julia runtests.jl all
   - sh run_remote_clone.sh
