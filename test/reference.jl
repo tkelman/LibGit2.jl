@@ -8,7 +8,7 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-
+@show :test
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -41,6 +41,7 @@ finally
 end
 
 
+@show :test
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -92,6 +93,7 @@ end
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
+@show :test
 @with_repo_access begin
     begin # test_reference validity
         valid = "refs/foobar"
@@ -120,6 +122,7 @@ end
     end
 end
 
+@show :test
 @with_repo_access begin
   begin :test_can_open_reference
     ref = lookup_ref(test_repo, "refs/heads/master")
@@ -188,6 +191,7 @@ end
   end
 end
 
+@show :test
 @with_tmp_repo_access begin
     create_ref(test_repo, 
                "refs/heads/unit_test",
@@ -199,6 +203,7 @@ end
                force=true)
 end
 
+@show :test
 @with_tmp_repo_access begin
     UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
     create_ref(test_repo,
@@ -208,6 +213,7 @@ end
     @test "heads/$UNICODE_REF_NAME" in refs
 end
 
+@show :test
 @with_tmp_repo_access begin
     ref = lookup_ref(test_repo, "HEAD")
     @test symbolic_target(ref) == "refs/heads/master"
@@ -218,11 +224,13 @@ end
     @test target(resolved) == peel(ref)
 end
 
+@show :test
 @with_tmp_repo_access begin
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
 end
 
+@show :test
 @with_tmp_repo_access begin
    @test repo_workdir(test_repo) == test_repo_path
    
@@ -235,6 +243,7 @@ end
    delete!(test_repo, ref)
 end
 
+@show :test
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
       "refs/heads/unit_test",
@@ -249,6 +258,7 @@ end
     delete!(test_repo, new_ref)
 end
 
+@show :test
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/unit_test",
@@ -263,6 +273,7 @@ end
     delete!(test_repo, new_ref)
 end
 
+@show :test
 @with_tmp_repo_access begin
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
     ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
@@ -270,6 +281,7 @@ end
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
+@show :test
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
@@ -296,6 +308,7 @@ end
     @test email(rlog[end].committer) == "foo@bar"
 end
 
+@show :test
 @with_tmp_repo_access begin
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
