@@ -85,11 +85,25 @@ function isremote(b::GitBranch)
     return bool(api.git_reference_is_remote(b.ptr))
 end
 
-function move(b::GitBranch, new_name::String, force::Bool=false)
+function move(b::GitBranch, new_name::String; 
+              force::Bool=false, sig=nothing, logmsg=nothing)
     @assert b.ptr != C_NULL
     branch_ptr = Array(Ptr{Void}, 1)
-    @check api.git_branch_move(branch_ptr, b.ptr, bytestring(new_name),
-                               force? 1 : 0)
+    bname = bytestring(new_name)
+    bmsg  = logmsg != nothing ? bytestring(logmsg) : C_NULL
+    if sig != nothing
+        @assert isa(sig, Signature)
+        gsig = git_signature(sig)
+        @check ccall((:git_branch_move, api.libgit2), Cint,
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
+                       Ptr{api.GitSignature}, Ptr{Cchar}),
+                       branch_ptr, b.ptr, bname, force? 1:0, &gsig, bmsg)
+    else
+        @check ccall((:git_branch_move, api.libgit2), Cint,
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
+                       Ptr{api.GitSignature}, Ptr{Cchar}),
+                       branch_ptr, b.ptr, bname, force? 1:0, C_NULL, bmsg)
+    end
     @check_null branch_ptr
     return GitBranch(branch_ptr[1])
 end
@@ -169,6 +183,7 @@ function set_upstream(b::GitBranch, ustream::GitReference)
     @check api.git_branch_set_upstream(b.ptr, C_NULL)
 end
 
-function rename(b::GitBranch, new_name::String, force::Bool=false)
-    return move(b, new_name, force)
+function rename(b::GitBranch, new_name::String; 
+                force::Bool=false, sig=nothing, logmsg=nothing)
+    return move(b, new_name, force=force, sig=sig, logmsg=logmsg)
 end 
