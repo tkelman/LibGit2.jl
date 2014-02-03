@@ -25,31 +25,12 @@ install:
   - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 script:
+  - julia-debug-readline --version
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`); Pkg.pin("LibGit2"); Pkg.resolve()'
   - julia -e 'Pkg.build("LibGit2")'
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
   - git submodule init
   - cd test/
-  - alias julia-dbg='cat script.gdb | gdb --args /usr/bin/julia-debug-readline'
   - git config --global user.name "testfirst testlast" 
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl oid
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl blob
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl repository
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl config
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl signature
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl index
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl object
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl odb
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl reference
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl tree
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl walker
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl tag
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl note
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl diff
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl branch
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl repository_pack 
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl patch
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl merge
-  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl remote
-  
+  - cat script.gdb | sudo gdb --args /usr/bin/julia-debug-readline runtests.jl all
   - sh run_remote_clone.sh
