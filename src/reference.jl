@@ -91,11 +91,25 @@ function resolve(r::GitReference)
     return GitReference(ref_ptr[1])
 end
 
-function rename(r::GitReference, name::String, force::Bool=false)
+function rename(r::GitReference, name::String;
+                force::Bool=false, sig=nothing, logmsg=nothing)
     @assert r.ptr != C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
     bname = bytestring(name)
-    @check api.git_reference_rename(ref_ptr, r.ptr, bname, force? 1 : 0)
+    bmsg  = logmsg != nothing ? bytestring(logmsg) : C_NULL
+    ref_ptr = Array(Ptr{Void}, 1)
+    if sig != nothing
+        @assert(isa(sig, Signature))
+        gsig = git_signature(sig)
+        @check ccall((:git_reference_rename, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
+                      Ptr{api.GitSignature}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, bname, force? 1:0, &gsig, bmsg)
+    else
+        @check ccall((:git_reference_rename, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
+                      Ptr{api.GitSignature}, Ptr{Cchar}),
+                      ref_ptr, r.ptr, bname, force? 1:0, C_NULL, bmsg)
+    end
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end

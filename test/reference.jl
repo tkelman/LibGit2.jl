@@ -15,24 +15,36 @@ try
     cid, tid = seed_test_repo(repo)
     
     _ = create_ref(repo, "refs/tags/tree", tid, force=true)
+@show :test
     tag = lookup_ref(repo, "refs/tags/tree")
+@show :test
     @test git_reftype(tag) == 1 #api.REF_OID 
+@show :test
     @test isa(tag, GitReference{Oid})
     
     ref = lookup_ref(repo, "HEAD")
+@show :test
     @test git_reftype(ref) == 2 #api.REF_SYMBOLIC
+@show :test
     @test isa(ref, GitReference{Sym})
 
     @test target(ref) == nothing
+@show :test
     ref = resolve(ref)
+@show :test
     @test isa(ref, GitReference{Oid})
     @test isa(target(ref), Oid)
+@show :test
     @test symbolic_target(ref) == ""
+@show :test
     @test hex(cid) == hex(target(ref))
+@show :test
 
-    _ = rename(tag, "refs/tags/renamed", false)
+    _ = rename(tag, "refs/tags/renamed", force=false)
+@show :test
     tag = lookup_ref(repo, "refs/tags/renamed")
     @test isa(tag, GitReference{Oid})
+@show :end_one
 
 catch err
     rethrow(err)
