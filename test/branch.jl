@@ -44,7 +44,7 @@
   end
 end
 
-@show :test_lookup_unicode_branch_name
+#:test_lookup_unicode_branch_name
 @with_tmp_repo_access begin
     new_branch = create_branch(test_repo, "Ångström", 
         Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
@@ -56,14 +56,14 @@ end
     @test new_branch == retrieved_branch
 end
 
-@show :test_delete_branch
+#:test_delete_branch
 @with_tmp_repo_access begin
     b = create_branch(test_repo, "test_branch")
     delete!(b)
     @test lookup_branch(test_repo, "test_branch") == nothing
 end
 
-@show :test_is_head
+#:test_is_head
 @with_tmp_repo_access begin
     @test ishead(lookup_branch(test_repo, "master"))
     @test ishead(lookup_branch(test_repo, "origin/master", :remote)) == false
@@ -71,7 +71,7 @@ end
     @test ishead(create_branch(test_repo, "test_branch")) == false
 end
 
-@show :test_rename_branch
+#:test_rename_branch
 @with_tmp_repo_access begin
     b = create_branch(test_repo, "test_branch")
     rename(b, "other_branch")
@@ -79,7 +79,7 @@ end
     @test isa(lookup_branch(test_repo, "other_branch"), GitBranch)
 end
 
-@show :test_create_new_branch
+#:test_create_new_branch
 @with_tmp_repo_access begin
     new_branch = create_branch(test_repo, "test_branch", 
         Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
@@ -94,7 +94,7 @@ end
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
-@show :test_create_unicode_branch
+#:test_create_unicode_branch
 @with_tmp_repo_access begin
     branch_name = "A\314\212ngstro\314\210m"
     new_branch = create_branch(test_repo, branch_name,
@@ -110,7 +110,7 @@ end
     @test any(b -> name(b) == branch_name, iter_branches(test_repo))
 end
 
-@show :test_create_branch_short_sha
+#:test_create_branch_short_sha
 @with_tmp_repo_access begin
     new_branch = create_branch(test_repo, "test_branch", "5b5b025")
 
@@ -124,7 +124,7 @@ end
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
-@show :test_create_branch_from_tag
+#:test_create_branch_from_tag
 @with_tmp_repo_access begin
     new_branch = create_branch(test_repo, "test_branch", "refs/tags/v0.9")
 
@@ -138,7 +138,7 @@ end
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
-@show :test_create_branch_from_head
+#:test_create_branch_from_head
 @with_tmp_repo_access begin
     new_branch = create_branch(test_repo, "test_branch")
     
@@ -152,7 +152,7 @@ end
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
-@show :test_create_branch_explicit_head
+#:test_create_branch_explicit_head
 @with_tmp_repo_access begin
     new_branch = create_branch(test_repo, "test_branch", "HEAD")
     
@@ -166,7 +166,7 @@ end
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
-@show :test_create_branch_from_commit
+#:test_create_branch_from_commit
 @with_tmp_repo_access begin
     new_branch = create_branch(test_repo, "test_branch",
       lookup_commit(test_repo, Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")))
@@ -181,61 +181,61 @@ end
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
 
-@show :test_create_branch_from_unknown_ref_fails
+#:test_create_branch_from_unknown_ref_fails
 @with_tmp_repo_access begin
     @test_throws create_branch(test_repo, "test_branch", "i_do_not_exist")
 end
 
-@show :test_create_branch_from_unknown_commit_fails
+#:test_create_branch_from_unknown_commit_fails
 @with_tmp_repo_access begin
  @test_throws create_branch(test_repo, "test_branch",
         Oid("dd15de908706711b51b7acb24faab726d2b3cb16"))
 end
 
-@show :test_create_branch_from_non_canonical_fails
+#:test_create_branch_from_non_canonical_fails
 @with_tmp_repo_access begin
     @test_throws create_branch(test_repo, "test_branch", "packed")
 end
 
-@show :test_branch_remote_remote_branch
+#:test_branch_remote_remote_branch
 @with_tmp_repo_access begin
     @test "origin" == (lookup_branch(test_repo, "origin/master", :remote) 
                        |> remote |> name)
 end
 
-@show :test_branch_remote_local_tracking_remote_branch
+#:test_branch_remote_local_tracking_remote_branch
 @with_tmp_repo_access begin
      @test "origin" == (lookup_branch(test_repo, "master", :local)
                         |> remote |> name)
 end
 
-@show :test_branch_remote_local_non_tracking_branch
+#:test_branch_remote_local_non_tracking_branch
 @with_tmp_repo_access begin
         b = create_branch(test_repo, "test_branch",
                 Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
         @test remote(b) == nothing 
 end
 
-@show :test_branch_upstream
+#:test_branch_upstream
 @with_tmp_repo_access begin
     upstream_branch = lookup_branch(test_repo, "master", :local) |> upstream
     @test "origin/master" == name(upstream_branch)
 end
 
-@show :test_branch_upstream_remote_branch
+#:test_branch_upstream_remote_branch
 @with_tmp_repo_access  begin
     @test nothing == (lookup_branch(test_repo, "origin/master", :remote)
                       |> upstream)
 end
 
-@show :test_branch_upstream_no_tracking_branch
+#:test_branch_upstream_no_tracking_branch
 @with_tmp_repo_access  begin
     branch = create_branch(test_repo, "test_branch",
                            Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     @test upstream(branch) == nothing
 end
 
-@show :test_branch_set_upstream_with_reference
+#:test_branch_set_upstream_with_reference
 @with_tmp_repo_access  begin
     b = create_branch(test_repo, "test_branch",
                  Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
@@ -244,14 +244,14 @@ end
     @test name(upstream(b)) == "master"
 end
 
-@show :test_branch_set_upstream_with_tag_reference
+#:test_branch_set_upstream_with_tag_reference
 @with_tmp_repo_access  begin
     b = create_branch(test_repo, "test_branch", 
             Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     @test_throws set_upstream!(b, lookup_ref(test_repo, "refs/tags/v1.0"))
 end
 
-@show :test_branch_set_upstream_local
+#:test_branch_set_upstream_local
 @with_tmp_repo_access  begin
     b = create_branch(test_repo, "test_branch",
                 Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
@@ -260,7 +260,7 @@ end
     @test (upstream(b) |> name) == "master"
 end
 
-@show :test_branch_set_upstream_remote
+#:test_branch_set_upstream_remote
 @with_tmp_repo_access  begin
     b = create_branch(test_repo, "test_branch",
                 Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
@@ -268,7 +268,7 @@ end
     @test name(upstream(b)) == "origin/master"
 end
 
-@show :test_branch_unset_upstream
+#:test_branch_unset_upstream
 @with_tmp_repo_access  begin
     b = lookup_branch(test_repo, "master", :local)
     @test upstream(b) != nothing
@@ -276,7 +276,7 @@ end
     @test upstream(b) == nothing
 end
 
-@show :test_branch_set_upstream_on_remote_branch
+#:test_branch_set_upstream_on_remote_branch
 @with_tmp_repo_access  begin
     b = lookup_branch(test_repo, "origin/master", :remote)
     @test_throws set_upstream!(b, 
