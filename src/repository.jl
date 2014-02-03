@@ -1061,27 +1061,40 @@ lookup_branch(r::Repository, branch_name::String, branch_type=:local) =
 #        lookup(GitBranch, r, string(branch_id), branch_type)
 
 
-function create_branch(r::Repository, n::String, target::Oid, force::Bool=false)
+function create_branch(r::Repository, n::String, target::Oid;
+                       force::Bool=false, sig=nothing, logmsg=nothing)
     @assert r.ptr != C_NULL
     #TODO: give intelligent error msg when target
     # does not exist
     c = lookup_commit(r, target)
+    bmsg = logmsg != nothing ? bytestring(logmsg) : C_NULL
     branch_ptr = Array(Ptr{Void}, 1)
-    @check api.git_branch_create(branch_ptr, r.ptr, bytestring(n),
-                                 c.ptr, force? 1 : 0)
+    if sig != nothing
+        @assert(isa(sig, Signature))
+        gsig = git_signature(sig)
+        @check ccall((:git_branch_create, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void},
+                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+                     branch_ptr, r.ptr, bytestring(n), c.ptr, force? 1:0, &gsig, bmsg)
+    else
+        @check ccall((:git_branch_create, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void},
+                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+                     branch_ptr, r.ptr, bytestring(n), c.ptr, force? 1:0, C_NULL, bmsg)
+    end
     return GitBranch(branch_ptr[1]) 
 end
 
-function create_branch(r::Repository, n::String,
-                       target::String="HEAD", force::Bool=false)
+function create_branch(r::Repository, n::String, target::String="HEAD"; 
+                       force::Bool=false, sig=nothing, logmsg=nothing)
     id = rev_parse_oid(r, target)
-    return create_branch(r, n, id, force)
+    return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
 end
 
-function create_branch(r::Repository, n::String,
-                       target::GitCommit, force::Bool=false)
+function create_branch(r::Repository, n::String, target::GitCommit;
+                       force::Bool=false, sig=nothing, logmsg=nothing)
     id = oid(target)
-    return create_branch(r, n, id, force)
+    return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
 end
 
 type BranchIterator 
