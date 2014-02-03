@@ -8,7 +8,6 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -30,7 +29,7 @@ try
     @test symbolic_target(ref) == ""
     @test hex(cid) == hex(target(ref))
 
-    _ = rename(tag, "refs/tags/renamed", false)
+    _ = rename(tag, "refs/tags/renamed", force=false)
     tag = lookup_ref(repo, "refs/tags/renamed")
     @test isa(tag, GitReference{Oid})
 
@@ -206,16 +205,6 @@ end
                "refs/heads/master")
     refs = map(r -> replace(name(r), "refs/", ""), iter_refs(test_repo))
     @test "heads/$UNICODE_REF_NAME" in refs
-end
-
-@with_tmp_repo_access begin
-    ref = lookup_ref(test_repo, "HEAD")
-    @test symbolic_target(ref) == "refs/heads/master"
-    @test isa(ref, GitReference{Sym})
-    resolved = resolve(ref)
-    @test isa(resolved, GitReference{Oid})
-    @test target(resolved) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    @test target(resolved) == peel(ref)
 end
 
 @with_tmp_repo_access begin
