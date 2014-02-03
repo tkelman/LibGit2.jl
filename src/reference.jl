@@ -60,9 +60,9 @@ function set_symbolic_target(r::GitReference, target::String;
 end
 
 function set_target(r::GitReference, id::Oid;
-                    msg=nothing, sig=nothing)
+                    sig=nothing, logmsg=nothing)
     @assert r.ptr != C_NULL
-    bmsg = msg != nothing ? bytestring(msg) : C_NULL
+    bmsg = logmsg != nothing ? bytestring(logmsg) : C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
     if sig == nothing
         @check ccall((:git_reference_set_target, api.libgit2), Cint,
