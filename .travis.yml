@@ -3,6 +3,7 @@ compiler:
   - clang
 notifications:
   email: false
+
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
   - sudo add-apt-repository ppa:staticfloat/julianightlies -y
@@ -31,24 +32,24 @@ script:
   - cd test/
   - alias julia-dbg='cat script.gdb | gdb --args /usr/bin/julia-debug-readline'
   - git config --global user.name "testfirst testlast" 
-  - julia-dbg runtests.jl oid
-  - julia-dbg runtests.jl blob
-  - julia-dbg runtests.jl repository
-  - julia-dbg runtests.jl config
-  - julia-dbg runtests.jl signature
-  - julia-dbg runtests.jl index
-  - julia-dbg runtests.jl object
-  - julia-dbg runtests.jl odb
-  - julia-dbg runtests.jl reference
-  - julia-dbg runtests.jl tree
-  - julia-dbg runtests.jl walker
-  - julia-dbg runtests.jl tag
-  - julia-dbg runtests.jl note
-  - julia-dbg runtests.jl diff
-  - julia-dbg runtests.jl branch
-  - julia-dbg runtests.jl repository_pack 
-  - julia-dbg runtests.jl patch
-  - julia-dbg runtests.jl merge
-  - julia-dbg runtests.jl remote
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl oid
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl blob
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl repository
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl config
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl signature
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl index
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl object
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl odb
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl reference
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl tree
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl walker
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl tag
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl note
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl diff
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl branch
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl repository_pack 
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl patch
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl merge
+  - cat script.gdb | gdb --args /usr/bin/julia-debug-readline runtests.jl remote
   
   - sh run_remote_clone.sh
