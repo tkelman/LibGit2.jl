@@ -506,7 +506,6 @@ end
     @test 19 == received_objects
     @test 1563 == received_bytes
 end
-gc(); @show :here
 
 ## test_clone_quits_on_error
 @repo_clone_test begin
@@ -519,7 +518,6 @@ gc(); @show :here
     end
     @test isdir(joinpath(tmppath, ".git")) == false
 end
-gc(); @show :here
 
 # test_clone_with_bad_progress_callback
 @repo_clone_test begin
@@ -528,7 +526,6 @@ gc(); @show :here
       }})
     @test isdir(joinpath(tmppath, ".git")) == false
 end
-gc(); @show :here
 
 #---------------------------
 # Repo Namespace Test

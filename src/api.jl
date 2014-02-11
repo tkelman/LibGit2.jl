@@ -953,12 +953,14 @@ immutable IGitRemoteCallbacks
                                 C_NULL)
 end
 
-type GitCloneOpts
+type GitCloneOptsNew
     version::Cuint
     
     checkout_opts::IGitCheckoutOptions
+    pad1::Cuint
+    pad2::Cuint
     remote_callbacks::IGitRemoteCallbacks
-
+   
     bare::Cint
     ignore_cert_errors::Cint
     remote_name::Ptr{Cchar}
@@ -967,6 +969,7 @@ type GitCloneOpts
     function GitCloneOpts()
         return new(1,
                    IGitCheckoutOptions(),
+                   0,0,
                    IGitRemoteCallbacks(),
                    0,
                    0,
@@ -976,7 +979,7 @@ type GitCloneOpts
     end
 end
 
-type GitCloneOptsPrev
+type GitCloneOpts
     version::Cuint
     pad1::Cuint
      

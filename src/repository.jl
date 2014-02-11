@@ -1521,7 +1521,6 @@ end
 
 function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
                             payload_ptr::Ptr{Void})
-    println("test")
     stats = unsafe_load(stats_ptr)
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
     callback = payload[:callbacks][:transfer_progress]
@@ -1645,12 +1644,12 @@ function parse_clone_options(opts::Dict)
         cred = opts[:credentials]
         if isa(cred, GitCredential)
             payload[:credentials] = cred
-            #gopts.remote_credentials_cb = c_cb_default_remote_credentials
-            gopts.remote_callbacks.credentials_cb = c_cb_default_remote_credentials
+            gopts.remote_credentials_cb = c_cb_default_remote_credentials
+            #gopts.remote_callbacks.credentials_cb = c_cb_default_remote_credentials
         elseif isa(cred, Function)
             payload[:credentials] = cred
-            #gopts.remote_credentials_cb = c_cb_remote_credential
-            gopts.remote_callbacks.credentials_cb = c_cb_remote_credential
+            gopts.remote_credentials_cb = c_cb_remote_credential
+            #gopts.remote_callbacks.credentials_cb = c_cb_remote_credential
         else
             throw(ArgumentError("clone option :credentials must be a GitCredential or Function type"))
         end
@@ -1662,25 +1661,24 @@ function parse_clone_options(opts::Dict)
                 throw(ArgumentError("clone callback :transfer_progress must be a Function"))
             end
             payload[:callbacks] = callbacks
-            #gopts.remote_transfer_progress_cb = c_cb_remote_transfer 
-            gopts.remote_callbacks.transfer_progress_cb = c_cb_remote_transfer 
+            gopts.remote_transfer_progress_cb = c_cb_remote_transfer 
+            #gopts.remote_callbacks.transfer_progress_cb = c_cb_remote_transfer 
         end
     end
-    #gopts.remote_payload = pointer_from_objref(payload)
-    gopts.remote_callbacks.payload = pointer_from_objref(payload)
+    gopts.remote_payload = pointer_from_objref(payload)
+    #gopts.remote_callbacks.payload = pointer_from_objref(payload)
     return gopts
 end
 
 function repo_clone(url::String, path::String, opts=nothing)
     gopts = parse_clone_options(opts)
-    @show :parsed_opts
     repo_ptr = Array(Ptr{Void}, 1)
     err = ccall((:git_clone, api.libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),
                  repo_ptr, bytestring(url), bytestring(path), &gopts)
     if err != api.GIT_OK
-        #payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
-        payload = unsafe_pointer_to_objref(gopts.remote_callbacks.payload)::Dict
+        payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
+        #payload = unsafe_pointer_to_objref(gopts.remote_callbacks.payload)::Dict
         if haskey(payload, :exception)
             throw(payload[:exception])
         else
