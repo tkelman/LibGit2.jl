@@ -201,9 +201,12 @@ Base.download(r::GitRemote) = begin
     return r
 end
 
+#TODO: this should accept a signature and message
 function update_tips!(r::GitRemote)
     @assert r.ptr != C_NULL
-    @check api.git_remote_update_tips(r.ptr)
+    @check ccall((:git_remote_update_tips, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
+                 r.ptr, C_NULL, C_NULL)
     return r
 end
 

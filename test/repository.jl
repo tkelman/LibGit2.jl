@@ -506,6 +506,7 @@ end
     @test 19 == received_objects
     @test 1563 == received_bytes
 end
+gc(); @show :here
 
 ## test_clone_quits_on_error
 @repo_clone_test begin
@@ -518,6 +519,7 @@ end
     end
     @test isdir(joinpath(tmppath, ".git")) == false
 end
+gc(); @show :here
 
 # test_clone_with_bad_progress_callback
 @repo_clone_test begin
@@ -526,6 +528,7 @@ end
       }})
     @test isdir(joinpath(tmppath, ".git")) == false
 end
+gc(); @show :here
 
 #---------------------------
 # Repo Namespace Test
@@ -556,7 +559,6 @@ end
 #---------------------------
 # Repo Push Test
 #---------------------------
-# test_push_single_ref
 @sandboxed_test "testrepo.git" begin
     remote_repo = test_repo
     source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
@@ -591,7 +593,7 @@ end
     @test_throws push!(test_repo, "origin", ["refs/heads/master"])
 end
 
-# tets_push_to_remote_instance
+# test_push_to_remote_instance
 @sandboxed_test "testrepo.git" begin
     remote_repo = test_repo
     source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")

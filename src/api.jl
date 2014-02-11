@@ -884,7 +884,99 @@ type GitTransferProgress
     received_bytes::Csize_t
 end
 
+immutable IGitStrArray
+   strings::Ptr{Ptr{Cchar}}
+   count::Csize_t
+
+   IGitStrArray() = new(C_NULL, 0)
+end
+
+# git checkout options
+immutable IGitCheckoutOptions
+    version::Cuint
+    
+    strategy::Cuint
+    
+    disable_filters::Cint
+    dir_mode::Cuint
+    file_mode::Cuint
+    file_open_flags::Cint
+    
+    notify_flags::Cuint 
+    notify_cb::Ptr{Void}
+    notify_payload::Ptr{Void}
+    
+    progress_cb::Ptr{Void}
+    progress_payload::Ptr{Void}
+
+    paths::IGitStrArray
+
+    baseline::Ptr{Void}
+
+    target_directory::Ptr{Cchar}
+    our_label::Ptr{Cchar}
+    their_label::Ptr{Cchar}
+
+    IGitCheckoutOptions() = new(1,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                C_NULL,
+                                C_NULL,
+                                C_NULL,
+                                C_NULL,
+                                IGitStrArray(), 
+                                C_NULL,
+                                C_NULL,
+                                C_NULL,
+                                C_NULL)
+end
+
+immutable IGitRemoteCallbacks
+    version::Cuint
+    progress_cb::Ptr{Void}
+    completion_cb::Ptr{Void}
+    credentials_cb::Ptr{Void}
+    transfer_progress_cb::Ptr{Void}
+    update_tips_cb::Ptr{Void}
+    payload::Ptr{Void}
+
+    IGitRemoteCallbacks() = new(1,
+                                C_NULL,
+                                C_NULL,
+                                C_NULL,
+                                C_NULL,
+                                C_NULL,
+                                C_NULL)
+end
+
 type GitCloneOpts
+    version::Cuint
+    
+    checkout_opts::IGitCheckoutOptions
+    remote_callbacks::IGitRemoteCallbacks
+
+    bare::Cint
+    ignore_cert_errors::Cint
+    remote_name::Ptr{Cchar}
+    checkout_branch::Ptr{Cchar}
+
+    function GitCloneOpts()
+        return new(1,
+                   IGitCheckoutOptions(),
+                   IGitRemoteCallbacks(),
+                   0,
+                   0,
+                   C_NULL,
+                   C_NULL)
+                   #convert(Ptr{Cchar}, "a")) useful for testing
+    end
+end
+
+type GitCloneOptsPrev
     version::Cuint
     pad1::Cuint
      
@@ -969,6 +1061,7 @@ type GitCloneOpts
                    #convert(Ptr{Cchar}, "a")) useful for testing
     end
 end
+
 
 
 # ------ libgit config  ------

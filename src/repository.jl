@@ -371,6 +371,8 @@ const c_cb_push_status = cfunction(cb_push_status, Cint,
                                    (Ptr{Cchar}, Ptr{Cchar}, Ptr{Void}))
 
 #TODO: possible julia bug?? refs only works for ASCIIStrings...
+#TODO: git push update tips takes a signature and message
+#TODO: better error messages
 Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
     @assert r.ptr != C_NULL && remote.ptr != C_NULL
     err = zero(Cint) 
@@ -411,7 +413,9 @@ Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
         api.git_push_free(push_ptr[1])
         throw(GitError(err))
     end
-    err = api.git_push_update_tips(push_ptr[1])
+    err = ccall((:git_push_update_tips, api.libgit2), Cint,
+                (Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
+                push_ptr[1], C_NULL, C_NULL)
     if err != api.GIT_OK
         api.git_push_free(push_ptr[1])
         throw(GitError(err))
@@ -980,7 +984,7 @@ function commit(r::Repository,
                      (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, 
                       Ptr{api.GitSignature}, Ptr{api.GitSignature}, 
                       Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
-                      Cint, Ptr{Ptr{Void}}),
+                      Csize_t, Ptr{Ptr{Void}}),
                       commit_oid.oid, r.ptr, bref,
                       &gauthor, &gcommitter,
                       C_NULL, bmsg, tree.ptr, 
@@ -1517,6 +1521,7 @@ end
 
 function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
                             payload_ptr::Ptr{Void})
+    println("test")
     stats = unsafe_load(stats_ptr)
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
     callback = payload[:callbacks][:transfer_progress]
@@ -1573,7 +1578,6 @@ function cb_default_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
                                        username_from_url::Ptr{Cchar},
                                        allowed_types::Cuint,
                                        payload_ptr::Ptr{Void})
-    
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
     cred = payload[:credentials]
     try
@@ -1641,10 +1645,12 @@ function parse_clone_options(opts::Dict)
         cred = opts[:credentials]
         if isa(cred, GitCredential)
             payload[:credentials] = cred
-            gopts.remote_credentials_cb = c_cb_default_remote_credentials
+            #gopts.remote_credentials_cb = c_cb_default_remote_credentials
+            gopts.remote_callbacks.credentials_cb = c_cb_default_remote_credentials
         elseif isa(cred, Function)
             payload[:credentials] = cred
-            gopts.remote_credentials_cb = c_cb_remote_credential
+            #gopts.remote_credentials_cb = c_cb_remote_credential
+            gopts.remote_callbacks.credentials_cb = c_cb_remote_credential
         else
             throw(ArgumentError("clone option :credentials must be a GitCredential or Function type"))
         end
@@ -1656,21 +1662,25 @@ function parse_clone_options(opts::Dict)
                 throw(ArgumentError("clone callback :transfer_progress must be a Function"))
             end
             payload[:callbacks] = callbacks
-            gopts.remote_transfer_progress_cb = c_cb_remote_transfer 
+            #gopts.remote_transfer_progress_cb = c_cb_remote_transfer 
+            gopts.remote_callbacks.transfer_progress_cb = c_cb_remote_transfer 
         end
     end
-    gopts.remote_payload = pointer_from_objref(payload)
+    #gopts.remote_payload = pointer_from_objref(payload)
+    gopts.remote_callbacks.payload = pointer_from_objref(payload)
     return gopts
 end
 
 function repo_clone(url::String, path::String, opts=nothing)
     gopts = parse_clone_options(opts)
+    @show :parsed_opts
     repo_ptr = Array(Ptr{Void}, 1)
     err = ccall((:git_clone, api.libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),
                  repo_ptr, bytestring(url), bytestring(path), &gopts)
     if err != api.GIT_OK
-        payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
+        #payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
+        payload = unsafe_pointer_to_objref(gopts.remote_callbacks.payload)::Dict
         if haskey(payload, :exception)
             throw(payload[:exception])
         else
