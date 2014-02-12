@@ -1627,18 +1627,13 @@ end
 const c_cb_remote_credential = cfunction(cb_remote_credentials, Cint,
                                          (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Cuint, Ptr{Void}))
 
-function parse_clone_options(opts::Nothing)
-    return api.GitCloneOpts()
-end
-
-function parse_clone_options(opts::Dict)
+function parse_clone_options(opts, payload::Dict)
     gopts = api.GitCloneOpts()
-    payload = Dict() 
-    if isempty(opts)
+    if opts == nothing || isempty(opts)
         return gopts
     end
     if get(opts, :bare, false)
-        gopts.bare = convert(Cint, 1)
+        gopts.bare = convert(Cint, opts[:bare])
     end
     if haskey(opts, :credentials)
         cred = opts[:credentials]
@@ -1671,7 +1666,12 @@ function parse_clone_options(opts::Dict)
 end
 
 function repo_clone(url::String, path::String, opts=nothing)
-    gopts = parse_clone_options(opts)
+    # we initalize the payload here as pointer_from_objref
+    # hides the object from julia's gc.  A reference in this
+    # function's scope allows the object to be preserved
+    # for the lifetime of the function call.
+    gpayload = Dict() 
+    gopts    = parse_clone_options(opts, gpayload)
     repo_ptr = Array(Ptr{Void}, 1)
     err = ccall((:git_clone, api.libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),

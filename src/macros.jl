@@ -13,6 +13,3 @@ macro get_header_fieldnames(arr, obj)
     end
     return Expr(:block, args...)
 end
-
-
-

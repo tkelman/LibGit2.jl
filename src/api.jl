@@ -981,6 +981,7 @@ end
 
 type GitCloneOpts
     version::Cuint
+
     pad1::Cuint
      
     # git checkout options
