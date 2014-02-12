@@ -370,7 +370,6 @@ end
 const c_cb_push_status = cfunction(cb_push_status, Cint,
                                    (Ptr{Cchar}, Ptr{Cchar}, Ptr{Void}))
 
-#TODO: possible julia bug?? refs only works for ASCIIStrings...
 #TODO: git push update tips takes a signature and message
 #TODO: better error messages
 Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
