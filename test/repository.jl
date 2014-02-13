@@ -283,7 +283,7 @@ end
     their_commit = lookup_branch(test_repo, "branch") |> tip
 
     index = merge_commits(test_repo, our_commit, their_commit)
-    #TODO: BUG versy rarely the length of the index is reported as 6??
+    #TODO: BUG very rarely the length of the index is reported as 6??
     @test length(index) == 8
 
     @test (Oid("233c0919c998ed110a4b6ff36f353aec8b713487") == 
@@ -458,11 +458,12 @@ end
 #---------------------------
 # Repo Clone Test
 #---------------------------
-# test clone repo
+#:test_clone_repo
 @repo_clone_test begin
     repo = repo_clone(source_path, tmppath)
+    gc()
     try
-#      @test open(readline, joinpath(tmppath, "README")) |> chomp == "hey"
+      #@test open(readline, joinpath(tmppath, "README")) |> chomp == "hey"
       @test (target(head(repo)) 
                 == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
       @test (target(lookup_ref(repo, "refs/heads/master")) 
@@ -476,7 +477,7 @@ end
     end
 end
 
-## test clone bare
+#:test_clone_bare
 @repo_clone_test begin
     repo = repo_clone(source_path, tmppath, {:bare => true})
     try
@@ -486,7 +487,7 @@ end
     end
 end
 
-## test_clone_with_progress
+#:test_clone_with_progress
 @repo_clone_test begin
     total_objects = indexed_objects = received_objects = received_bytes = 0
     callsback = 0
@@ -507,7 +508,7 @@ end
     @test 1563 == received_bytes
 end
 
-## test_clone_quits_on_error
+#:test_clone_quits_on_error
 @repo_clone_test begin
     try
       repo_clone(source_path, tmppath, {:callbacks => {
