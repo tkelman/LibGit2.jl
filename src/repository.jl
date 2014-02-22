@@ -1631,17 +1631,17 @@ function parse_clone_options(opts, payload::Dict)
     if opts == nothing || isempty(opts)
         return gopts
     end
-    if get(opts, :bare, false)
-        gopts.bare = convert(Cint, opts[:bare])
+    if haskey(opts, :bare)
+        gopts.bare = convert(Cint, opts[:bare] ? 1 : 0)
     end
     if haskey(opts, :credentials)
         cred = opts[:credentials]
         if isa(cred, GitCredential)
             payload[:credentials] = cred
-            gopts.remote_credentials_cb = c_cb_default_remote_credentials
+            gopts.remote_credentials_cb = convert(Ptr{Void}, c_cb_default_remote_credentials)
         elseif isa(cred, Function)
             payload[:credentials] = cred
-            gopts.remote_credentials_cb = c_cb_remote_credential
+            gopts.remote_credentials_cb = convert(Ptr{Void}, c_cb_remote_credential)
         else
             throw(ArgumentError("clone option :credentials must be a GitCredential or Function type"))
         end
@@ -1653,12 +1653,10 @@ function parse_clone_options(opts, payload::Dict)
                 throw(ArgumentError("clone callback :transfer_progress must be a Function"))
             end
             payload[:callbacks] = callbacks
-            gopts.remote_transfer_progress_cb = c_cb_remote_transfer 
-            #gopts.remote_callbacks.transfer_progress_cb = c_cb_remote_transfer 
+            gopts.remote_transfer_progress_cb = convert(Ptr{Void}, c_cb_remote_transfer)
         end
     end
-    gopts.remote_payload = pointer_from_objref(payload)
-    #gopts.remote_callbacks.payload = pointer_from_objref(payload)
+    gopts.remote_payload = convert(Ptr{Void}, pointer_from_objref(payload))
     return gopts
 end
 
