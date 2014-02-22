@@ -1,18 +1,6 @@
 export GitBranch, tip, resolve, owner, name, canonical_name, ishead, move,
        remote_name, remote, isremote, upstream, set_upstream!
 
-#TODO: git branch is subtype of git reference
-type GitBranch #<: GitReference{T}
-    ptr::Ptr{Void}
-    
-    function GitBranch(ptr::Ptr{Void})
-        @assert ptr != C_NULL
-        b = new(ptr)
-        finalizer(b, free!)
-        return b
-    end
-end
-
 free!(b::GitBranch) = begin
     if b.ptr != C_NULL
         api.git_reference_free(b.ptr)

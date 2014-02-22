@@ -3,17 +3,6 @@ export GitReference, ReflogEntry, Sym,
        rename, target, symbolic_target, name,
        git_reftype, isvalid_ref, reflog, has_reflog, peel, log!
 
-#TODO:
-#abstract GitRefType
-#type RefSym <: GitRefType end
-#type RefOid <: GitRefType end
-
-type Sym end 
-
-type GitReference{T}
-    ptr::Ptr{Void}
-end
-
 function GitReference(ptr::Ptr{Void})
     @assert ptr != C_NULL
     ty = api.git_reference_type(ptr)
@@ -21,13 +10,6 @@ function GitReference(ptr::Ptr{Void})
     ref = GitReference{RType}(ptr)
     finalizer(ref, free!)
     return ref
-end
-
-free!(r::GitReference) = begin
-    if r.ptr != C_NULL
-        api.git_reference_free(r.ptr)
-        r.ptr = C_NULL
-    end
 end
 
 function isvalid_ref(ref::String)

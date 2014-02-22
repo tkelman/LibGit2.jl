@@ -13,29 +13,6 @@ export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        ishead_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
        repo_clone
 
-type Repository
-    ptr::Ptr{Void}
-    
-    function Repository(ptr::Ptr{Void}, manage::Bool=true)
-        if ptr == C_NULL
-            throw(ArgumentError("Repository initialized with NULL pointer"))
-        end
-        r = new(ptr)
-        if manage
-            finalizer(r, free!)
-        end
-        return r
-    end
-end
-
-free!(r::Repository) = begin
-    if r.ptr != C_NULL
-        close(r)
-        api.git_repository_free(r.ptr)
-        r.ptr = C_NULL
-    end
-end
-
 Repository(path::String; alternates=nothing) = begin
     bpath = bytestring(path)
     repo_ptr = Array(Ptr{Void}, 1)

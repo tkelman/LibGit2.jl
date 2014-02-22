@@ -1,8 +1,5 @@
 export GitObject, GitAny, libgit_const, oid, hex
 
-abstract GitObject
-type GitAny <: GitObject end
-
 git_otype(::Type{GitAny}) = api.OBJ_ANY
 git_otype{T<:GitObject}(o::T) = git_otype(T)
 

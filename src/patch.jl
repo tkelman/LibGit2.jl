@@ -2,6 +2,7 @@ export GitPatch, lines, nlines, DiffHunk, hunks, nchanges, delta
 
 type GitPatch
     ptr::Ptr{Void}
+    
     function GitPatch(ptr::Ptr{Void})
         @assert ptr != C_NULL
         p = new(ptr)

@@ -1,15 +1,5 @@
 export GitBlob, git_otype, is_binary, raw_content, sloc, text, isbinary
 
-type GitBlob <: GitObject
-    ptr::Ptr{Void}
-
-    function GitBlob(ptr::Ptr{Void})
-        b = new(ptr)
-        finalizer(b, free!)
-        return b
-    end
-end
-
 git_otype(::Type{GitBlob}) = api.OBJ_BLOB
 
 Base.sizeof(b::GitBlob) = begin

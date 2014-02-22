@@ -1,17 +1,6 @@
 export GitCommit, git_otype, message, tree, tree_id,
        author, committer, parent, parent_id, parent_count, parents
 
-type GitCommit <: GitObject
-    ptr::Ptr{Void}
-
-    function GitCommit(ptr::Ptr{Void})
-        @assert ptr != C_NULL
-        c = new(ptr)
-        finalizer(c, free!)
-        return c
-    end
-end
-
 git_otype(::Type{GitCommit}) = api.OBJ_COMMIT
 
 function message(c::GitCommit, raw::Bool=false)
