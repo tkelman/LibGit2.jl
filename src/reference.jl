@@ -1,4 +1,4 @@
-export GitReference, ReflogEntry, Sym,
+export ReflogEntry,
        set_target, set_symbolic_target, resolve, 
        rename, target, symbolic_target, name,
        git_reftype, isvalid_ref, reflog, has_reflog, peel, log!

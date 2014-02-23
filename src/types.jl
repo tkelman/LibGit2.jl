@@ -1,5 +1,5 @@
 export Repository, GitObject, GitAny, GitBlob, GitCommit, GitTag,
-       GitTree, GitReference, GitBranch, GitRemote
+       GitTree, GitReference, GitBranch, GitRemote, Sym
 
 # --------------
 # Git Repository

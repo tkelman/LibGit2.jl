@@ -1,4 +1,4 @@
-export GitTag, git_otype, message, target_id, target, tagger
+export git_otype, message, target_id, target, tagger
 
 git_otype(::Type{GitTag}) = api.OBJ_TAG 
 
