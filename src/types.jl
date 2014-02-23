@@ -1,6 +1,9 @@
 export Repository, GitObject, GitAny, GitBlob, GitCommit, GitTag,
        GitTree, GitReference, GitBranch
 
+# --------------
+# Git Repository
+# --------------
 type Repository
     ptr::Ptr{Void}
     
@@ -8,11 +11,11 @@ type Repository
         if ptr == C_NULL
             throw(ArgumentError("Repository initialized with NULL pointer"))
         end
-        r = new(ptr)
+        this = new(ptr)
         if manage
-            finalizer(r, free!)
+            finalizer(this, free!)
         end
-        return r
+        return this
     end
 end
 
@@ -25,6 +28,9 @@ free!(r::Repository) = begin
 end
 
 
+# -------------
+# Git Objects
+# -------------
 abstract GitObject
 
 free!(o::GitObject) = begin
@@ -41,9 +47,9 @@ type GitBlob <: GitObject
     
     function GitBlob(ptr::Ptr{Void})
         @assert ptr != C_NULL
-        b = new(ptr)
-        finalizer(b, free!)
-        return b
+        this = new(ptr)
+        finalizer(this, free!)
+        return this 
     end
 end
 
@@ -52,9 +58,9 @@ type GitCommit <: GitObject
 
     function GitCommit(ptr::Ptr{Void})
         @assert ptr != C_NULL
-        c = new(ptr)
-        finalizer(c, free!)
-        return c
+        this = new(ptr)
+        finalizer(this, free!)
+        return this
     end
 end
 
@@ -63,9 +69,9 @@ type GitTag <: GitObject
 
     function GitTag(ptr::Ptr{Void})
         @assert ptr != C_NULL 
-        t = new(ptr)
-        finalizer(t, free!)
-        return t
+        this = new(ptr)
+        finalizer(this, free!)
+        return this
     end
 end
 
@@ -74,12 +80,15 @@ type GitTree <: GitObject
 
     function GitTree(ptr::Ptr{Void})
         @assert ptr != C_NULL
-        t = new(ptr)
-        finalizer(t, free!)
-        return t
+        this = new(ptr)
+        finalizer(this, free!)
+        return this
     end
 end
 
+# ---------------
+# Git Reftypes
+# ---------------
 immutable Sym end 
 const RefType = Union(Oid, Sym)
 
@@ -99,9 +108,9 @@ type GitBranch #<: GitReference{Sym}
     
     function GitBranch(ptr::Ptr{Void})
         @assert ptr != C_NULL
-        b = new(ptr)
-        finalizer(b, free!)
-        return b
+        this = new(ptr)
+        finalizer(this, free!)
+        return this
     end
 end
 
@@ -112,6 +121,9 @@ free!(b::GitBranch) = begin
     end
 end
 
+# ---------------
+# Git Remote
+# ---------------
 type GitRemote
     ptr::Ptr{Void}
 
