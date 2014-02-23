@@ -3,35 +3,31 @@ export Oid, hex, oid, raw, iszero
 type Oid
     oid::Array{Uint8,1}
 
-    function Oid()
-        new(zeros(Uint8, api.OID_RAWSZ))
-    end
-
-    function Oid(b::Array{Uint8,1})
+    Oid(b::Array{Uint8, 1}) = begin
         if length(b) != api.OID_RAWSZ
             throw(ArgumentError("invalid raw buffer size"))
         end
-        new(b)
+        return new(b)
     end
-    
-    function Oid(h::String)
-        if length(h) != api.OID_HEXSZ
-            throw(ArgumentError("invalid hex size"))
-        end
-        bytes = hex2bytes(bytestring(h))
-        Oid(bytes)
-    end
+end
 
-    function Oid(ptr::Ptr{Uint8})
-        if ptr == C_NULL
-            throw(ArgumentError("pointer is NULL"))
-        end
-        oid = Array(Uint8, api.OID_RAWSZ)
-        for i in 1:api.OID_RAWSZ
-            oid[i] = unsafe_load(ptr, i)
-        end
-        return Oid(oid)
+Oid() = Oid(zeros(Uint8, api.OID_RAWSZ))
+
+Oid(h::String) = begin
+    if length(h) != api.OID_HEXSZ
+        throw(ArgumentError("invalid hex size"))
     end
+    bytes = hex2bytes(bytestring(h))
+    return Oid(bytes)
+end
+
+Oid(ptr::Ptr{Uint8}) = begin
+    @assert ptr != C_NULL
+    oid = Array(Uint8, api.OID_RAWSZ)
+    for i in 1:api.OID_RAWSZ
+        oid[i] = unsafe_load(ptr, i)
+    end
+    return Oid(oid)
 end
 
 function oid(id::Oid)
