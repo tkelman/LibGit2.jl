@@ -1,4 +1,4 @@
-export Repository, repo_isbare, repo_isempty, repo_workdir, repo_path, path,
+export repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_open, repo_init, repo_index, head, set_head!, tags, tag!, commits, references,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,

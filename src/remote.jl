@@ -1,8 +1,7 @@
-export GitRemote, name, isconnected, disconnect, url, set_url!, 
+export name, isconnected, disconnect, url, set_url!, 
        push_url, set_push_url!, fetch_refspecs, push_refspecs, 
        add_fetch!, add_push!, clear_refspecs!, save!, rename!,
        update_tips!
-
 
 function name(r::GitRemote)
     @assert r.ptr != C_NULL

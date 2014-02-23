@@ -1,12 +1,5 @@
-export GitBranch, tip, resolve, owner, name, canonical_name, ishead, move,
+export tip, resolve, owner, name, canonical_name, ishead, move,
        remote_name, remote, isremote, upstream, set_upstream!
-
-free!(b::GitBranch) = begin
-    if b.ptr != C_NULL
-        api.git_reference_free(b.ptr)
-        b.ptr = C_NULL
-    end
-end
 
 Base.delete!(b::GitBranch) = begin
     @assert b.ptr != C_NULL  

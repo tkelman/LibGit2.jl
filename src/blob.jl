@@ -1,4 +1,4 @@
-export GitBlob, git_otype, is_binary, raw_content, sloc, text, isbinary
+export git_otype, is_binary, raw_content, sloc, text, isbinary
 
 git_otype(::Type{GitBlob}) = api.OBJ_BLOB
 
@@ -85,4 +85,3 @@ function isbinary(b::GitBlob)
     res = api.git_blob_is_binary(b.ptr)
     return bool(res)
 end
-

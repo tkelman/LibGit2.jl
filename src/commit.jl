@@ -1,4 +1,4 @@
-export GitCommit, git_otype, message, tree, tree_id,
+export git_otype, message, tree, tree_id,
        author, committer, parent, parent_id, parent_count, parents
 
 git_otype(::Type{GitCommit}) = api.OBJ_COMMIT

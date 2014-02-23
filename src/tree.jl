@@ -1,18 +1,7 @@
-export GitTree, git_otype, GitTreeEntry, 
+export git_otype, GitTreeEntry, 
        entry_byname, entry_bypath,
        each_tree, each_blob,
        walk_trees, walk_blobs
-
-type GitTree <: GitObject
-    ptr::Ptr{Void}
-
-    function GitTree(ptr::Ptr{Void})
-        @assert ptr != C_NULL
-        t = new(ptr)
-        finalizer(t, free!)
-        return t
-    end
-end
 
 git_otype(::Type{GitTree}) = api.OBJ_TREE
 

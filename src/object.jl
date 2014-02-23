@@ -1,14 +1,7 @@
-export GitObject, GitAny, libgit_const, oid, hex
+export libgit_const, oid, hex
 
 git_otype(::Type{GitAny}) = api.OBJ_ANY
 git_otype{T<:GitObject}(o::T) = git_otype(T)
-
-free!(o::GitObject) = begin
-    if o.ptr != C_NULL
-        api.git_object_free(o.ptr)
-        o.ptr = C_NULL
-    end
-end
 
 Base.isequal(o1::GitObject, o2::GitObject) = begin
     Base.isequal(oid(o1), oid(o2))
