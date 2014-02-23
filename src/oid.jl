@@ -1,5 +1,20 @@
 export Oid, hex, oid, raw, iszero
 
+type Sha1
+    sha1::String
+    
+    Sha1(s::String) = begin
+        if length(s) != api.OID_HEXSZ
+            throw(ArgumentError("invalid sha1 string length"))
+        end
+        return new(s)
+    end
+end
+
+macro sha1_str(s)
+    Sha1(s)
+end
+
 type Oid
     oid::Array{Uint8,1}
 

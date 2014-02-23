@@ -35,4 +35,8 @@ push!(s, Oid("0000000000000000000000000000000000000001"))
 @test iszero(oid1) == false
 @test iszero(Oid(zeros(Uint8, 20))) == true
 
+#sh1 = sha1"15b648aec6ed045b5ca6f57f8b7831a8b4757298"
+#sh2 = sha1"15b648aec6ed045b5ca6f57f8b7831a8b4757299"
+#@test_throws sha1"15b648aec6ed045b5ca6f57f8b7831a8b475729"
 # TODO: test pointer constructor....
+
