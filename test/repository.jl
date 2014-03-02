@@ -380,7 +380,7 @@ end
 
 # test discover nested false
 @discover_test begin
-    @test_throws repo_disover(joinpath(tmpdir, "foo"))
+    @test_throws repo_discover(joinpath(tmpdir, "foo"))
 end
 
 # test discover true
