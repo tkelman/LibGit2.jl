@@ -21,7 +21,7 @@ oid1 = Oid(HEX1)
 oid2 = Oid(HEX1)
 
 #XXX: travis fails no method length?
-s = Set{Oid}(oid1, oid2)
+s = Set{Oid}({oid1, oid2})
 @test length(s) == 1
 
 push!(s, Oid("0000000000000000000000000000000000000000"))
