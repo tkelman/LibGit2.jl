@@ -15,10 +15,12 @@ install:
   - cd ${TRAVIS_BUILD_DIR}
   - mkdir -p deps
   - cd deps
-  - git clone https://github.com/libgit2/libgit2.git
+  - git clone --depth 1 --single-branch https://github.com/libgit2/libgit2.git
   - cd libgit2
   - mkdir build && cd build
-  - cmake ..
+  - cmake -DTHREADSAFE=ON \
+          -DBUILD_CLAR=OFF \
+          ..
   - cmake --build .
   - sudo cmake --build . --target install
   - cd ${TRAVIS_BUILD_DIR}
