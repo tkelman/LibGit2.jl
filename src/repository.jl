@@ -683,7 +683,7 @@ function blob_from_stream(r::Repository, stream, hintpath=nothing)
     blob_id = Oid()
     local path_ptr::Ptr{Cchar}
     if hintpath != nothing
-        path_ptr = convert(Ptr{Cchar}, bytestring(hintpath))
+        path_ptr = convert(Ptr{Cchar}, pointer(bytestring(hintpath)))
     else
         path_ptr = C_NULL
     end

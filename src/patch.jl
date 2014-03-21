@@ -43,10 +43,10 @@ Base.diff(repo::Repository, blob::GitBlob, other::GitBlob, opts=nothing) = begin
     new_path_ptr::Ptr{Cchar} = C_NULL
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Cchar}, opts[:old_path]::ByteString)
+            old_path_ptr = convert(Ptr{Cchar}, pointer(opts[:old_path]::ByteString))
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Cchar}, opts[:new_path]::ByteString)
+            new_path_ptr = convert(Ptr{Cchar}, pointer(opts[:new_path]::ByteString))
         end
     end
     gopts = parse_git_diff_options(opts)
