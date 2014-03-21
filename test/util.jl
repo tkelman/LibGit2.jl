@@ -39,7 +39,7 @@ end
 
 macro with_test_index(body)
     quote
-        let test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index"),
+        let test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index")
             test_index = GitIndex(test_index_path)
             $body
         end

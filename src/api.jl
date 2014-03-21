@@ -271,7 +271,7 @@ type GitStrArray
        #TODO: memory management?
        str_ptr = Array(Ptr{Cchar}, length(s))
        for i in length(s)
-           str_ptr[i] = convert(Ptr{Cchar}, bytestring(s[i]))
+           str_ptr[i] = convert(Ptr{Cchar}, pointer(bytestring(s[i])))
        end
        sa = new(str_ptr, length(s))
        return sa

@@ -35,7 +35,7 @@ function hex(o::GitObject)
         error("oid pointer is NULL")
     end
     hex_buff = Array(Uint8, api.OID_HEXSZ)
-    @check api.git_oid_fmt(hex_buff, oid_ptr)
+    @check api.git_oid_fmt(pointer(hex_buff), oid_ptr)
     return bytestring(hex_buff)
 end
 

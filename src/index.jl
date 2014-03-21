@@ -150,7 +150,7 @@ function api.GitIndexEntry(idx::IndexEntry)
                              idx.oid.oid[20],
                              flags,
                              zero(Uint16),
-                             convert(Ptr{Cchar}, idx.path))
+                             convert(Ptr{Cchar}, pointer(idx.path)))
 end
 
 function IndexEntry(ptr::Ptr{api.GitIndexEntry})
