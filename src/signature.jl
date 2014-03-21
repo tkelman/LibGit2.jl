@@ -55,8 +55,8 @@ end
 git_signature(sig::Signature) = begin
     #name_copy  = copy(sig.name)
     #email_copy = copy(sig.email) 
-    return api.GitSignature(convert(Ptr{Cchar}, sig.name),
-                            convert(Ptr{Cchar}, sig.email),
+    return api.GitSignature(convert(Ptr{Cchar}, pointer(sig.name)),
+                            convert(Ptr{Cchar}, pointer(sig.name)),
                             sig.time, sig.time_offset)
 end
 
