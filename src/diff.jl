@@ -487,7 +487,7 @@ function parse_git_diff_options(opts::Dict)
         gdiff.pathspec_count = convert(Csize_t, length(paths))
         str_ptrs = Array(Ptr{Cchar}, length(paths))
         for i in 1:length(paths)
-            str_ptrs[i] = convert(Ptr{Cchar}, bytestring(paths[i]))
+            str_ptrs[i] = convert(Ptr{Cchar}, pointer(bytestring(paths[i])))
         end
         gdiff.pathspec_strings = convert(Ptr{Ptr{Cchar}}, str_ptrs)
     end 
