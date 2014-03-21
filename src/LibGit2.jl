@@ -2,6 +2,8 @@ module LibGit2
 
 include("api.jl")
 
+__threads_handle = nothing
+
 type __GitThreadsHandle
     function __GitThreadsHandle()
         h = new()
@@ -10,8 +12,16 @@ type __GitThreadsHandle
     end
 end
 
-api.git_threads_init()
-const __threads_handle = __GitThreadsHandle()
+function init()
+    global __threads_handle
+    if __threads_handle == nothing
+        api.git_threads_init()
+	__threads_handle = __GitThreadsHandle()
+    end
+    return
+end
+
+init()
 
 include("error.jl")
 include("macros.jl")
