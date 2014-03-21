@@ -1389,7 +1389,8 @@ function parse_checkout_options(opts::Dict)
         gopts.file_open_flags = convert(Cint, opts[:file_open_flags])
     end
     if haskey(opts, :target_directory)
-        gopts.target_directory = convert(Ptr{Cchar}, bytestring(opts[:target_directory]))
+        gopts.target_directory = convert(Ptr{Cchar}, 
+					 pointer(bytestring(opts[:target_directory])))
     end
     if haskey(opts, :baseline)
         if isa(opts[:baseline], GitTree)
@@ -1407,7 +1408,7 @@ function parse_checkout_options(opts::Dict)
         cpaths = Array(Ptr{Cchar}, npaths)
         gopts.paths_count = convert(Csize_t, npaths)
         for i in 1:npaths
-            cpaths[i] = convert(Ptr{Cchar}, paths[i])
+            cpaths[i] = convert(Ptr{Cchar}, pointer(paths[i]))
         end
         gopts.paths_strings = convert(Ptr{Ptr{Cchar}}, cpaths)
     end
