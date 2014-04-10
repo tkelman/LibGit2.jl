@@ -46,27 +46,26 @@ const git_error_class = (Int => Symbol)[
     25 => :GITERR_REVERT,
 ]
 
-immutable CGitError
+immutable ErrorStruct
     message::Ptr{Cchar}
     class::Cint
 end
 
-immutable GitError
+immutable LibGitError
     code::Symbol
-    mesg::String
-end
-
-GitError(code::Integer) = begin
-    err_code = git_error_code[int(code)]
-    class, msg = last_error()
-    GitError(err_code, msg)
+    mesg::UTF8String
 end
 
 function last_error()
-    err = ccall((:giterr_last, api.libgit2), 
-                       Ptr{CGitError}, ())
+    err = ccall((:giterr_last, api.libgit2), Ptr{ErrorStruct}, ())
     err_obj = unsafe_load(err)
     (err_obj.class, bytestring(err_obj.message))
+end
+
+LibGitError(code::Integer) = begin
+    err_code = git_error_code[int(code)]
+    class, msg = last_error()
+    LibGitError(err_code, msg)
 end
 
 macro check(git_func)
@@ -74,7 +73,7 @@ macro check(git_func)
         local err::Cint
         err = $git_func
         if err < 0
-            throw(GitError(err))
+            throw(LibGitError(err))
         end
         err
     end
