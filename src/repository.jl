@@ -308,7 +308,7 @@ GitRemote(r::Repository, url::String) = begin
     @assert r.ptr != C_NULL
     check_valid_url(url)
     remote_ptr = Array(Ptr{Void}, 1)
-    @check api.git_remote_create_inmemory(remote_ptr, r.ptr, C_NULL, bytestring(url))
+    @check api.git_remote_create_anonymous(remote_ptr, r.ptr, bytestring(url), C_NULL)
     @check_null remote_ptr
     return GitRemote(remote_ptr[1])
 end
