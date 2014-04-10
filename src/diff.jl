@@ -446,6 +446,9 @@ function parse_git_diff_options(opts::Dict)
     if get(opts, :patience, false)
         gdiff.flags |= api.DIFF_PATIENCE
     end
+    if get(opts, :minimal, false)
+        gdiff.flags |= api.DIFF_MINIMAL
+    end
     if get(opts, :include_ignored, false)
         gdiff.flags |= api.DIFF_INCLUDE_IGNORED
     end
