@@ -21,9 +21,10 @@ testnames = ["oid",
              "repository_pack", 
              "patch", 
              "merge", 
-             "remote"]
+             "remote"
+             ]
 
-tests = ARGS==["all"] ? testnames : ARGS
+tests = isempty(ARGS) || ARGS == ["all"] ? testnames : ARGS
 
 function runtests(name)
     println(" \033[1m*\033[0m \033[31m$(name)\033[0m")
