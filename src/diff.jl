@@ -352,6 +352,15 @@ Base.diff(repo::Repository,
     return GitDiff(diff_ptr[1])
 end
 
+Base.diff(repo::Repository, left::String, right::GitIndex, opts=nothing) = begin
+    other = rev_parse(repo, left)
+    return diff(repo, other, right, opts)
+end
+
+Base.diff(repo::Repository, left::GitCommit, right::GitIndex, opts=nothing) = begin
+    return diff(repo, GitTree(left), right, opts)
+end
+
 Base.diff(repo::Repository, left::GitTree, right::GitIndex, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Array(Ptr{Void}, 1)

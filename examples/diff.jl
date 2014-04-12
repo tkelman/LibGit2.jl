@@ -245,12 +245,7 @@ function main()
 
   elseif haskey(o,:treeish1) && o[:cached]
     println("diff tree to index")
-
-    # FIXME change LibGit2.jl api to include:
-    # `Base.diff(repo::Repository, left::String, right::GitIndex, opts=nothing)`
-    # This can be done by following the approach on LibGit2.jl/src/diff.jl L315-322
-
-    d = diff(repo, GitTree(rev_parse(repo,o[:treeish1])), repo_index(repo), o)
+    d = diff(repo, o[:treeish1], repo_index(repo), o)
 
   elseif haskey(o,:treeish1) # TODO
     println("diff tree to working directory")
@@ -259,7 +254,7 @@ function main()
 
   elseif o[:cached]
     println("diff head to index")
-    d = diff(repo, GitTree(rev_parse(repo, "HEAD")), repo_index(repo), o) # FIXME
+    d = diff(repo, "HEAD", repo_index(repo), o)
 
   else
     println("diff index to working directory")
