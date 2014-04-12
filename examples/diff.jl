@@ -33,7 +33,7 @@ function parse_commandline()
     "treeish2"
       help = "oid of the second treeish"
 
-    "path"  # FIXME
+    "path"
       help = "path of the repository"
 
     "-p", "-u", "--patch"
@@ -42,13 +42,13 @@ function parse_commandline()
     "--cached"
       action = :store_true
 
-    "--name-only" # TODO To be implemented in LibGit2.jl
+    "--name-only"
       action = :store_true
 
-    "--name-status" # TODO To be implemented in LibGit2.jl
+    "--name-status"
       action = :store_true
 
-    "--raw" # TODO To be implemented in LibGit2.jl
+    "--raw"
       action = :store_true
 
     "--color"
@@ -128,19 +128,28 @@ function parse_commandline()
 
   end
   args = parse_args(s)
-#   println(args)
-#   no_symbol_keys = ["path","treeish1","treeish2","patch"]
-#   no_symbol = {k=>pop!(args,k) for k in no_symbol_keys}
 
   # Convert keys to symbol
   args = {symbol(k)=>v for (k,v) in args}
-#   merge!(args,no_symbol)
 
   # prune "nothing" values just for debug and to work in a clearer space
   for (k,v) in args
     v == nothing && delete!(args,k)
   end
-  return args
+
+  format_dic = [i => args[i] for i = [:raw, :patch, :name_only, :name_status]]
+  if sum(values(format_dic)) > 1
+    error("too many format flags")
+  end
+
+  diff_format = :patch
+  for i in keys(format_dic)
+    if format_dic[i]
+      diff_format = i
+    end
+  end
+
+  return args, diff_format
 end
 
 function diff_print_shortstat(d::GitDiff) # L304 libgit2/examples/diff.c
@@ -223,8 +232,7 @@ return color
 end
 
 function main()
-  o = parse_commandline()
-  println(o)
+  o,diff_format = parse_commandline()
   if haskey(o,:path)
     repo = repo_open(o[:path])
   else
@@ -265,7 +273,7 @@ function main()
   elseif o[:color]
     color_printer(d)
   else
-    println(patch(d))
+    println(patch(d, format = diff_format))
   end
 end
 
