@@ -95,12 +95,12 @@ end
 
 # test check reads fail on missing objects
 @sandboxed_test "testrepo.git" begin
-    @test_throws read(Oid("a496071c1b46c854b31185ea97743be6a8774471"))
+    @test_throws read(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
 # test check read headers fail on missing objects
 @sandboxed_test "testrepo.git" begin
-    @test_throws read_header(Oid("a496071c1b46c854b31185ea97743be6a8774471"))
+    @test_throws read_header(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
 # test walking with block
