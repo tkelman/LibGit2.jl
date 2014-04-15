@@ -231,17 +231,31 @@ end
 const c_cb_diff_print = cfunction(cb_diff_print, Cint,
                                   (Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffLine}, Ptr{Void}))
 
-function patch(d::GitDiff; compact::Bool=false)
+function patch(d::GitDiff; format::Symbol=:patch)
     @assert d.ptr != C_NULL
     s = Uint8[]
-    if compact
+    if format == :name_status
         ccall((:git_diff_print, api.libgit2), Cint,
               (Ptr{Void}, Cuint, Ptr{Void}, Any),
               d.ptr, api.DIFF_FORMAT_NAME_STATUS, c_cb_diff_print, &s)
-    else
+    elseif format == :name_only
+        ccall((:git_diff_print, api.libgit2), Cint,
+              (Ptr{Void}, Cuint, Ptr{Void}, Any),
+              d.ptr, api.DIFF_FORMAT_NAME_ONLY, c_cb_diff_print, &s)
+    elseif format == :raw
+        ccall((:git_diff_print, api.libgit2), Cint,
+              (Ptr{Void}, Cuint, Ptr{Void}, Any),
+              d.ptr, api.DIFF_FORMAT_RAW, c_cb_diff_print, &s)
+    elseif format == :header
+        ccall((:git_diff_print, api.libgit2), Cint,
+              (Ptr{Void}, Cuint, Ptr{Void}, Any),
+              d.ptr, api.DIFF_FORMAT_PATCH_HEADER, c_cb_diff_print, &s)
+    elseif format == :patch
         ccall((:git_diff_print, api.libgit2), Cint,
               (Ptr{Void}, Cuint, Ptr{Void}, Any),
               d.ptr, api.DIFF_FORMAT_PATCH, c_cb_diff_print, &s)
+    else
+      error("Unknown diff output format ($format)")
     end
     return UTF8String(s)
 end
@@ -336,6 +350,15 @@ Base.diff(repo::Repository,
                  &gopts)
     @check_null diff_ptr
     return GitDiff(diff_ptr[1])
+end
+
+Base.diff(repo::Repository, left::String, right::GitIndex, opts=nothing) = begin
+    other = rev_parse(repo, left)
+    return diff(repo, other, right, opts)
+end
+
+Base.diff(repo::Repository, left::GitCommit, right::GitIndex, opts=nothing) = begin
+    return diff(repo, GitTree(left), right, opts)
 end
 
 Base.diff(repo::Repository, left::GitTree, right::GitIndex, opts=nothing) = begin
@@ -445,6 +468,9 @@ function parse_git_diff_options(opts::Dict)
     end
     if get(opts, :patience, false)
         gdiff.flags |= api.DIFF_PATIENCE
+    end
+    if get(opts, :minimal, false)
+        gdiff.flags |= api.DIFF_MINIMAL
     end
     if get(opts, :include_ignored, false)
         gdiff.flags |= api.DIFF_INCLUDE_IGNORED

@@ -686,19 +686,19 @@ end
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
     
     d = diff(test_repo, a, b, {:paths => ["readme.txt"]})
-    @test "M\treadme.txt\n" == patch(d, compact=true)
+    @test "M\treadme.txt\n" == patch(d, format=:name_status)
 
     d = diff(test_repo, a, b, {:paths => ["r*.txt"]})
-    @test "M\treadme.txt\n" == patch(d, compact=true)
+    @test "M\treadme.txt\n" == patch(d, format=:name_status)
 
     d = diff(test_repo, a, b, {:paths => ["*.txt"]})
-    @test "M\tanother.txt\nM\treadme.txt\n" == patch(d, compact=true)
+    @test "M\tanother.txt\nM\treadme.txt\n" == patch(d, format=:name_status)
 
     d = diff(test_repo, a, b, {:paths => ["*.txt"], :disable_pathspec_match => true})
-    @test "" == patch(d, compact=true)
+    @test "" == patch(d, format=:name_status)
 
     d = diff(test_repo, a, b, {:paths => ["readme.txt"], :disable_pathspec_match => true})
-    @test "M\treadme.txt\n" == patch(d, compact=true)
+    @test "M\treadme.txt\n" == patch(d, format=:name_status)
 end
 
 @sandboxed_test "diff" begin
@@ -824,7 +824,7 @@ end
     a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
     d = diff(test_repo, a, b)
-    @test patch(d, compact=true) == "M\tanother.txt
+    @test patch(d, format=:name_status) == "M\tanother.txt
 M\treadme.txt
 "
 end
