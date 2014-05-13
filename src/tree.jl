@@ -163,7 +163,7 @@ function walk(t::GitTree, order=:postorder)
     elseif order == :preorder
         mode = api.TREEWALK_PRE
     else
-        throw(ArgumentError("walkorder can be :preorder or :postorder"))
+        throw(ArgumentError("walk order can be :preorder or :postorder, got :$order"))
     end
     @task api.git_tree_walk(t.ptr, mode, c_cb_treewalk, C_NULL)  
 end
