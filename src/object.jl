@@ -1,23 +1,14 @@
-export libgit_const, oid, hex
+export oid, hex
 
 git_otype(::Type{GitAny}) = api.OBJ_ANY
 git_otype{T<:GitObject}(o::T) = git_otype(T)
 
-Base.isequal(o1::GitObject, o2::GitObject) = begin
-    Base.isequal(oid(o1), oid(o2))
-end
+Base.(:(==))(o1::GitObject, o2::GitObject) = isequal(oid(o1), oid(o2))
+Base.isequal(o1::GitObject, o2::GitObject) = isequal(oid(o1), oid(o2))
+Base.isless(o1::GitObject, o2::GitObject)  = isless(oid(o1), oid(o2))
 
-Base.isless(o1::GitObject, o2::GitObject) = begin
-    Base.isless(oid(o1), oid(o2))
-end
-
-Base.hash(o::GitObject) = begin
-    Base.hash(hex(o))
-end
-
-Base.cmp(o1::GitObject, o2::GitObject) = begin
-    Base.cmp(oid(o1), oid(o2))
-end
+Base.hash(o::GitObject) = hash(hex(o))
+Base.cmp(o1::GitObject, o2::GitObject) = cmp(oid(o1), oid(o2))
 
 function oid(o::GitObject)
     @assert o.ptr != C_NULL
