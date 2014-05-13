@@ -307,7 +307,7 @@ end
         update_all!(index, "file.*")
 
         @test index["file.bar"] != nothing 
-        @test lookup(test_repo, oid(index["file.bar"])) |> raw_content == "new content for file"
+        @test lookup(test_repo, oid(index["file.bar"])) |> bytestring == "new content for file"
 
         @test index["other.zzz"] == nothing
         @test index["more.zzz"]  == nothing

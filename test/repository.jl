@@ -188,7 +188,7 @@ end
 @sandboxed_test "testrepo.git" begin
     id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
     blob = blob_at(test_repo, id, "new.txt")
-    @test "my new file\n" == raw_content(blob)
+    @test "my new file\n" == bytestring(blob)
 end
 
 # test_access_a_missing_file

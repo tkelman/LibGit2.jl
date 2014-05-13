@@ -50,16 +50,13 @@ end
     msg = "This is the note message\n\nThis note is created from Rugged"
     obj = lookup(test_repo, id)
 
-    note_id = create_note!(obj, msg,
-                    committer=sig,
-                    author=sig,
-                    ref="refs/notes/test")
+    note_id = create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test")
 
     @test note_id == Oid("38c3a690c474d8dcdb13088205a464a60312eec4")
     # note is actually a blob
     blob = lookup(test_repo, note_id)
     @test oid(blob) == note_id
-    @test raw_content(blob) == msg
+    @test bytestring(blob) == msg
     @test isa(blob, GitBlob) 
 
     n = notes(obj, "refs/notes/test")
