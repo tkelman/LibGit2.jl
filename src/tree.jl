@@ -19,19 +19,19 @@ Base.filemode(te::GitTreeEntry) = convert(Cint, te.filemode)
 
 let 
     function tree_entry_name(ptr::Ptr{Void})
-        ptr::Ptr{Cchar} = api.git_tree_entry_name(ptr)
-        if ptr == C_NULL
+        nptr::Ptr{Cchar} = api.git_tree_entry_name(ptr)
+        if nptr == C_NULL
             error("tree entry name pointer is NULL")
         end
-        return bytestring(ptr)
+        return bytestring(nptr)
     end
 
     function tree_entry_oid(ptr::Ptr{Void})
-        oid_ptr::Ptr{Uint8} = api.git_tree_entry_id(ptr)
-        if oid_ptr == C_NULL
+        idptr::Ptr{Uint8} = api.git_tree_entry_id(ptr)
+        if idptr == C_NULL
             error("tree entry oid pointer is NULL")
         end
-        return Oid(oid_ptr)
+        return Oid(idptr)
     end
 
     function tree_entry_type(ptr::Ptr{Void})
