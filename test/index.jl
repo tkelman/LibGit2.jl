@@ -212,7 +212,7 @@ run(`rm -rf $tmp_path`)
     read_tree!(index, tree)
     
     index_tree_id = write_tree!(index)
-    index_tree = lookup(test_repo, index_tree_id)
+    index_tree = test_repo[index_tree_id]
     @test oid(index_tree) == oid(tree)
 end
 
@@ -220,14 +220,14 @@ end
 @with_tmp_repo_access begin
     head_id = lookup_ref(test_repo,
                 "refs/remotes/origin/packed") |> resolve |> target
-    tree = GitTree(lookup(test_repo, head_id))
+    tree = GitTree(test_repo[head_id])
     index = repo_index(test_repo)
     read_tree!(index, tree)
     remove!(index, "second.txt")
 
     new_tree_id = write_tree!(index)
     @test head_id != new_tree_id
-    @test lookup(test_repo, new_tree_id)["second.txt"] == nothing
+    @test test_repo[new_tree_id]["second.txt"] == nothing
 end
 
 # --------------------
@@ -307,7 +307,7 @@ end
         update_all!(index, "file.*")
 
         @test index["file.bar"] != nothing 
-        @test lookup(test_repo, oid(index["file.bar"])) |> bytestring == "new content for file"
+        @test test_repo[oid(index["file.bar"])] |> bytestring == "new content for file"
 
         @test index["other.zzz"] == nothing
         @test index["more.zzz"]  == nothing

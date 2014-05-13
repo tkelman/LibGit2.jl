@@ -209,7 +209,6 @@ end
     create_ref(repo, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     remote = lookup_remote(repo, "origin")
-
     @test_throws push!(repo, remote, ["refs/heads/unit_test:refs/heads/master"])
 
     @test (target(lookup_ref(remote_repo, "refs/heads/master"))

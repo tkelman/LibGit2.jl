@@ -53,37 +53,37 @@ end
    #@test repo_path(test_repo) == test_repo_path
    
    begin # lookup any object type 
-       blob = lookup(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
+       blob = test_repo[Oid("fa49b077972391ad58037050f2a75f74e3671e92")]
        @test isa(blob, GitBlob)
 
-       commit = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+       commit = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
        @test isa(commit, GitCommit)
         
-       tag = lookup(test_repo, Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
+       tag = test_repo[Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")]
        @test isa(tag, GitTag)
 
-       tree = lookup(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
+       tree = test_repo[Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")]
        @test isa(tree, GitTree)
    end
 
    begin # test_fail_to_lookup_inexistant_object 
-       @test_throws lookup(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774479"))
+       @test_throws test_repo[Oid("a496071c1b46c854b31185ea97743be6a8774479")]
    end
 
    begin # test_lookup_object
-        obj = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+        obj = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         @test isa(obj, GitCommit)
         @test Oid("8496071c1b46c854b31185ea97743be6a8774479") == oid(obj)
    end
 
    begin # test_objects_are_the_same
-        obj1 = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-        obj2 = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+        obj1 = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
+        obj2 = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         @test obj1 == obj2
    end
   
    begin # test_read_raw_data
-        obj = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+        obj = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         @test isa(raw(obj), OdbObject)
    end
    

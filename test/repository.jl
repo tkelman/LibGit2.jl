@@ -123,7 +123,7 @@ end
 
 # test lookup object
 @sandboxed_test "testrepo.git" begin
-    obj = lookup(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    obj = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
     @test isa(obj, GitCommit)
 end
 
@@ -231,8 +231,8 @@ end
 
 # test_find_merge_base_between_commits
 @sandboxed_test "testrepo.git" begin
-    commit1 = lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"))
-    commit2 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+    commit1 = test_repo[Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")]
+    commit2 = test_repo[Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")]
     base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
     @test base == merge_base(test_repo, commit1, commit2)
 end
@@ -249,7 +249,7 @@ end
 @sandboxed_test "testrepo.git" begin
     commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
     commit2 = "refs/heads/packed"
-    commit3 = lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+    commit3 = test_repo[Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")]
 
     base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
     @test base == merge_base(test_repo, commit1, commit2, commit3)
@@ -268,8 +268,8 @@ end
 # test_ahead_behind_with_commits
 @sandboxed_test "testrepo.git" begin
     ahead, behind = ahead_behind(test_repo, 
-      lookup(test_repo, Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")),
-      lookup(test_repo, Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+      test_repo[Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")],
+      test_repo[Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")]
     )
     @test ahead == 2 
     @test behind == 1
@@ -279,7 +279,7 @@ end
 # Merge Commits Repo Test
 #---------------------------
 @sandboxed_test "merge-resolve" begin
-    our_commit = lookup_branch(test_repo, "master") |> tip
+    our_commit   = lookup_branch(test_repo, "master") |> tip
     their_commit = lookup_branch(test_repo, "branch") |> tip
 
     index = merge_commits(test_repo, our_commit, their_commit)

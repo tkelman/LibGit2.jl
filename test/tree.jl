@@ -88,7 +88,7 @@ end
                    Oid("1385f264afb75a56a5bec74243be9b367ba4ca08"),
                    33188)
   id = write!(builder)
-  obj = lookup(test_repo, id)
+  obj = test_repo[id]
   @test isa(obj, GitTree)
   @test length(raw(obj)) == 38
 end

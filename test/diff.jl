@@ -821,8 +821,8 @@ end
 end
 
 @sandboxed_test "diff" begin
-    a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
-    b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
+    a = GitTree(test_repo[Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")])
+    b = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d = diff(test_repo, a, b)
     @test patch(d, format=:name_status) == "M\tanother.txt
 M\treadme.txt
@@ -830,8 +830,8 @@ M\treadme.txt
 end
 
 @sandboxed_test "diff" begin
-    a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
-    b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
+    a = GitTree(test_repo[Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")])
+    b = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d = diff(test_repo, a, b)
 
     diff_stat = stat(d)
@@ -841,7 +841,7 @@ end
 
     expected_patch_stat = {[ 5, 5, 26 ], [ 2, 9, 28 ]}
 
-    for (patch, expected)  in zip(patches(d), expected_patch_stat)
+    for (patch, expected) in zip(patches(d), expected_patch_stat)
         patch_stat = stat(patch)
         @test expected[1] == patch_stat.adds
         @test expected[2] == patch_stat.dels

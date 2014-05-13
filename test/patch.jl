@@ -1,7 +1,7 @@
 # test_to_s
 @sandboxed_test "diff" begin
-    t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
-    t2 = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
+    t1 = GitTree(test_repo[Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")])
+    t2 = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d  = diff(test_repo, t1, t2, {:context_lines => 0})
     s1 = string(patches(d)[1])
     p1 = "diff --git a/another.txt b/another.txt

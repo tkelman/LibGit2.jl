@@ -1,7 +1,7 @@
 @with_repo_access begin
     begin # test read note for object
         id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-        obj = lookup(test_repo, id)
+        obj = test_repo[id]
         n = notes(obj)
         @test message(n) == "note text\n" 
         @test oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
@@ -9,7 +9,7 @@
 
     begin # test read note for object from ref
         id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-        obj = lookup(test_repo, id)
+        obj = test_repo[id]
         n = notes(obj, "refs/notes/commits")
         @test message(n) == "note text\n" 
         @test oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
@@ -17,13 +17,13 @@
 
     begin # test_object_without_note
         id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
-        obj = lookup(test_repo, id)
+        obj = test_repo[id]
         @test notes(obj) == nothing
     end
 
     begin # test_nil_ref_lookup
         id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-        obj = lookup(test_repo, id)
+        obj = test_repo[id]
         @test notes(obj, "refs/notes/missing") == nothing
     end
 
@@ -48,13 +48,13 @@ end
     sig = Signature("Julia", "julia@julia.com")
     id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg = "This is the note message\n\nThis note is created from Rugged"
-    obj = lookup(test_repo, id)
+    obj = test_repo[id]
 
     note_id = create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test")
 
     @test note_id == Oid("38c3a690c474d8dcdb13088205a464a60312eec4")
     # note is actually a blob
-    blob = lookup(test_repo, note_id)
+    blob = test_repo[note_id]
     @test oid(blob) == note_id
     @test bytestring(blob) == msg
     @test isa(blob, GitBlob) 
@@ -73,13 +73,13 @@ end
 
     id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg ="This is the note message\n\nThis note is created from Rugged"
-    obj = lookup(test_repo, id)
+    obj = test_repo[id]
 
     note_id = create_note!(obj, msg, ref="refs/notes/test")
     
     @test note_id == Oid("38c3a690c474d8dcdb13088205a464a60312eec4")
     note_ref = lookup_ref(test_repo, "refs/notes/test")
-    note_commit = lookup(test_repo, target(note_ref))
+    note_commit = test_repo[target(note_ref)]
     
     @test testname == committer(note_commit).name
     @test testemail == committer(note_commit).email
@@ -92,7 +92,7 @@ end
     sig = Signature("Julia", "julia@julia.com")
     id  = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg = "This is the note message\n\nThis note is created from Rugged"
-    obj = lookup(test_repo, id)
+    obj = test_repo[id]
     
     create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test") 
     @test_throws create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test") 
@@ -104,7 +104,7 @@ end
     sig = Signature("Julia", "julia@julia.com")
     id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg ="This is the note message\n\nThis note is created from Rugged"
-    obj = lookup(test_repo, id)
+    obj = test_repo[id]
     
     create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test")
     create_note!(obj, "new msg", committer=sig, author=sig, ref="refs/notes/test", force=true)
@@ -117,7 +117,7 @@ end
     id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     sig = Signature("Julia", "julia@julia.com")
     msg ="This is the note message\n\nThis note is created from Rugged"
-    obj = lookup(test_repo, id)
+    obj = test_repo[id]
 
     create_note!(obj, msg, author=sig, committer=sig, ref="refs/notes/test")
 
@@ -134,7 +134,7 @@ end
     id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
 
     msg ="This is the note message\n\nThis note is created from Rugged"
-    obj = lookup(test_repo, id)
+    obj = test_repo[id]
 
     create_note!(obj, msg, ref="refs/notes/test")
     create_note!(obj, msg)
@@ -149,6 +149,6 @@ end
 @with_tmp_repo_access begin
     sig = Signature("Julia", "julia@julia.com")
     id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    obj = lookup(test_repo, id)
+    obj = test_repo[id]
     @test remove_note!(obj, committer=sig, author=sig, ref="refs/notes/test") == false
 end
