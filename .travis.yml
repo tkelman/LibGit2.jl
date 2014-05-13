@@ -25,13 +25,13 @@ install:
   - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 script:
-  #- julia-debug-readline --version
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`); Pkg.pin("LibGit2"); Pkg.resolve()'
   - julia -e 'Pkg.build("LibGit2")'
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
   - git submodule init
   - cd test/
   - git config --global user.name "testfirst testlast" 
-  #- cat script.gdb | sudo gdb --args julia runtests.jl all
-  - julia runtests.jl all
+# - cat script.gdb | sudo gdb --args julia runtests.jl all
+  - julia --coverage runtests.jl all
   - sh run_remote_clone.sh
+  - julia -e 'Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
