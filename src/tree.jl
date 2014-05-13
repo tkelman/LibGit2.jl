@@ -36,23 +36,14 @@ let
 
     function tree_entry_type(ptr::Ptr{Void})
         t = api.git_tree_entry_type(ptr)
-        if t == api.OBJ_BLOB
-            return GitBlob
-        elseif t == api.OBJ_COMMIT
-            return GitCommit
-        elseif t == api.OBJ_TAG
-            return GitTag
-        elseif t == api.OBJ_TREE
-            return GitTree
-        else
-            error("unknown git_type $(t)")
-        end
+        t == api.OBJ_BLOB   && return GitBlob
+        t == api.OBJ_COMMIT && return GitCommit
+        t == api.OBJ_TAG    && return GitTag
+        t == api.OBJ_TREE   && return GitTree
+        error("unknown git_type $(t)")
     end
 
-    function tree_entry_filemode(ptr::Ptr{Void})
-        fm = api.git_tree_entry_filemode(ptr)
-        return fm
-    end
+    tree_entry_filemode(ptr::Ptr{Void}) = api.git_tree_entry_filemode(ptr)
 
     function GitTreeEntry(ptr::Ptr{Void}, owns::Bool=false)
         @assert ptr != C_NULL
@@ -69,9 +60,7 @@ function entry_byname(t::GitTree, filename::String)
     @assert t.ptr != C_NULL
     bname = bytestring(filename)
     entry_ptr = api.git_tree_entry_byname(t.ptr, bname)
-    if entry_ptr == C_NULL
-        return nothing
-    end
+    entry_ptr == C_NULL && return nothing
     te = GitTreeEntry(entry_ptr)
     #api.git_tree_entry_free(entry_ptr)
     return te
@@ -82,7 +71,6 @@ function entry_bypath(t::GitTree, path::String)
     bpath = bytestring(path)
     entry_ptr = Array(Ptr{Void}, 1)
     @check api.git_tree_entry_bypath(entry_ptr, t.ptr, bpath)
-    @check_null entry_ptr
     te = GitTreeEntry(entry_ptr[1], true)
     #api.git_tree_entry_free(entry_ptr[1])
     return te
@@ -91,9 +79,7 @@ end
 function entry_byindex(t::GitTree, idx::Integer)
     @assert t.ptr != C_NULL
     entry_ptr = api.git_tree_entry_byindex(t.ptr, idx - 1)
-    if entry_ptr == C_NULL
-        return nothing
-    end
+    entry_ptr == C_NULL && return nothing
     te = GitTreeEntry(entry_ptr)
     #XXX: this throws a stack trace
     #api.git_tree_entry_free(entry_ptr)
@@ -103,17 +89,15 @@ end
 function entry_byid(t::GitTree, id::Oid)
     @assert t.ptr != C_NULL
     entry_ptr = api.git_tree_entry_byid(t.ptr, id.oid)
-    if entry_ptr == C_NULL
-        return nothing
-    end
+    entry_ptr == C_NULL && return nothing
     te = GitTreeEntry(entry_ptr)
     #api.git_tree_entry_free(entry_ptr)
     return te
 end
 
 Base.getindex(t::GitTree, entry::Integer) = entry_byindex(t, entry)
-Base.getindex(t::GitTree, entry::String) = entry_byname(t, entry)
-Base.getindex(t::GitTree, entry::Oid) = entry_byid(t, entry)
+Base.getindex(t::GitTree, entry::String)  = entry_byname(t, entry)
+Base.getindex(t::GitTree, entry::Oid)     = entry_byid(t, entry)
 
 Base.start(t::GitTree) = begin
     @assert t.ptr != C_NULL
@@ -121,9 +105,7 @@ Base.start(t::GitTree) = begin
     return (1, te)
 end
 
-Base.done(t::GitTree, state) = begin
-    state[1] > length(t)
-end
+Base.done(t::GitTree, state) = state[1] > length(t)
 
 Base.next(t::GitTree, state) = begin
     nidx = state[1] + 1
@@ -170,7 +152,7 @@ end
 
 function walk_blobs(t::GitTree, order=:postorder)
     @task for res in walk(t, order)
-        isa(res[2], GitTreeEntry{GitBlob})  && produce(res)
+        isa(res[2], GitTreeEntry{GitBlob}) && produce(res)
     end
 end
 
