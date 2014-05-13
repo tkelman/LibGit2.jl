@@ -99,6 +99,8 @@ Base.delete!(r::Repository, t::GitTag) = begin
     return nothing
 end
 
+Base.getindex(r::Repository, o) = lookup(r, o)
+
 function read_header(r::Repository, id::Oid)
     odb = repo_odb(r)
     return read_header(odb, id)
