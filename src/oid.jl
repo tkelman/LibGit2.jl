@@ -48,13 +48,7 @@ Base.show(io::IO, oid::Oid) = print(io, "Oid($(string(oid)))")
 
 Base.hash(oid::Oid) = hash(hex(oid))
 
-Base.cmp(oid1::Oid, oid2::Oid) = begin
-    git_cmp = ccall((:git_oid_cmp, api.libgit2),
-                    Cint,
-                    (Ptr{Uint8}, Ptr{Uint8}),
-                    oid1.oid, oid2.oid)
-    return git_cmp
-end
+Base.cmp(oid1::Oid, oid2::Oid) = api.git_oid_cmp(pointer(oid1.oid), pointer(oid2.oid))
 
 Base.isequal(oid1::Oid, oid2::Oid) = cmp(oid1, oid2) == 0
 Base.isless(oid1::Oid, oid2::Oid)  = cmp(oid1, oid2) < 0
