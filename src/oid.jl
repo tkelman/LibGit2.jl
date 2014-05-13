@@ -54,6 +54,7 @@ Base.hash(id::Oid) = hash(hex(id))
 
 Base.cmp(id1::Oid, id2::Oid) = api.git_oid_cmp(pointer(id1.oid), pointer(id2.oid))
 
+Base.(:(==))(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
 Base.isequal(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
 Base.isless(id1::Oid, id2::Oid)  = cmp(id1, id2) < 0
 
