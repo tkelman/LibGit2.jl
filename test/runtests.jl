@@ -29,11 +29,8 @@ tests = isempty(ARGS) || ARGS == ["all"] ? testnames : ARGS
 function runtests(name)
     println(" \033[1m*\033[0m \033[31m$(name)\033[0m")
     # support shell tab expansion
-    if endswith(name, ".jl")
-        Core.include("$name")
-    else
-        Core.include("$name.jl")
-    end
+    endswith(name, ".jl") ? Core.include("$name") : Core.include("$name.jl")
+    nothing
 end
 
 function propagate_errors(a, b)
