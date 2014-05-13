@@ -12,7 +12,7 @@ end
         id = Oid("fa49b077972391ad58037050f2a75f74e3671e92")
         b = lookup(test_repo, id)
         @test sizeof(b) == 9 
-        @test raw_content(b) == "new file\n"
+        @test bytestring(b) == "new file\n"
         @test isa(b, GitBlob)
         @test oid(b) == id
         @test text(b) == "new file\n"
@@ -27,29 +27,29 @@ end
     begin :test_blob_content_with_size
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
-        c =  raw_content(b, 10)
-        @test c == "# Rugged\n*"
+        c =  rawcontent(b, 10)
+        @test c == convert(Vector{Uint8}, "# Rugged\n*")
         @test sizeof(c) == 10
     end
 
     begin :test_blob_content_with_size_gt_file_size
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
-        c =  raw_content(b, 1000000)
+        c =  rawcontent(b, 1000000)
         @test sizeof(b) == sizeof(c)
     end
 
     begin :test_blob_content_with_zero_size
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
-        c =  raw_content(b, 0)
-        @test c == ""
+        c =  rawcontent(b, 0)
+        @test isempty(c)
     end
 
     begin :test_blob_content_with_negative_size
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
-        c =  raw_content(b, -100)
+        c =  rawcontent(b, -100)
         @test sizeof(b) == sizeof(c)
     end
 
@@ -113,8 +113,8 @@ end
     @test isa(id, Oid)
     b = lookup(test_repo, id)
     fh = open(file_path, "r")
-    c = readall(fh)
-    rc = raw_content(b)
+    c  = readbytes(fh)
+    rc = rawcontent(b)
     @test length(c) == length(rc)
     for i in length(c)
         @assert c[i] == rc[i]
@@ -209,8 +209,8 @@ end
         id = blob_from_stream(test_repo, io, "archive.tar.gz2")
         seekstart(io)
         blob = lookup(test_repo, id)
-        c = readall(io)
-        rc  = raw_content(blob)
+        c = readbytes(io)
+        rc  = rawcontent(blob)
         @test length(c) == length(rc)
         for i in length(rc)
             @assert c[i] == rc[i]
@@ -225,8 +225,8 @@ end
         id = blob_from_stream(test_repo, io)
         seekstart(io)
         blob = lookup(test_repo, id)
-        c = readall(io)
-        rc  = raw_content(blob)
+        c = readbytes(io)
+        rc  = rawcontent(blob)
         @test length(c) == length(rc)
         for i in length(rc)
             @assert c[i] == rc[i]
