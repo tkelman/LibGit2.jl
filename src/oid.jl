@@ -39,48 +39,14 @@ end
 Oid(ptr::Ptr{Uint8}) = begin
     @assert ptr != C_NULL
     oid = Array(Uint8, api.OID_RAWSZ)
-    for i in 1:api.OID_RAWSZ
-        oid[i] = unsafe_load(ptr, i)
-    end
+    unsafe_copy!(pointer(oid), ptr, api.OID_RAWSZ)
     return Oid(oid)
 end
 
-function oid(id::Oid)
-    return id
-end
+Base.string(oid::Oid) = hex(oid)
+Base.show(io::IO, oid::Oid) = print(io, "Oid($(string(oid)))")
 
-function hex(oid::Oid)
-    bytes2hex(oid.oid)
-end
-
-
-function raw(oid::Oid)
-    copy(oid.oid)
-end
-
-
-Base.show(io::IO, oid::Oid) = begin
-    print(io, "Oid($(hex(oid)))")
-end
-
-
-Base.isequal(oid1::Oid, oid2::Oid) = begin
-    cmp(oid1, oid2) == 0
-end
-
-
-Base.isless(oid1::Oid, oid2::Oid) = begin
-    cmp(oid1, oid2) < 0
-end
-
-
-Base.hash(oid::Oid) = begin
-    hash(hex(oid))
-end
-
-Base.string(oid::Oid) = begin
-    hex(oid)
-end
+Base.hash(oid::Oid) = hash(hex(oid))
 
 Base.cmp(oid1::Oid, oid2::Oid) = begin
     git_cmp = ccall((:git_oid_cmp, api.libgit2),
@@ -90,9 +56,14 @@ Base.cmp(oid1::Oid, oid2::Oid) = begin
     return git_cmp
 end
 
-Base.copy(oid::Oid) = begin
-    return Oid(copy(oid.oid))
-end
+Base.isequal(oid1::Oid, oid2::Oid) = cmp(oid1, oid2) == 0
+Base.isless(oid1::Oid, oid2::Oid)  = cmp(oid1, oid2) < 0
+
+Base.copy(oid::Oid) = Oid(copy(oid.oid))
+
+oid(id::Oid)  = id
+hex(oid::Oid) = bytes2hex(oid.oid)
+raw(oid::Oid) = copy(oid.oid)
 
 iszero(oid::Oid) = begin
     for i in api.OID_RAWSZ
