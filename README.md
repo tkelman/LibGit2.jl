@@ -5,7 +5,7 @@ Work in Progress LibGit2 bindings for Julia
 Adapted from the Ruby's Rugged libgit bindings
 
 [![Build Status](https://travis-ci.org/jakebolewski/LibGit2.jl.svg?branch=master)](https://travis-ci.org/jakebolewski/LibGit2.jl)
-[![Coverage Status](https://img.shields.io/coveralls/jakebolewski/LibGit2.jl.svg)](https://coveralls.io/r/jakebolewski/LibGit2.jl?branch=master)
+[![Coverage Status](https://img.shields.io/coveralls/jakebolewski/LibGit2.jl.svg)](https://coveralls.io/r/jakebolewski/LibGit2.jl)
 
 ## Testing
 LibGit2.jl is tested against the latest development branch of
