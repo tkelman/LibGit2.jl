@@ -28,11 +28,11 @@ end
 
 Oid() = Oid(zeros(Uint8, api.OID_RAWSZ))
 
-Oid(h::String) = begin
-    if length(h) != api.OID_HEXSZ
+Oid(id::String) = begin
+    if length(id) != api.OID_HEXSZ
         throw(ArgumentError("invalid hex size"))
     end
-    bytes = hex2bytes(bytestring(h))
+    bytes = hex2bytes(bytestring(id))
     return Oid(bytes)
 end
 
@@ -43,25 +43,25 @@ Oid(ptr::Ptr{Uint8}) = begin
     return Oid(oid)
 end
 
-Base.string(oid::Oid) = hex(oid)
-Base.show(io::IO, oid::Oid) = print(io, "Oid($(string(oid)))")
+oid(id::Oid) = id
+hex(id::Oid) = bytes2hex(id.oid)
+raw(id::Oid) = copy(id.oid)
 
-Base.hash(oid::Oid) = hash(hex(oid))
+Base.string(id::Oid) = hex(id)
+Base.show(io::IO, id::Oid) = print(io, "Oid($(string(id)))")
 
-Base.cmp(oid1::Oid, oid2::Oid) = api.git_oid_cmp(pointer(oid1.oid), pointer(oid2.oid))
+Base.hash(id::Oid) = hash(hex(id))
 
-Base.isequal(oid1::Oid, oid2::Oid) = cmp(oid1, oid2) == 0
-Base.isless(oid1::Oid, oid2::Oid)  = cmp(oid1, oid2) < 0
+Base.cmp(id1::Oid, id2::Oid) = api.git_oid_cmp(pointer(id1.oid), pointer(id2.oid))
 
-Base.copy(oid::Oid) = Oid(copy(oid.oid))
+Base.isequal(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
+Base.isless(id1::Oid, id2::Oid)  = cmp(id1, id2) < 0
 
-oid(id::Oid)  = id
-hex(oid::Oid) = bytes2hex(oid.oid)
-raw(oid::Oid) = copy(oid.oid)
+Base.copy(id::Oid) = Oid(copy(id.oid))
 
-iszero(oid::Oid) = begin
+iszero(id::Oid) = begin
     for i in api.OID_RAWSZ
-        if oid.oid[i] != zero(Uint8)
+        if id.oid[i] != zero(Uint8)
             return false
         end
     end
