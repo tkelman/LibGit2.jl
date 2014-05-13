@@ -3,24 +3,19 @@ export git_otype, GitTreeEntry,
        each_tree, each_blob,
        walk_trees, walk_blobs
 
-git_otype(::Type{GitTree}) = api.OBJ_TREE
-
-Base.length(t::GitTree) = begin
-    return int(api.git_tree_entrycount(t.ptr))
-end
-
 type GitTreeEntry{T<:GitObject}
     name::String
     oid::Oid
     filemode::Cint
 end
 
+git_otype(::Type{GitTree}) = api.OBJ_TREE
+
 oid(te::GitTreeEntry) = te.oid
 name(te::GitTreeEntry) = te.name
 
-Base.filemode(te::GitTreeEntry) = begin
-    convert(Cint, te.filemode)
-end
+Base.length(t::GitTree) = int(api.git_tree_entrycount(t.ptr))
+Base.filemode(te::GitTreeEntry) = convert(Cint, te.filemode)
 
 let 
     function tree_entry_name(ptr::Ptr{Void})
@@ -137,23 +132,15 @@ end
 
 function each_blob(t::GitTree)
     @assert t.ptr != C_NULL
-    @task begin
-        for te in t
-            if isa(te, GitTreeEntry{GitBlob})
-                produce(te)
-            end
-        end
+    @task for te in t
+        isa(te, GitTreeEntry{GitBlob}) && produce(te)
     end
 end
 
 function each_tree(t::GitTree)
     @assert t.ptr != C_NULL
-    @task begin
-        for te in t
-            if isa(te, GitTreeEntry{GitTree})
-                produce(te)
-            end
-        end
+    @task for te in t
+        isa(te, GitTreeEntry{GitTree}) && produce(te)
     end
 end
 
@@ -166,8 +153,7 @@ function cb_treewalk(root::Ptr{Cchar}, entry::Ptr{Void}, data::Ptr{Void})
     end
 end
 
-const c_cb_treewalk = cfunction(cb_treewalk, Cint,
-                                (Ptr{Cchar}, Ptr{Void}, Ptr{Void}))
+const c_cb_treewalk = cfunction(cb_treewalk, Cint, (Ptr{Cchar}, Ptr{Void}, Ptr{Void}))
  
 function walk(t::GitTree, order=:postorder)
     @assert t.ptr != C_NULL
@@ -183,12 +169,8 @@ function walk(t::GitTree, order=:postorder)
 end
 
 function walk_blobs(t::GitTree, order=:postorder)
-    @task begin
-        for res in walk(t, order)
-            if isa(res[2], GitTreeEntry{GitBlob})
-                produce(res)
-            end
-        end
+    @task for res in walk(t, order)
+        isa(res[2], GitTreeEntry{GitBlob})  && produce(res)
     end
 end
 
@@ -200,12 +182,8 @@ function walk_blobs(f::Function, t::GitTree, order=:postorder)
 end
 
 function walk_trees(t::GitTree, order=:postorder)
-    @task begin
-        for res in walk(t, order)
-            if isa(res[2], GitTreeEntry{GitTree})
-                produce(res)
-            end
-        end
+    @task for res in walk(t, order)
+        isa(res[2], GitTreeEntry{GitTree}) && produce(res)
     end
 end
 
