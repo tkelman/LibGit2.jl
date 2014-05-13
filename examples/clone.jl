@@ -24,89 +24,77 @@ using ArgParse
 # repository's currently active branch.
 
 function parse_commandline()
-  s = ArgParseSettings(autofix_names=true)
-  @add_arg_table s begin
-    "repo-url"
-      help = "repo url"
-      required = true
-
-    "directory"
-      help = ""
-  end
-  args = parse_args(s)
-  # Convert keys to symbol
-#   args = {symbol(k)=>v for (k,v) in args}
-  # prune "nothing" values just for debug and to work in a clearer space
-  for (k,v) in args
-    v == nothing && delete!(args,k)
-  end
-  return args
+    settings = ArgParseSettings(autofix_names=true)
+    @add_arg_table settings begin
+        "repo-url" 
+        help = "repo url"
+        required = true
+        
+        "directory"
+        help = ""
+    end
+    args = parse_args(settings)
+    # Convert keys to symbol
+    #a rgs = {symbol(k)=>v for (k,v) in args}
+    # prune "nothing" values just for debug and to work in a clearer space
+    for (k,v) in args
+        v == nothing && delete!(args,k)
+    end
+    return args
 end
 
 
 function clone(repo_url::String, dest_dir::String="")
-  # fetch and checkout head with progress indication
-  # FIXME logic
-  if isempty(dest_dir)
-    dest_dir = dest_dir*basename(splitext(repo_url)[1])
-#     try
-      mkdir(dest_dir)
-#     catch err
-#       return err
-#     end
-#   elseif !isdir(dest_dir)
-#     error("directory \"$dest_dir\" not valid")
-  end
+    # fetch and checkout head with progress indication
+    # FIXME logic
+    if isempty(dest_dir)
+        dest_dir = dest_dir * basename(splitext(repo_url)[1])
+        mkdir(dest_dir)
+    end
 
-  println(dest_dir)
-  info("dest dir generated: $dest_dir")
+    println(dest_dir)
+    info("dest dir generated: $dest_dir")
 
-  total_objects = indexed_objects = received_objects = received_bytes = 0
-  repo = repo_clone(repo_url, dest_dir, {
+    total_objects = indexed_objects = received_objects = received_bytes = 0
+    repo = repo_clone(repo_url, dest_dir, {
         :callbacks => {
           :transfer_progress => (args...) -> begin
             total_objects, indexed_objects, received_objects, received_bytes = args
-            perc = int(received_objects/total_objects * 100)
+            perc = int(received_objects / total_objects * 100.0)
             print("\rReceiving objects: $perc% ($received_objects/$total_objects) $(pretty_size(received_bytes))")
             end
           }
         }
       )
-  println(", done.")
+    println(", done.")
 
-  path = completed_steps = total_steps = payload = 0
-  checkout_head!(repo,
+    path = completed_steps = total_steps = payload = 0
+    checkout_head!(repo,
       {:strategy => :safe_create,
       :progress => (args...) -> begin
         path, completed_steps, total_steps = args
-        # println(path_ptr)
         print("\rUnpacking files: $completed_steps/$total_steps")
       end
       }
-      )
-  println(", done.")
-  return repo
+    )
+
+    println(", done.")
+    return repo
 end
 
-function pretty_size{T<:Number}(n::T)
-  # Assuming n is in bytes
-  c = log2(n) / 10
-  val = (n/1024^floor(c))
-  if c < 1
-    return @sprintf("%i B",val)
-  elseif 1 <= c < 2
-    return @sprintf("%.2f KiB",val)
-  elseif 2 <= c < 3
-    return @sprintf("%.2f MiB",val)
-  elseif 3 <= c
-    return @sprintf("%.2f GiB",val)
-  end
+function pretty_sizen(n)
+    # Assuming n is in bytes
+    c = log2(n) / 10
+    val = n / 1024^floor(c)
+    c < 1      && return @sprintf("%i B",val)
+    1 <= c < 2 && return @sprintf("%.2f KiB",val)
+    2 <= c < 3 && return @sprintf("%.2f MiB",val)
+    3 <= c     && return @sprintf("%.2f GiB",val)
 end
 
 function main()
-  o = parse_commandline()
-  println(o)
-  haskey(o,"directory") ? clone(o["repo_url"],o["directory"]) : clone(o["repo_url"])
+    opts = parse_commandline()
+    haskey(opts, "directory") ? clone(opts["repo_url"], opts["directory"]) : clone(opts["repo_url"])
 end
 
 main()
