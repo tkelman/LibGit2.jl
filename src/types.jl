@@ -53,6 +53,8 @@ type GitBlob <: GitObject
     end
 end
 
+git_otype(::Type{GitBlob}) = api.OBJ_BLOB
+
 type GitCommit <: GitObject
     ptr::Ptr{Void}
 
