@@ -16,17 +16,17 @@ using ArgParse
 # This example demonstrates the use of the LibGit2.jl diff APIs
 # emulating a number of core Git `diff` command line options.
 
-COLORS = {
-  :reset => "\033[m",
-  :bold =>  "\033[1m",
-  :red =>   "\033[31m",
-  :green => "\033[32m",
-  :cyan =>  "\033[36m"
+const COLORS = {
+    :reset => "\033[m",
+    :bold =>  "\033[1m",
+    :red =>   "\033[31m",
+    :green => "\033[32m",
+    :cyan =>  "\033[36m"
 }
 
 function parse_commandline()
-  s = ArgParseSettings(autofix_names=true)
-  @add_arg_table s begin
+  settings = ArgParseSettings(autofix_names=true)
+  @add_arg_table settings begin
     "treeish1"
       help = "oid of the first treeish"
 
@@ -127,7 +127,7 @@ function parse_commandline()
 =#
 
   end
-  args = parse_args(s)
+  args = parse_args(settings)
 
   # Convert keys to symbol
   args = {symbol(k)=>v for (k,v) in args}
@@ -148,7 +148,6 @@ function parse_commandline()
       diff_format = i
     end
   end
-
   return args, diff_format
 end
 
@@ -169,9 +168,10 @@ function diff_print_shortstat(d::GitDiff) # L304 libgit2/examples/diff.c
   end
 end
 
+#TODO: support iteration for patches
 function diff_print_numstat(d::GitDiff) # L278 libgit2/examples/diff.c
   p = patches(d)
-  if !(p == nothing)
+  if p != nothing
     for i=1:length(p)
       a = stat(p[i])
       del = delta(p[i])
@@ -228,7 +228,7 @@ function color_printer(d)
       end
     end
   end
-return color
+  return color
 end
 
 function main()
