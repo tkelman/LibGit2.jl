@@ -66,12 +66,9 @@ end
 
 function parent(c::GitCommit, n::Integer)
     @assert c.ptr != C_NULL
-    if n < 0
-        throw(ArgumentError("n must be greater than or equal to 0"))
-    end
-    cn = convert(Cuint, n)
+    n >= 0 || throw(ArgumentError("n must be greater than or equal to 0"))
     commit_ptr = Array(Ptr{Void}, 1)
-    @check api.git_commit_parent(commit_ptr, c.ptr, cn)
+    @check api.git_commit_parent(commit_ptr, c.ptr, n)
     @check_null commit_ptr
     return GitCommit(commit_ptr[1])
 end
