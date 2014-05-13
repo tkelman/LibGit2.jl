@@ -20,21 +20,21 @@ function disconnect(r::GitRemote)
     return nothing
 end
 
-Base.connect(r::GitRemote, dir::Symbol) = begin
-    direction = zero(Cint)
-    if dir == :fetch
-        direction = api.DIRECTION_FETCH
-    elseif dir == :push
-        direction = api.DIRECTION_PUSH
+Base.connect(r::GitRemote, direction::Symbol) = begin
+    local dir::Cint
+    if direction == :fetch
+        dir = api.DIRECTION_FETCH
+    elseif direction == :push
+        dir = api.DIRECTION_PUSH
     else
-        throw(ArgumentError("dir can be :fetch or :push"))
+        throw(ArgumentError("direction can be :fetch or :push, got :$direction"))
     end
-    @check api.git_remote_connect(r.ptr, direction)
+    @check api.git_remote_connect(r.ptr, dir)
     return nothing
 end
 
-Base.connect(f::Function, r::GitRemote, dir::Symbol) = begin
-    connect(r, dir)
+Base.connect(f::Function, r::GitRemote, direction::Symbol) = begin
+    connect(r, direction)
     try
         f(r)
     finally
