@@ -7,14 +7,12 @@ export Repository, GitObject, GitAny, GitBlob, GitCommit, GitTag,
 type Repository
     ptr::Ptr{Void}
     
-    function Repository(ptr::Ptr{Void}, manage::Bool=true)
+    function Repository(ptr::Ptr{Void}, owns::Bool=true)
         if ptr == C_NULL
             throw(ArgumentError("Repository initialized with NULL pointer"))
         end
         this = new(ptr)
-        if manage
-            finalizer(this, free!)
-        end
+        owns && finalizer(this, free!)
         return this
     end
 end
@@ -53,7 +51,6 @@ type GitBlob <: GitObject
     end
 end
 
-git_otype(::Type{GitBlob}) = api.OBJ_BLOB
 
 type GitCommit <: GitObject
     ptr::Ptr{Void}
@@ -87,6 +84,13 @@ type GitTree <: GitObject
         return this
     end
 end
+
+git_otype(::Type{GitAny})     = api.OBJ_ANY
+git_otype(::Type{GitBlob})    = api.OBJ_BLOB
+git_otype(::Type{GitCommit})  = api.OBJ_COMMIT
+git_otype(::Type{GitTag})     = api.OBJ_TAG 
+git_otype(::Type{GitTree})    = api.OBJ_TREE
+git_otype{T<:GitObject}(o::T) = git_otype(T)
 
 # ---------------
 # Git Reftypes
