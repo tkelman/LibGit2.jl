@@ -13,7 +13,7 @@ function oid(o::GitObject)
     return Oid(oid_ptr)
 end
 
-function hex(o::GitObject)
+Base.hex(o::GitObject) = begin
     @assert o.ptr != C_NULL
     oid_ptr::Ptr{Uint8} = api.git_object_id(o.ptr)
     @assert oid_ptr != C_NULL
