@@ -11,37 +11,47 @@
     begin :test_list_only_local_branches
         @test ["master"] == sort(branch_names(test_repo, :local))
     end
-
-   begin :test_list_only_remote_branches
+    
+    begin :test_list_only_remote_branches
        @test [
            "origin/HEAD",
            "origin/master",
            "origin/packed",
        ] == sort(branch_names(test_repo, :remote))
-   end
+    end
 
-   begin :test_get_latest_commit_in_branch
+    begin :test_get_latest_commit_in_branch
        t = lookup_branch(test_repo, "master") |> tip
        @test isa(t, GitCommit)
        @test oid(t) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-   end
+    end
 
-   begin :test_lookup_local_branch
+    begin :test_lookup_local_branch
        b = lookup_branch(test_repo, "master")
        @test b != nothing 
        @test name(b) == "master"
        @test canonical_name(b) == "refs/heads/master"
        @test oid(tip(b)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-  end
-
-  begin :test_lookup_remote_branches
+    end
+    
+    begin :test_lookup_remote_branches
        b = lookup_branch(test_repo, "origin/packed", :remote)
        @test b != nothing
 
        @test name(b) == "origin/packed"
        @test canonical_name(b) == "refs/remotes/origin/packed"
        @test oid(tip(b)) == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")
-  end
+    end
+
+    begin :test_branch_equality
+        b1 = lookup_branch(test_repo, "master")
+        b2 = lookup_branch(test_repo, "master")
+        @test b1 == b2
+        
+        b1 = lookup_branch(test_repo, "master")
+        b2 = lookup_branch(test_repo, "origin/packed", :remote)
+        @test b1 != b2
+    end
 end
 
 #:test_lookup_unicode_branch_name
