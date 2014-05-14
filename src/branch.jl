@@ -8,7 +8,7 @@ Base.delete!(b::GitBranch) = begin
 end
 
 Base.(:(==))(b1::GitBranch, b2::GitBranch) = canonical_name(b1) == canonical_name(b2)
-Base.isequal(b1::GitBranch, b2::GitBranch) = canonical_name(b1) == canonical_name(b2)
+Base.isequal(b1::GitBranch, b2::GitBranch) = b1 == b2 
 
 Base.start(b::GitBranch) = begin
     @assert b.ptr != C_NULL
