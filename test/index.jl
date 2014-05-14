@@ -179,7 +179,7 @@ run(`rm -rf $tmp_path`)
 # test reloading index
 # --------------------
 tmp_path = mktempdir()
-test_repo  = repo_init(tmp_path, bare=false)
+test_repo = repo_init(tmp_path, bare=false)
 index = repo_index(test_repo)
 fh = open(joinpath(tmp_path, "test.txt"), "w")
 write(fh, "test content")

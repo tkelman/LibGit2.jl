@@ -177,6 +177,7 @@ function IndexEntry(ptr::Ptr{api.GitIndexEntry})
                       dev, ino, mode, uid, gid, valid, stage)
 end
 
+#TODO: add! is defined in Base
 function add!(idx::GitIndex, entry::IndexEntry)
     @assert idx.ptr != C_NULL
     gentry = api.GitIndexEntry(entry)
@@ -206,7 +207,7 @@ function getentry(idx::GitIndex, path::String, stage=0)
     return IndexEntry(entry_ptr)
 end
 
-Base.isequal(e1::IndexEntry, e2::IndexEntry) = begin
+Base.(:(==))(e1::IndexEntry, e2::IndexEntry) = begin
     return e1.path  == e2.path &&
            e1.oid   == e2.oid &&
            e1.ctime == e2.ctime && 
@@ -220,6 +221,7 @@ Base.isequal(e1::IndexEntry, e2::IndexEntry) = begin
            e1.valid == e2.valid && 
            e1.stage == e2.stage
 end
+Base.isequal(e1::IndexEntry, e2::IndexEntry) = e1 == e2
 
 Base.start(idx::GitIndex) = begin
     if length(idx) == 0
