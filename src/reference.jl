@@ -126,7 +126,7 @@ function peel{T}(r::GitReference{T})
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     if T <: Oid && !bool(api.git_oid_cmp(obj_ptr[1], api.git_reference_target(r.ptr)))
         api.git_object_free(obj_ptr[1])
@@ -232,7 +232,7 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
     end
     api.git_reflog_free(reflog_ptr[1])
     if err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return nothing
 end
