@@ -193,18 +193,20 @@ end
 
 #:test_create_branch_from_unknown_ref_fails
 @with_tmp_repo_access begin
-    @test_throws create_branch(test_repo, "test_branch", "i_do_not_exist")
+    @test_throws LibGitError{:Ref,:NotFound} create_branch(test_repo, 
+                                                    "test_branch", "i_do_not_exist")
 end
 
 #:test_create_branch_from_unknown_commit_fails
 @with_tmp_repo_access begin
- @test_throws create_branch(test_repo, "test_branch",
+ @test_throws LibGitError{:Odb,:NotFound} create_branch(test_repo, "test_branch",
         Oid("dd15de908706711b51b7acb24faab726d2b3cb16"))
 end
 
 #:test_create_branch_from_non_canonical_fails
 @with_tmp_repo_access begin
-    @test_throws create_branch(test_repo, "test_branch", "packed")
+    @test_throws LibGitError{:Ref,:NotFound} create_branch(test_repo, 
+                                                           "test_branch", "packed")
 end
 
 #:test_branch_remote_remote_branch
@@ -258,7 +260,8 @@ end
 @with_tmp_repo_access  begin
     b = create_branch(test_repo, "test_branch", 
             Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
-    @test_throws set_upstream!(b, lookup_ref(test_repo, "refs/tags/v1.0"))
+    r = lookup_ref(test_repo, "refs/tags/v1.0")
+    @test_throws LibGitError{:Invalid,:Error} set_upstream!(b, r)
 end
 
 #:test_branch_set_upstream_local
@@ -288,8 +291,8 @@ end
 
 #:test_branch_set_upstream_on_remote_branch
 @with_tmp_repo_access  begin
-    b = lookup_branch(test_repo, "origin/master", :remote)
-    @test_throws set_upstream!(b, 
-        create_branch(test_repo, "test_branch",
-                      Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")))
+    b1 = lookup_branch(test_repo, "origin/master", :remote)
+    b2 =  create_branch(test_repo, "test_branch",
+                      Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
+    @test_throws LibGitError{:Invalid,:Error} set_upstream!(b1, b2)        
 end
