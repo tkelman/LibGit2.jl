@@ -7,6 +7,7 @@ type GitTreeEntry{T<:GitObject}
     name::String
     oid::Oid
     filemode::Cint
+    owns::Bool
 end
 
 oid(te::GitTreeEntry) = te.oid
@@ -39,14 +40,15 @@ let
 
     tree_entry_filemode(ptr::Ptr{Void}) = api.git_tree_entry_filemode(ptr)
 
+    #TODO: ownership of tree entry pointer 
+
     function GitTreeEntry(ptr::Ptr{Void}, owns::Bool=false)
         @assert ptr != C_NULL
         ty   = tree_entry_type(ptr)
         name = tree_entry_name(ptr)
         oid  = tree_entry_oid(ptr)
         fm   = tree_entry_filemode(ptr)
-        entry = GitTreeEntry{ty}(name, oid, fm)
-        return entry
+        return GitTreeEntry{ty}(name, oid, fm, owns)
     end
 end
 
@@ -55,9 +57,7 @@ function entry_byname(t::GitTree, filename::String)
     bname = bytestring(filename)
     entry_ptr = api.git_tree_entry_byname(t.ptr, bname)
     entry_ptr == C_NULL && return nothing
-    te = GitTreeEntry(entry_ptr)
-    #api.git_tree_entry_free(entry_ptr)
-    return te
+    return GitTreeEntry(entry_ptr)
 end
 
 function entry_bypath(t::GitTree, path::String)
@@ -65,28 +65,27 @@ function entry_bypath(t::GitTree, path::String)
     bpath = bytestring(path)
     entry_ptr = Array(Ptr{Void}, 1)
     @check api.git_tree_entry_bypath(entry_ptr, t.ptr, bpath)
-    te = GitTreeEntry(entry_ptr[1], true)
-    #api.git_tree_entry_free(entry_ptr[1])
-    return te
+    return GitTreeEntry(entry_ptr[1], true)
 end
 
 function entry_byindex(t::GitTree, idx::Integer)
     @assert t.ptr != C_NULL
     entry_ptr = api.git_tree_entry_byindex(t.ptr, idx - 1)
-    entry_ptr == C_NULL && return nothing
-    te = GitTreeEntry(entry_ptr)
-    #XXX: this throws a stack trace
-    #api.git_tree_entry_free(entry_ptr)
-    return te
+    if entry_ptr == C_NULL
+        return nothing
+    else
+        return GitTreeEntry(entry_ptr)
+    end
 end
 
 function entry_byid(t::GitTree, id::Oid)
     @assert t.ptr != C_NULL
     entry_ptr = api.git_tree_entry_byid(t.ptr, id.oid)
-    entry_ptr == C_NULL && return nothing
-    te = GitTreeEntry(entry_ptr)
-    #api.git_tree_entry_free(entry_ptr)
-    return te
+    if entry_ptr == C_NULL
+        return nothing
+    else
+        return GitTreeEntry(entry_ptr)
+    end
 end
 
 Base.getindex(t::GitTree, entry::Integer) = entry_byindex(t, entry)
