@@ -1,49 +1,51 @@
+export LibGitError
+
 const git_error_code = (Int => Symbol)[
-      0 => :GIT_OK,
-    -01 => :GIT_ERROR, 
-    -03 => :GIT_ENOTFOUND,
-    -04 => :GIT_EEXISTS,
-    -05 => :GIT_EAMBIGUOUS,
-    -06 => :GIT_EBUFS,
-    -07 => :GIT_EUSER,
-    -08 => :GIT_EBAREREPO,
-    -09 => :GIT_EUNBORNBRANCH,
-    -10 => :GIT_EUNMERGED,
-    -11 => :GIT_ENONFASTFORWARD,
-    -12 => :GIT_EINVALIDSPEC,
-    -13 => :GIT_EMERGECONFLICT,
-    -14 => :GIT_ELOCKED,
-    -30 => :GIT_PASSTHROUGH,
-    -31 => :GIT_ITEROVER
+     00 => :OK,
+    -01 => :Error, 
+    -03 => :NotFound,
+    -04 => :Exists,
+    -05 => :Ambiguous,
+    -06 => :Bufs,
+    -07 => :User,
+    -08 => :BareRepo,
+    -09 => :UnbornBranch,
+    -10 => :Unmerged,
+    -11 => :NonFastForward,
+    -12 => :InvalidSpec,
+    -13 => :MergeConflict,
+    -14 => :Locked,
+    -30 => :PassThrough,
+    -31 => :Iterover
 ]
 
 const git_error_class = (Int => Symbol)[
-    0 => :GITERR_NONE,
-    1 => :GITERR_NOMEMORY,
-    2 => :GITERR_OS,
-    3 => :GITERR_INVALID,
-    4 => :GITERR_REFERENCE,
-    5 => :GITERR_ZLIB,
-    6 => :GITERR_REPOSITORY,
-    7 => :GITERR_CONFIG,
-    8 => :GITERR_REGEX,
-    9 => :GITERR_ODB,
-    10 => :GITERR_INDEX,
-    11 => :GITERR_OBJECT,
-    12 => :GITERR_NET,
-    13 => :GITERR_TAG,
-    14 => :GITERR_TREE,
-    15 => :GITERR_INDEXER,
-    16 => :GITERR_SSL,
-    17 => :GITERR_SUBMODULE,
-    18 => :GITERR_THREAD,
-    19 => :GITERR_STASH,
-    20 => :GITERR_CHECKOUT,
-    21 => :GITERR_FETCHHEAD,
-    22 => :GITERR_MERGE,
-    23 => :GITERR_SSH,
-    24 => :GITERR_FILTER,
-    25 => :GITERR_REVERT,
+    0 => :None,
+    1 => :NoMemory,
+    2 => :OS,
+    3 => :Invalid,
+    4 => :Ref,
+    5 => :Zlib,
+    6 => :Repo,
+    7 => :Config,
+    8 => :Regex,
+    9 => :Odb,
+    10 => :Index,
+    11 => :Object,
+    12 => :Net,
+    13 => :Tag,
+    14 => :Tree,
+    15 => :Indexer,
+    16 => :SSL,
+    17 => :Submodule,
+    18 => :Thread,
+    19 => :Stash,
+    20 => :Checkout,
+    21 => :FetchHead,
+    22 => :Merge,
+    23 => :SSH,
+    24 => :Filter,
+    25 => :Revert,
 ]
 
 immutable ErrorStruct
@@ -51,21 +53,22 @@ immutable ErrorStruct
     class::Cint
 end
 
-immutable LibGitError
-    code::Symbol
-    mesg::UTF8String
+immutable LibGitError{Class, Code} 
+    msg::UTF8String
 end
 
 function last_error()
     err = ccall((:giterr_last, api.libgit2), Ptr{ErrorStruct}, ())
-    err_obj = unsafe_load(err)
-    (err_obj.class, bytestring(err_obj.message))
+    err_obj   = unsafe_load(err)
+    err_class = git_error_class[int(err_obj.class)] 
+    err_msg   = bytestring(err_obj.message)
+    return (err_class, err_msg)
 end
 
 LibGitError(code::Integer) = begin
     err_code = git_error_code[int(code)]
-    class, msg = last_error()
-    LibGitError(err_code, msg)
+    err_class, err_msg = last_error()
+    LibGitError{err_class, err_code}(err_msg)
 end
 
 macro check(git_func)
