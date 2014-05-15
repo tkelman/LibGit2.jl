@@ -1,4 +1,4 @@
-export git_otype, GitTreeEntry, 
+export GitTreeEntry, 
        entry_byname, entry_bypath,
        each_tree, each_blob,
        walk_trees, walk_blobs
@@ -9,8 +9,6 @@ type GitTreeEntry{T<:GitObject}
     filemode::Cint
 end
 
-git_otype(::Type{GitTree}) = api.OBJ_TREE
-
 oid(te::GitTreeEntry) = te.oid
 name(te::GitTreeEntry) = te.name
 
@@ -20,17 +18,13 @@ Base.filemode(te::GitTreeEntry) = convert(Cint, te.filemode)
 let 
     function tree_entry_name(ptr::Ptr{Void})
         nptr::Ptr{Cchar} = api.git_tree_entry_name(ptr)
-        if nptr == C_NULL
-            error("tree entry name pointer is NULL")
-        end
+        @assert nptr != C_NULL
         return bytestring(nptr)
     end
 
     function tree_entry_oid(ptr::Ptr{Void})
         idptr::Ptr{Uint8} = api.git_tree_entry_id(ptr)
-        if idptr == C_NULL
-            error("tree entry oid pointer is NULL")
-        end
+        @assert idptr != C_NULL
         return Oid(idptr)
     end
 
@@ -130,7 +124,7 @@ function cb_treewalk(root::Ptr{Cchar}, entry::Ptr{Void}, data::Ptr{Void})
     try 
         produce(bytestring(root), GitTreeEntry(entry))
         return api.GIT_OK
-    catch
+    catch err
         return api.ERROR
     end
 end
@@ -160,7 +154,6 @@ function walk_blobs(f::Function, t::GitTree, order=:postorder)
     for res in walk_blobs(t, order) 
         f(res)
     end
-    return nothing
 end
 
 function walk_trees(t::GitTree, order=:postorder)
@@ -173,5 +166,4 @@ function walk_trees(f::Function, t::GitTree, order=:postorder)
     for te in walk_trees(t, order)
         f(te)
     end
-    return nothing
 end
