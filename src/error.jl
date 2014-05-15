@@ -35,7 +35,7 @@ const git_error_class = (Int => Symbol)[
     12 => :Net,
     13 => :Tag,
     14 => :Tree,
-    15 => :Indexer,
+    15 => :Index,
     16 => :SSL,
     17 => :Submodule,
     18 => :Thread,
@@ -74,7 +74,7 @@ end
 macro check(git_func)
     quote
         local err::Cint
-        err = $git_func
+        err = $(esc(git_func))
         if err < 0
             throw(LibGitError(err))
         end
