@@ -40,13 +40,10 @@ Base.start(w::GitRevWalker) = begin
     elseif err == api.ITEROVER
         return (nothing, true)
     end
-    throw(GitError(err))
+    throw(LibGitError(err))
 end
 
-Base.done(w::GitRevWalker, state) = begin
-    wdone = state[2]
-    return wdone 
-end
+Base.done(w::GitRevWalker, state) = state[2]::Bool
 
 Base.next(w::GitRevWalker, state) = begin
     commit_oid = Oid()
@@ -57,63 +54,55 @@ Base.next(w::GitRevWalker, state) = begin
     elseif err == api.ITEROVER
         return (state[1], (nothing, true))
     end
-    throw(GitError(err))
+    throw(LibGitError(err))
 end
 
 Base.push!(w::GitRevWalker, cid::Oid) = begin
     @assert w.ptr != C_NULL
     @check api.git_revwalk_push(w.ptr, cid.oid)
-    return nothing
+    return 
 end
 
-Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev=false) = begin
+#TODO: this does not mimic Base's sortby! functionality so it should be renamed
+Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false) = begin
     s = symbol_to_gitsort(sort_mode)
-    if rev
-        s |= api.SORT_REVERSE
-    end
+    rev && (s |= api.SORT_REVERSE)
     sortby!(w, s)
-    return nothing
+    return 
 end
 
 Base.sortby!(w::GitRevWalker, sort_mode::Cint) = begin
     @assert w.ptr != C_NULL
     api.git_revwalk_sorting(w.ptr, sort_mode)
-    return nothing
+    return 
 end
 
 function hide!(w::GitRevWalker, cid::Oid)
     @assert w.ptr != C_NULL
     @check api.git_revwalk_hide(w.ptr, cid.oid)
-    return nothing
+    return 
 end
 
 function reset!(w::GitRevWalker)
     @assert w.ptr != C_NULL
     api.git_revwalk_reset(w.ptr)
-    return nothing
+    return 
 end
 
 function symbol_to_gitsort(s::Symbol)
-    if s == :none
-        return api.SORT_NONE
-    elseif s == :topo
-        return api.SORT_TOPOLOGICAL
-    elseif s == :date
-        return api.SORT_TIME
-    else
-        error("unknown sort type :$s")
-    end
+    s == :none && return api.SORT_NONE
+    s == :topo && return api.SORT_TOPOLOGICAL
+    s == :date && return api.SORT_TIME
+    error("unknown git sort flag :$s")
 end
 
 function walk(r::Repository, from::Oid, sorting=SortDate)
     walker = GitRevWalker(r)
     sortby!(walker, api.SORT_TIME)
     push!(walker, from)
-    return @task begin
-        for c in walker
-            produce(c)
-        end
-    end
+    return (@task for c in walker
+        produce(c)
+    end)
 end
 
 # walk(repo, oid) do commit
@@ -126,5 +115,5 @@ function walk(f::Function, r::Repository, from::Oid, sorting=SortDate)
     for c in walker
         f(c)
     end
-    return nothing
+    return 
 end
