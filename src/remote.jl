@@ -17,7 +17,7 @@ end
 function disconnect(r::GitRemote)
     @assert r.ptr != C_NULL
     api.git_remote_disconnect(r.ptr)
-    return nothing
+    return 
 end
 
 Base.connect(r::GitRemote, direction::Symbol) = begin
@@ -30,7 +30,7 @@ Base.connect(r::GitRemote, direction::Symbol) = begin
         throw(ArgumentError("direction can be :fetch or :push, got :$direction"))
     end
     @check api.git_remote_connect(r.ptr, dir)
-    return nothing
+    return 
 end
 
 Base.connect(f::Function, r::GitRemote, direction::Symbol) = begin
@@ -41,14 +41,18 @@ Base.connect(f::Function, r::GitRemote, direction::Symbol) = begin
         disconnect(r)
     end
 end
-    
+
+function check_valid_url(url::String)
+    if !bool(api.git_remote_valid_url(bytestring(url))) 
+        throw(ArgumentError("Invalid URL : $url"))
+    end
+    return true
+end
+
 function url(r::GitRemote)
     @assert r.ptr != C_NULL
     url_ptr = api.git_remote_url(r.ptr)
-    if url_ptr == C_NULL
-        return nothing
-    end
-    return bytestring(url_ptr)
+    return url_ptr != C_NULL ? bytestring(url_ptr) : nothing
 end
 
 function set_url!(r::GitRemote, url::String)
@@ -61,10 +65,7 @@ end
 function push_url(r::GitRemote)
     @assert r.ptr != C_NULL
     url_ptr = api.git_remote_pushurl(r.ptr)
-    if url_ptr == C_NULL
-        return nothing
-    end
-    return bytestring(url_ptr)
+    return url_ptr != C_NULL ? bytestring(url_ptr) : nothing
 end
 
 function set_push_url!(r::GitRemote, url::String)
@@ -125,7 +126,7 @@ function save!(r::GitRemote)
 end
 
 function cb_remote_rename(refspec_name::Ptr{Cchar}, payload::Ptr{Void})
-    errs = unsafe_pointer_to_objref(payload)::Array{String, 1}
+    errs = unsafe_pointer_to_objref(payload)::Array{ByteString, 1}
     push!(errs, bytestring(refspec_name))
     return api.GIT_OK
 end
@@ -134,7 +135,7 @@ const c_cb_remote_rename = cfunction(cb_remote_rename, Cint, (Ptr{Cchar}, Ptr{Vo
 
 function rename!(r::GitRemote, name::String) 
     @assert r.ptr != C_NULL
-    errs = String[]
+    errs = ByteString[]
     @check ccall((:git_remote_rename, api.libgit2), Cint,
                   (Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
                   r.ptr, bytestring(name), c_cb_remote_rename, &errs)
@@ -143,23 +144,23 @@ end
 
 type RemoteHead
     islocal::Bool
-    oid::Oid
-    loid::Union(Nothing, Oid)
-    name::String
+    id::Oid
+    lid::Union(Nothing, Oid)
+    name::ByteString
 end
 
 RemoteHead(ghead::api.GitRemoteHead) = begin
     oid_arr = Array(Uint8, api.OID_RAWSZ)
     @get_oid_fieldnames(oid_arr, ghead, oid)
-    oid = Oid(oid_arr)
+    id = Oid(oid_arr)
     
     loid_arr = Array(Uint8, api.OID_RAWSZ)
     @get_oid_fieldnames(loid_arr, ghead, loid)
-    loid = Oid(loid_arr)
+    lid = Oid(loid_arr)
     
     return RemoteHead(bool(ghead.islocal),
-                      oid,
-                      iszero(loid)? nothing : loid,
+                      id,
+                      iszero(lid)? nothing : lid,
                       ghead.name == C_NULL ? "" : bytestring(ghead.name))
 end
 
@@ -167,7 +168,7 @@ Base.ls(r::GitRemote) = begin
     @assert r.ptr != C_NULL
     nheads = Csize_t[0]
     head_ptrs = Array(Ptr{Ptr{api.GitRemoteHead}}, 1)
-    err = api.git_remote_ls(head_ptrs, nheads, r.ptr)
+    @check api.git_remote_ls(head_ptrs, nheads, r.ptr)
     head_ptr = head_ptrs[1]
     remote_heads = RemoteHead[]
     for i in 1:nheads[1]
@@ -191,10 +192,3 @@ function update_tips!(r::GitRemote)
                  r.ptr, C_NULL, C_NULL)
     return r
 end
-
-function check_valid_url(s::String)
-    if !bool(api.git_remote_valid_url(bytestring(s)))
-        throw(ArgumentError("invalid url"))
-    end
-end
-

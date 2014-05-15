@@ -247,8 +247,8 @@ end
         @test length(rheads) == 7
         rhead = first(rheads)
         @test rhead.islocal == false
-        @test rhead.oid != nothing
-        @test rhead.loid == nothing
+        @test rhead.id != nothing
+        @test rhead.lid == nothing
     end
 end
 
