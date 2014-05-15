@@ -187,7 +187,7 @@ function patches(d::GitDiff)
     patch_ptr = Array(Ptr{Void}, 1)
     for i in 1:ndelta
         err = api.git_patch_from_diff(patch_ptr, d.ptr, i-1)
-        if bool(err)
+        if err != api.GIT_OK
             break
         end
         @assert patch_ptr != C_NULL
