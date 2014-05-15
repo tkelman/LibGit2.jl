@@ -1,10 +1,14 @@
+# test lookup fails with incorrect git object
 @with_repo_access begin
       # commit
-    @test_throws lookup_blob(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_blob(test_repo, 
+                                                    Oid("8496071c1b46c854b31185ea97743be6a8774479"))
       # tag
-    @test_throws lookup_blob(test_repo, Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_blob(test_repo, 
+                                                    Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
       # tree
-    @test_throws lookup_blob(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_blob(test_repo, 
+                                                    Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
 end
 
 @with_repo_access begin
