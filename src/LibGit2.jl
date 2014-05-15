@@ -47,6 +47,6 @@ include("remote.jl")
 include("repository.jl")
 include("diff.jl")
 include("patch.jl")
-include("walk.jl")
+include("walker.jl")
 
 end # module
