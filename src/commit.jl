@@ -1,8 +1,6 @@
 export git_otype, message, tree, tree_id,
        author, committer, parent, parent_id, parent_count, parents
 
-git_otype(::Type{GitCommit}) = api.OBJ_COMMIT
-
 function message(c::GitCommit, raw::Bool=false)
     @assert c.ptr != C_NULL
     local msg_ptr::Ptr{Cchar}
