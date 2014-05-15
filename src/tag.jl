@@ -1,7 +1,5 @@
 export git_otype, message, target_id, target, tagger
 
-git_otype(::Type{GitTag}) = api.OBJ_TAG 
-
 function name(t::GitTag)
     @assert t.ptr != C_NULL
     return bytestring(api.git_tag_name(t.ptr))
