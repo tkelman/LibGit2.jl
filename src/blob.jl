@@ -1,4 +1,6 @@
-export rawcontent, sloc, text, isbinary
+export rawcontent, sloc, text, isbinary, lookup_blob
+
+#TODO: move blob related methods from repository
 
 Base.sizeof(b::GitBlob) = begin
     @assert b.ptr != C_NULL
