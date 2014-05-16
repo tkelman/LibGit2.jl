@@ -7,7 +7,7 @@ const test_time   = 0
 const test_offset = 0
 
 # throw on bad name
-@test_throws Signature("", "")
+@test_throws LibGitError{:Invalid,:Error} Signature("", "")
 
 # throw error on bad time
 # this fails with recent builds of julia that
