@@ -9,14 +9,14 @@ type __LibGitThreadsHandle
 
     function __LibGitThreadsHandle()
         api.git_threads_init()
-        h = new(true)
-        finalizer(h, h -> begin
+        handle = new(true)
+        finalizer(handle, h -> begin
             if h.inited
                 api.git_threads_shutdown()
                 h.inited = false
             end
         end)
-        return h
+        return handle
     end
 end
 
