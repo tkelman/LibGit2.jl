@@ -25,7 +25,8 @@ end
 
 # test_remote_new_invalid_url
 @with_repo_access begin
-    @test_throws GitRemote(test_repo, "libgit2")
+    #TODO: throw custom LibGitError ? 
+    @test_throws ArgumentError GitRemote(test_repo, "libgit2")
 end
 
 # test_url_set
@@ -40,7 +41,7 @@ end
 @with_repo_access begin
     new_url = "invalid"
     remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
-    @test_throws set_url!(remote, new_url)
+    @test_throws ArgumentError set_url!(remote, new_url)
 end
 
 # test_push_url
@@ -63,7 +64,7 @@ end
 @with_repo_access begin 
     new_url = "upstream"
     remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
-    @test_throws set_push_url!(remote, new_url)
+    @test_throws ArgumentError set_push_url!(remote, new_url)
 end
 
 # test_fetch_refspecs
@@ -117,7 +118,7 @@ end
 
 # test_remote_lookup_invalid
 @with_repo_access begin 
-    @test_throws lookup_remote(test_repo, "*\?")
+    @test_throws LibGitError{:Config,:InvalidSpec} lookup_remote(test_repo, "*\?")
 end
 
 # test_remote_add
@@ -130,7 +131,7 @@ end
 
 # test_remote_add_with_invalid_url
 @with_tmp_repo_access begin
-    @test_throws remote_add!(test_repo, "upstream", "libgit2")
+    @test_throws ArgumentError remote_add!(test_repo, "upstream", "libgit2")
 end
 
 # test_url_set
@@ -152,13 +153,13 @@ end
 #test_rename_invalid_name
 @with_tmp_repo_access begin
     remote = lookup_remote(test_repo, "origin")
-    @test_throws rename!(remote, "/?")
+    @test_throws LibGitError{:Config,:InvalidSpec} rename!(remote, "/?")
 end
 
 #test_rename_exists
 @with_tmp_repo_access begin
     remote = lookup_remote(test_repo, "origin")
-    @test_throws rename!(remote, "origin")
+    @test_throws LibGitError{:Config,:Exists} rename!(remote, "origin")
 end
 
 # test_rename_error_callback
@@ -198,7 +199,8 @@ end
     create_ref(repo, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     remote = lookup_remote(repo, "origin")
-    @test_throws push!(repo, remote, ["refs/heads/master"])
+    #TODO: better errors
+    @test_throws ErrorException push!(repo, remote, ["refs/heads/master"])
 end
 
 #test_push_non_forward_raise_error
@@ -209,7 +211,8 @@ end
     create_ref(repo, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     remote = lookup_remote(repo, "origin")
-    @test_throws push!(repo, remote, ["refs/heads/unit_test:refs/heads/master"])
+    #TODO: better errors
+    @test_throws ErrorException push!(repo, remote, ["refs/heads/unit_test:refs/heads/master"])
 
     @test (target(lookup_ref(remote_repo, "refs/heads/master"))
               == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
