@@ -95,7 +95,7 @@ end
     obj = test_repo[id]
     
     create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test") 
-    @test_throws create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test") 
+    @test_throws LibGitError{:Repo,:Exists} create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test") 
 end
 
 
