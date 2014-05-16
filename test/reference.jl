@@ -39,7 +39,7 @@ finally
     cleanup_dir(test_path)
 end
 
-
+#= TODO:
 test_path = joinpath(pwd(), "testrepo")
 try
     repo = create_test_repo(test_path)
@@ -87,6 +87,7 @@ catch err
 finally 
     cleanup_dir(test_path)
 end
+=#
 
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library

@@ -1,11 +1,11 @@
 # lookup raises error if object type does not match
 @with_repo_access begin
     # blob
-    @test_throws lookup_tree(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_tree(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
     # commit
-    @test_throws lookup_tree(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_tree(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     # tag
-    @test_throws lookup_tree(test_repo, Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
+    @test_throws LibGitError{:Invalid, :NotFound} lookup_tree(test_repo, Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d"))
 end
 
 @with_repo_access begin
@@ -13,11 +13,11 @@ end
     test_tree = lookup_tree(test_repo, id)
 
   begin # test_read_tree_data
-    @test id == oid(test_tree)
+    @test id == Oid(test_tree)
     @test isa(test_tree, GitTree)
     @test length(test_tree) == 3
-    @test (test_tree[1] |> oid) == Oid("1385f264afb75a56a5bec74243be9b367ba4ca08")
-    @test (test_tree[2] |> oid) == Oid("fa49b077972391ad58037050f2a75f74e3671e92")
+    @test Oid(test_tree[1]) == Oid("1385f264afb75a56a5bec74243be9b367ba4ca08")
+    @test Oid(test_tree[2]) == Oid("fa49b077972391ad58037050f2a75f74e3671e92")
   end
 
   begin #test_read_tree_entry_data
@@ -29,8 +29,8 @@ end
 
     @test name(tent) == "subdir"
     @test isa(tent, GitTreeEntry{GitTree})
-    @test (tent |> oid) == Oid("619f9935957e010c419cb9d15621916ddfcc0b96")
-    @test isa(lookup(test_repo, oid(tent)), GitTree)
+    @test Oid(tent) == Oid("619f9935957e010c419cb9d15621916ddfcc0b96")
+    @test isa(lookup(test_repo, Oid(tent)), GitTree)
   end
 
   begin # est_get_entry_by_oid
@@ -48,7 +48,7 @@ end
 
   begin #test tree iteration
       @test length(collect(test_tree)) == length(test_tree)
-      tes = sort(collect(test_tree), by=oid)
+      tes = sort(collect(test_tree))
       str = join([name(te) for te in tes], ":")
       @test str == "README:subdir:new.txt"
   end
@@ -63,7 +63,7 @@ end
   begin # test tree walk only blob
       walk_blobs(test_tree, :postorder) do res
           root, entry = res
-          @assert isa(entry, GitTreeEntry{GitBlob})
+          @test isa(entry, GitTreeEntry{GitBlob})
       end
   end
 

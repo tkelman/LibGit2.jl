@@ -23,7 +23,7 @@
     begin :test_get_latest_commit_in_branch
        t = lookup_branch(test_repo, "master") |> tip
        @test isa(t, GitCommit)
-       @test oid(t) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+       @test Oid(t) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     end
 
     begin :test_lookup_local_branch
@@ -31,7 +31,7 @@
        @test b != nothing 
        @test name(b) == "master"
        @test canonical_name(b) == "refs/heads/master"
-       @test oid(tip(b)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+       @test Oid(tip(b)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     end
     
     begin :test_lookup_remote_branches
@@ -40,7 +40,7 @@
 
        @test name(b) == "origin/packed"
        @test canonical_name(b) == "refs/remotes/origin/packed"
-       @test oid(tip(b)) == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")
+       @test Oid(tip(b)) == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")
     end
 
     begin :test_branch_equality
@@ -99,7 +99,7 @@ end
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
-    @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
@@ -115,7 +115,7 @@ end
     @test canonical_name(new_branch) == "refs/heads/$branch_name"
 
     @test tip(new_branch) != nothing
-    @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
 
     @test any(b -> name(b) == branch_name, iter_branches(test_repo))
 end
@@ -129,7 +129,7 @@ end
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
-    @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
@@ -143,7 +143,7 @@ end
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
-    @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
@@ -157,7 +157,7 @@ end
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
-    @test oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test Oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
@@ -171,7 +171,7 @@ end
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
-    @test oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test Oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end
@@ -186,7 +186,7 @@ end
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
-    @test oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
     @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
 end

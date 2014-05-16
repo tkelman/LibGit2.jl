@@ -24,22 +24,22 @@ try
     @test length(ctree) == 1
 
     t = lookup(GitTree, repo, tid)
-    @test oid(t) == tid
+    @test Oid(t) == tid
     @test isa(t, GitTree)
     entry = entry_byname(t, "README")
     @test entry != nothing
     
     @test filemode(entry) == 33188 #api.FILEMODE_BLOB
-    obj = lookup(repo, oid(t))
+    obj = lookup(repo, Oid(t))
     @test isa(obj, GitTree)
 
     obj = repo_revparse_single(repo, "HEAD")
     @test isa(obj, GitCommit)
-    @test oid(obj) == cid
+    @test Oid(obj) == cid
     
     obj = repo_revparse_single(repo, "HEAD^{tree}")
     @test isa(obj, GitTree)
-    @test oid(obj) == oid(t)
+    @test Oid(obj) == Oid(t)
 catch err
     rethrow(err)
 finally 
@@ -73,7 +73,7 @@ end
    begin # test_lookup_object
         obj = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         @test isa(obj, GitCommit)
-        @test Oid("8496071c1b46c854b31185ea97743be6a8774479") == oid(obj)
+        @test Oid("8496071c1b46c854b31185ea97743be6a8774479") == Oid(obj)
    end
 
    begin # test_objects_are_the_same
@@ -89,9 +89,9 @@ end
    
    begin # test_lookup_by_rev
         obj = rev_parse(test_repo, "v1.0")
-        @test oid(obj) == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+        @test Oid(obj) == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
         obj = rev_parse(test_repo, "v1.0^1")
-        @test oid(obj) == Oid("8496071c1b46c854b31185ea97743be6a8774479")
+        @test Oid(obj) == Oid("8496071c1b46c854b31185ea97743be6a8774479")
    end 
    
    begin # test_lookup_oid_by_rev

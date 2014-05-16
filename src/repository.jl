@@ -4,7 +4,7 @@ export repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
-       ahead_behind, merge_base, merge_commits, oid, blob_at, is_shallow, hash_data,
+       ahead_behind, merge_base, merge_commits,  blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
@@ -21,7 +21,7 @@ Repository(path::String; alternates=nothing) = begin
         if repo_ptr[1] != C_NULL
             api.git_repository_free(repo_ptr[1])
         end
-        throw(GitError(err_code))
+        throw(LibGitError(err_code))
     end
     @check_null repo_ptr
     repo = Repository(repo_ptr[1])
@@ -34,7 +34,7 @@ Repository(path::String; alternates=nothing) = begin
             bpath = bytestring(path)
             err = api.git_odb_add_disk_alternate(odb.ptr, bpath)
             if err != api.GIT_OK
-                throw(GitError(err))
+                throw(LibGitError(err))
             end
         end
     end
@@ -116,7 +116,7 @@ exists(r::Repository, ref::String) = begin
     if err == api.ENOTFOUND
         return false
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return true
 end
@@ -183,7 +183,7 @@ function default_signature(r::Repository)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     @check_null sig_ptr 
     gsig = unsafe_load(sig_ptr[1])
@@ -212,7 +212,7 @@ function repo_init(path::String; bare::Bool=false)
         if repo_ptr[1] != C_NULL
             api.git_repository_free(repo_ptr[1])
         end
-        throw(GitError(err_code))
+        throw(LibGitError(err_code))
     end
     @check_null repo_ptr
     return Repository(repo_ptr[1])
@@ -243,23 +243,23 @@ function head(r::Repository)
     if err == api.ENOTFOUND || err == api.EUNBORNBRANCH
         return nothing
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end 
     @check_null head_ptr
     return GitReference(head_ptr[1])
 end
 
-oid(r::Repository, val::GitObject) = oid(val)
-oid(r::Repository, val::Oid) = val
+Oid(r::Repository, val::GitObject) = Oid(val)
+Oid(r::Repository, val::Oid) = val
 
-function oid(r::Repository, val::String)
+function Oid(r::Repository, val::String)
     if length(val) == api.OID_HEXSZ
         try
             return Oid(val)
         catch
         end
     end
-    return oid(rev_parse(r, val))
+    return Oid(rev_parse(r, val))
 end
 
 #TODO: need to add tests for sig/logmsg
@@ -360,14 +360,14 @@ Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
         if push_ptr != C_NULL
             api.git_push_free(push_ptr[1])
         end
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     for ref in refs
         err = api.git_push_add_refspec(push_ptr[1], bytestring(ref))
     end
     if err != api.GIT_OK
         api.git_push_free(push_ptr[1])
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     err = api.git_push_finish(push_ptr[1])
     if err != api.GIT_OK
@@ -389,14 +389,14 @@ Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
                 push_ptr[1], c_cb_push_status, &result)
     if err != api.GIT_OK
         api.git_push_free(push_ptr[1])
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     err = ccall((:git_push_update_tips, api.libgit2), Cint,
                 (Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
                 push_ptr[1], C_NULL, C_NULL)
     if err != api.GIT_OK
         api.git_push_free(push_ptr[1])
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return result
 end
@@ -415,7 +415,7 @@ function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     @check_null remote_ptr
     return GitRemote(remote_ptr[1])
@@ -487,7 +487,7 @@ function create_note!(
     @assert obj.ptr != nothing
     #repo = Repository(api.git_object_owner(obj.ptr))
     repo_ptr = api.git_object_owner(obj.ptr)
-    target_id = oid(obj)
+    target_id = Oid(obj)
     bref = ref != nothing ? bytestring(ref) : C_NULL
     if committer != nothing
         committer_ptr = git_signature_ptr(committer)
@@ -522,7 +522,7 @@ function remove_note!(obj::GitObject;
                       author::Union(Nothing,Signature)=nothing,
                       ref::Union(Nothing,String)=nothing)
     @assert obj.ptr != C_NULL
-    target_id = oid(obj)
+    target_id = Oid(obj)
     #repo = Repository(api.git_object_owner(obj.ptr))
     repo_ptr = api.git_object_owner(obj.ptr)
     notes_ref = ref != nothing ? bytestring(ref) : bytestring("refs/notes/commits")
@@ -549,7 +549,7 @@ function remove_note!(obj::GitObject;
     if err == api.ENOTFOUND
         return false
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return true
 end
@@ -573,11 +573,11 @@ function lookup_note(obj::GitObject, ref=nothing)
     end
     note_ptr = Array(Ptr{Void}, 1)
     repo_ptr = api.git_object_owner(obj.ptr)
-    err = api.git_note_read(note_ptr, repo_ptr, bref, oid(obj).oid)
+    err = api.git_note_read(note_ptr, repo_ptr, bref, Oid(obj).oid)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     @check_null note_ptr
     n = GitNote(note_ptr[1])
@@ -613,7 +613,7 @@ end
 function ahead_behind(r::Repository,
                       lcommit::GitCommit,
                       ucommit::GitCommit)
-    ahead_behind(r, oid(lcommit), oid(ucommit))
+    ahead_behind(r, Oid(lcommit), Oid(ucommit))
 end
 
 function ahead_behind(r::Repository, lid::Oid, uid::Oid)
@@ -634,7 +634,7 @@ function blob_at(r::Repository, rev::Oid, p::String)
     catch
         return nothing
     end
-    blob = lookup_blob(r, oid(blob_entry))
+    blob = lookup_blob(r, Oid(blob_entry))
     return blob
 end
 
@@ -697,7 +697,7 @@ function blob_from_stream(r::Repository, stream, hintpath=nothing)
         throw(payload[2])
     end
     if err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return blob_id
 end
@@ -716,7 +716,7 @@ function write!{T<:GitObject}(::Type{T}, r::Repository, buf::ByteString)
     end
     api.git_odb_stream_free(stream_ptr[1])
     if err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return out
 end
@@ -755,7 +755,7 @@ function merge_base(r::Repository, args...)
     if length(args) < 2
         throw(ArgumentError("merge_base needs 2+ commits"))
     end
-    arg_oids = vcat([raw(oid(r, a)) for a in args]...)
+    arg_oids = vcat([raw(Oid(r, a)) for a in args]...)
     @assert length(arg_oids) == length(args) * api.OID_RAWSZ
     len = convert(Csize_t, length(args))
     id = Oid()
@@ -763,18 +763,18 @@ function merge_base(r::Repository, args...)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return id
 end
     
 function rev_parse_oid(r::Repository, rev::String)
-    oid(rev_parse(r, rev))
+    Oid(rev_parse(r, rev))
 end
 
 #TODO: this could be more efficient
 function rev_parse_oid(r::Repository, rev::Oid)
-    return oid(rev_parse(r, string(rev)))
+    return Oid(rev_parse(r, string(rev)))
 end
 
 function config(r::Repository)
@@ -866,7 +866,7 @@ function lookup_ref(r::Repository, refname::String)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
-        return GitError(err)
+        return LibGitError(err)
     end
     @check_null ref_ptr
     return GitReference(ref_ptr[1])
@@ -968,7 +968,7 @@ function commit(r::Repository,
                       C_NULL, bmsg, tree.ptr, 
                       nparents, nparents > 0 ? cparents : C_NULL)
     if err_code < 0
-        throw(GitError(err_code))
+        throw(LibGitError(err_code))
     end
     return commit_oid
 end
@@ -1004,7 +1004,7 @@ function branch_names(r::Repository, filter=:all)
             if iter_ptr[1] != C_NULL
                 api.git_branch_iterator_free(iter_ptr[1])
             end
-            throw(GitError(err))
+            throw(LibGitError(err))
         end
         name_ptr = api.git_reference_shorthand(branch_ptr[1])
         push!(names, bytestring(name_ptr)) 
@@ -1032,7 +1032,7 @@ function lookup(::Type{GitBranch}, r::Repository,
     elseif err == api.ENOTFOUND
         return nothing
     else
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
 end
 
@@ -1075,7 +1075,7 @@ end
 
 function create_branch(r::Repository, n::String, target::GitCommit;
                        force::Bool=false, sig=nothing, logmsg=nothing)
-    id = oid(target)
+    id = Oid(target)
     return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
 end
 
@@ -1124,7 +1124,7 @@ Base.start(b::BranchIterator) = begin
     if ret == api.ITEROVER
         return nothing
     elseif ret != api.GIT_OK
-        throw(GitError(ret))
+        throw(LibGitError(ret))
     end
     @check_null branch_ptr
     return GitBranch(branch_ptr[1])
@@ -1142,7 +1142,7 @@ Base.next(b::BranchIterator, state) = begin
     if ret == api.ITEROVER
         return (state, nothing)
     elseif ret != api.GIT_OK
-        throw(GitError(ret))
+        throw(LibGitError(ret))
     end
     @check_null branch_ptr
     return (state, GitBranch(branch_ptr[1]))
@@ -1431,7 +1431,7 @@ function checkout_tree!(r::Repository, tree::Treeish, opts=nothing)
                 r.ptr, tree.ptr, &gopts)
     #TODO: memory leak with option strings
     if err != api.GIT_OK
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
     return r 
 end
@@ -1469,13 +1469,13 @@ function checkout!(r::Repository, target, opts={})
     if branch != nothing
         checkout_tree!(r, tip(branch), opts)
         if isremote(branch)
-            create_ref(r, "HEAD", oid(tip(branch)), force=true)
+            create_ref(r, "HEAD", Oid(tip(branch)), force=true)
         else
             create_ref(r, "HEAD", canonical_name(branch), force=true)
         end
     else
         commit = lookup_commit(r, rev_parse_oid(r, target))
-        create_ref(r, "HEAD", oid(commit), force=true)
+        create_ref(r, "HEAD", Oid(commit), force=true)
         checkout_tree!(r, commit, opts)
     end
 end
@@ -1656,7 +1656,7 @@ function repo_clone(url::String, path::String, opts=nothing)
         if haskey(payload, :exception)
             throw(payload[:exception])
         else
-            throw(GitError(err))
+            throw(LibGitError(err))
         end
     end
     @check_null repo_ptr

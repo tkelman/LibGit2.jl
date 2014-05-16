@@ -9,12 +9,12 @@
     begin # test reading a tag
         id = Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
         obj = lookup(test_repo, id)
-        @test id == oid(obj)
+        @test id == Oid(obj)
         @test isa(obj, GitTag)
         @test message(obj) == "test tag message\n"
         @test name(obj) == "v1.0"
         @test target_id(obj) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-        @test target_id(obj) == oid(target(obj))
+        @test target_id(obj) == Oid(target(obj))
         @test isa(target(obj), GitCommit)
         c = tagger(obj)
         @test name(c) == "Scott Chacon"
@@ -25,7 +25,7 @@
     begin # test reading the oid of a tag
         id = Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
         obj = lookup(test_repo, id)
-        @test (target(obj) |> oid) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+        @test Oid(target(obj)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     end
 end
 
@@ -40,7 +40,7 @@ end
    t = lookup(test_repo, tid)
    @test isa(t, GitTag)
    @test target_id(t) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644") 
-   @test target_id(t) == oid(target(t))
+   @test target_id(t) == Oid(target(t))
    @test message(t) == "test tag message\n"
    @test name(tagger(t)) == "Julia"
    @test email(tagger(t)) == "julia@julia.com"

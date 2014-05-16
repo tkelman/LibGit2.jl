@@ -87,9 +87,9 @@ end
 
 function write_tree!(i::GitIndex)
     @assert i.ptr != C_NULL
-    oid = Oid()
-    @check api.git_index_write_tree(oid.oid, i.ptr)
-    return oid
+    id = Oid()
+    @check api.git_index_write_tree(id.oid, i.ptr)
+    return id
 end
 
 type IndexEntry
@@ -107,7 +107,7 @@ type IndexEntry
     stage::Int
 end
 
-oid(entry::IndexEntry) = entry.oid
+Oid(entry::IndexEntry) = entry.oid
 
 function api.GitIndexEntry(idx::IndexEntry)
     flags = uint16(0x0)
@@ -171,9 +171,9 @@ function IndexEntry(ptr::Ptr{api.GitIndexEntry})
     #TODO: refactor 
     arr = Array(Uint8, api.OID_RAWSZ)
     @get_oid_fieldnames(arr, gentry, oid)
-    oid = Oid(arr)
+    id = Oid(arr)
 
-    return IndexEntry(path, oid, ctime, mtime, file_size,
+    return IndexEntry(path, id, ctime, mtime, file_size,
                       dev, ino, mode, uid, gid, valid, stage)
 end
 

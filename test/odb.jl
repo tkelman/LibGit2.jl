@@ -23,7 +23,7 @@ try
     close(stream)
 
     eid = Oid("30f51a3fba5274d53522d0f19748456974647b4f")
-    @test eid == oid(stream)
+    @test eid == Oid(stream)
 
 catch err
     rethrow(err)

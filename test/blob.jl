@@ -18,7 +18,7 @@ end
         @test sizeof(b) == 9 
         @test bytestring(b) == "new file\n"
         @test isa(b, GitBlob)
-        @test oid(b) == id
+        @test Oid(b) == id
         @test text(b) == "new file\n"
     end
 
@@ -142,8 +142,8 @@ end
     t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     t2 = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
 
-    b = lookup(test_repo, oid(t1["readme.txt"]))
-    o = lookup(test_repo, oid(t2["readme.txt"]))
+    b = lookup(test_repo, Oid(t1["readme.txt"]))
+    o = lookup(test_repo, Oid(t2["readme.txt"]))
     p = diff(test_repo, b, o)
     
     @test delta(p).status == :modified
@@ -176,7 +176,7 @@ end
 # test_diff_nil
 @sandboxed_test "diff" begin
     t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
-    b  = lookup(test_repo, oid(t1["readme.txt"]))
+    b  = lookup(test_repo, Oid(t1["readme.txt"]))
     p  = diff(test_repo, b, nothing)
     
     @test delta(p).status == :deleted 
@@ -198,8 +198,8 @@ end
     t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     t2 = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
 
-    b = lookup(test_repo, oid(t1["readme.txt"]))
-    o = lookup(test_repo, oid(t2["readme.txt"]))
+    b = lookup(test_repo, Oid(t1["readme.txt"]))
+    o = lookup(test_repo, Oid(t2["readme.txt"]))
     p = diff(test_repo, b, o, {:old_path => "old_readme.txt", :new_path => "new_readme.txt"})
  
     @test "old_readme.txt" == delta(p).old_file.path

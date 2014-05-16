@@ -153,11 +153,8 @@ RemoteHead(ghead::api.GitRemoteHead) = begin
     oid_arr = Array(Uint8, api.OID_RAWSZ)
     @get_oid_fieldnames(oid_arr, ghead, oid)
     id = Oid(oid_arr)
-    
-    loid_arr = Array(Uint8, api.OID_RAWSZ)
-    @get_oid_fieldnames(loid_arr, ghead, loid)
-    lid = Oid(loid_arr)
-    
+    @get_oid_fieldnames(oid_arr, ghead, loid)
+    lid = Oid(oid_arr)
     return RemoteHead(bool(ghead.islocal),
                       id,
                       iszero(lid)? nothing : lid,

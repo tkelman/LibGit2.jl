@@ -1,12 +1,12 @@
 
-Base.(:(==))(o1::GitObject, o2::GitObject) = isequal(oid(o1), oid(o2))
-Base.isequal(o1::GitObject, o2::GitObject) = isequal(oid(o1), oid(o2))
-Base.isless(o1::GitObject, o2::GitObject)  = isless(oid(o1), oid(o2))
+Base.(:(==))(o1::GitObject, o2::GitObject) = isequal(Oid(o1), Oid(o2))
+Base.isequal(o1::GitObject, o2::GitObject) = isequal(Oid(o1), Oid(o2))
+Base.isless(o1::GitObject, o2::GitObject)  = isless(Oid(o1), Oid(o2))
 
 Base.hash(o::GitObject) = hash(hex(o))
-Base.cmp(o1::GitObject, o2::GitObject) = cmp(oid(o1), oid(o2))
+Base.cmp(o1::GitObject, o2::GitObject) = cmp(Oid(o1), Oid(o2))
 
-function oid(o::GitObject)
+Oid(o::GitObject) = begin
     @assert o.ptr != C_NULL
     oid_ptr::Ptr{Uint8} = api.git_object_id(o.ptr)
     @assert oid_ptr != C_NULL

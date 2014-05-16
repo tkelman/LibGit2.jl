@@ -25,7 +25,7 @@ try
     tree = tree1
     @test isa(tree, GitTree)
     @test tree.ptr != C_NULL
-    @test isa(oid(tree), Oid)
+    @test isa(Oid(tree), Oid)
     @test isa(hex(tree), ASCIIString)
 catch err
     rethrow(err)
@@ -86,7 +86,7 @@ end
 @with_test_index begin
     entry = test_index[1]
     @test "README" == entry.path 
-    @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == entry.oid
+    @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == Oid(entry)
     @test 1273360380 == int(entry.mtime)
     @test 1273360380 == int(entry.ctime)
     @test 4 == entry.file_size
@@ -101,12 +101,12 @@ end
 
     entry = test_index[2]
     @test "new.txt" == entry.path
-    @test Oid("fa49b077972391ad58037050f2a75f74e3671e92") == entry.oid
+    @test Oid("fa49b077972391ad58037050f2a75f74e3671e92") == Oid(entry)
 end
 
 # test iterate entries
 @with_test_index begin
-    c = sort(collect(test_index), by=x->x.oid)
+    c = sort(collect(test_index), by=x->Oid(x))
     @test join(map(x->x.path, c), ":") == "README:new.txt"
 end
 
@@ -114,7 +114,7 @@ end
 @with_test_index begin
     now = int(time())
     entry = test_index[1]
-    entry.oid = Oid("12ea3153a78002a988bb92f4123e7e831fd1138a")
+    Oid(entry) = Oid("12ea3153a78002a988bb92f4123e7e831fd1138a")
     entry.mtime = now
     entry.ctime = now
     entry.file_size = 1000
@@ -134,7 +134,7 @@ end
 @with_test_index begin
     add!(test_index, new_idx_entry())
     @test length(test_index) == 3
-    c = sort(collect(test_index), by=x->x.oid)
+    c = sort(collect(test_index), by=x->Oid(x))
     @test join(map(x -> x.path, c), ":") == "README:new_path:new.txt"
 end
 
@@ -152,7 +152,7 @@ end
     write!(test_index1)
 
     test_index2 = GitIndex(tmp_path)
-    c = sort(collect(test_index2), by=x->x.oid)
+    c = sort(collect(test_index2), by=x->Oid(x))
     @test join(map(x -> x.path, c), ":") == "README:else.txt:new_path:new.txt"
     @test length(test_index2) == 4
 end
@@ -213,7 +213,7 @@ run(`rm -rf $tmp_path`)
     
     index_tree_id = write_tree!(index)
     index_tree = test_repo[index_tree_id]
-    @test oid(index_tree) == oid(tree)
+    @test Oid(index_tree) == Oid(tree)
 end
 
 # test build tree from index
@@ -307,7 +307,7 @@ end
         update_all!(index, "file.*")
 
         @test index["file.bar"] != nothing 
-        @test test_repo[oid(index["file.bar"])] |> bytestring == "new content for file"
+        @test test_repo[Oid(index["file.bar"])] |> bytestring == "new content for file"
 
         @test index["other.zzz"] == nothing
         @test index["more.zzz"]  == nothing

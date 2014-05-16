@@ -132,9 +132,9 @@ function peel{T}(r::GitReference{T})
         api.git_object_free(obj_ptr[1])
         return nothing
     else
-        oid = Oid(api.git_object_id(obj_ptr[1]))
+        id = Oid(api.git_object_id(obj_ptr[1]))
         api.git_object_free(obj_ptr[1])
-        return oid
+        return id
     end
 end
 

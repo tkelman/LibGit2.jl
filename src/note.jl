@@ -5,13 +5,8 @@ type GitNote
     id::Oid
 end
 
-function message(n::GitNote)
-    return n.msg
-end
-
-function oid(n::GitNote)
-    return n.id
-end
+message(n::GitNote) = n.msg
+Oid(n::GitNote) = n.id
 
 let
     function git_note_message(n_ptr::Ptr{Void})

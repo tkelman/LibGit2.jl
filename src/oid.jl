@@ -1,4 +1,4 @@
-export Oid, oid, raw, iszero
+export Oid, raw, iszero
 
 type Sha1
     sha::ByteString
@@ -47,7 +47,7 @@ Oid(ptr::Ptr{Uint8}) = begin
     return Oid(oid)
 end
 
-oid(id::Oid) = id
+Oid(id::Oid) = id
 raw(id::Oid) = copy(id.oid)
 
 Base.string(id::Oid) = hex(id)

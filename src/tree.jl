@@ -10,8 +10,10 @@ type GitTreeEntry{T<:GitObject}
     owns::Bool
 end
 
-oid(te::GitTreeEntry) = te.oid
+Oid(te::GitTreeEntry)  = te.oid
 name(te::GitTreeEntry) = te.name
+
+Base.isless(te1::GitTreeEntry, te2::GitTreeEntry) = isless(Oid(te1), Oid(te2))
 
 Base.length(t::GitTree) = int(api.git_tree_entrycount(t.ptr))
 Base.filemode(te::GitTreeEntry) = convert(Cint, te.filemode)

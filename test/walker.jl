@@ -3,7 +3,7 @@
         walker = GitRevWalker(test_repo)
         push!(walker, Oid("9fd738e8f7967c078dceed8190330fc8648ee56a"))
         data = collect(walker)
-        ids = sort(data, by=oid)
+        ids = sort(data)
         str = join(map(id -> hex(id)[1:5], ids), ".")
         @test str == "4a202.5b5b0.84960.9fd73"
     end
@@ -13,7 +13,7 @@
         id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
         push!(walker, id)
         walk = collect(walker)
-        @test id == oid(walk[1])
+        @test id == Oid(walk[1])
         @test length(walk) == 1
     end
 
@@ -29,7 +29,7 @@
         id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
         push!(walker, id)
         walk = collect(walker)
-        @test id == oid(walk[1])
+        @test id == Oid(walk[1])
         @test length(walk) == 1 
         reset!(walker)
         walk = collect(walker)
@@ -39,8 +39,7 @@
    begin # test_walk_is_iterable
         walker = GitRevWalker(test_repo)
         push!(walker, Oid("9fd738e8f7967c078dceed8190330fc8648ee56a"))
-        vs = collect(walker)
-        sort!(vs, by=oid)
+        vs = sort(collect(walker))
         str = join(map(a -> hex(a)[1:4], vs), ".")
         @test str == "4a20.5b5b.8496.9fd7"
    end

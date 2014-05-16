@@ -1,5 +1,5 @@
 export Odb, OdbObject, OdbWrite, OdbRead,
-       exists, data, open_wstream, oid, read_header
+       exists, data, open_wstream, read_header
 
 type Odb
     ptr::Ptr{Void}
@@ -88,7 +88,7 @@ end
 
 type OdbWrite <: OdbIO
     ptr::Ptr{Void}
-    id::Oid
+    oid::Oid
 
     function OdbWrite(ptr::Ptr{Void})
         @assert ptr != C_NULL
@@ -102,7 +102,7 @@ type OdbWrite <: OdbIO
     end
 end
 
-oid(os::OdbWrite) = os.id
+Oid(odbw::OdbWrite) = odbw.oid
 
 function open_wstream{T<:GitObject}(::Type{T}, odb::Odb, len::Int)
     @assert odb.ptr != C_NULL
@@ -137,7 +137,7 @@ end
 
 Base.close(os::OdbWrite) = begin
     @assert os.ptr != C_NULL
-    @check api.git_odb_stream_finalize_write(os.id.oid, os.ptr)
+    @check api.git_odb_stream_finalize_write(Oid(os).oid, os.ptr)
     return nothing
 end
 

@@ -4,7 +4,7 @@
         obj = test_repo[id]
         n = notes(obj)
         @test message(n) == "note text\n" 
-        @test oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
+        @test Oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
     end
 
     begin # test read note for object from ref
@@ -12,7 +12,7 @@
         obj = test_repo[id]
         n = notes(obj, "refs/notes/commits")
         @test message(n) == "note text\n" 
-        @test oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
+        @test Oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
     end
 
     begin # test_object_without_note
@@ -30,7 +30,7 @@
     begin # iterate over notes
         for (note_blob, ann_obj) in iter_notes(test_repo, "refs/notes/commits")
             @test content(note_blob) == "note text\n"
-            @test (ann_obj |> oid) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+            @test Oid(ann_obj) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
         end
     end
 
@@ -55,12 +55,12 @@ end
     @test note_id == Oid("38c3a690c474d8dcdb13088205a464a60312eec4")
     # note is actually a blob
     blob = test_repo[note_id]
-    @test oid(blob) == note_id
+    @test Oid(blob) == note_id
     @test bytestring(blob) == msg
     @test isa(blob, GitBlob) 
 
     n = notes(obj, "refs/notes/test")
-    @test oid(n) == note_id
+    @test Oid(n) == note_id
     @test message(n) == msg
 end
 
