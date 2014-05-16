@@ -1,22 +1,22 @@
 export LibGitError
 
 const git_error_code = (Int => Symbol)[
-     00 => :OK,
-    -01 => :Error, 
-    -03 => :NotFound,
-    -04 => :Exists,
-    -05 => :Ambiguous,
-    -06 => :Bufs,
-    -07 => :User,
-    -08 => :BareRepo,
-    -09 => :UnbornBranch,
-    -10 => :Unmerged,
-    -11 => :NonFastForward,
-    -12 => :InvalidSpec,
-    -13 => :MergeConflict,
-    -14 => :Locked,
-    -30 => :PassThrough,
-    -31 => :Iterover
+     00 => :OK,             # no error
+    -01 => :Error,          # generic error 
+    -03 => :NotFound,       # requested object could not be found 
+    -04 => :Exists,         # object exits preventing op
+    -05 => :Ambiguous,      # more than one object matches
+    -06 => :Bufs,           # output buffer too small to hold data
+    -07 => :User,           # user callback generated error
+    -08 => :BareRepo,       # operation not allowed on bare repo
+    -09 => :UnbornBranch,   # HEAD refers to branch with 0 commits
+    -10 => :Unmerged,       # merge in progress prevented op
+    -11 => :NonFastForward, # ref not fast-forwardable
+    -12 => :InvalidSpec,    # name / ref not in valid format
+    -13 => :MergeConflict,  # merge conflict prevented op
+    -14 => :Locked,         # lock file prevented op
+    -15 => :Modified,       # ref value does not match expected
+    -31 => :Iterover        # signals end of iteration
 ]
 
 const git_error_class = (Int => Symbol)[
@@ -35,7 +35,7 @@ const git_error_class = (Int => Symbol)[
     12 => :Net,
     13 => :Tag,
     14 => :Tree,
-    15 => :Index,
+    15 => :Indexer,
     16 => :SSL,
     17 => :Submodule,
     18 => :Thread,
@@ -46,6 +46,8 @@ const git_error_class = (Int => Symbol)[
     23 => :SSH,
     24 => :Filter,
     25 => :Revert,
+    26 => :Callback,
+    27 => :CherryPick
 ]
 
 immutable ErrorStruct
