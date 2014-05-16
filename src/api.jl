@@ -291,10 +291,6 @@ free!(sa::GitStrArray) = begin
     end
 end
 
-# ----- libgit threads -----
-@libgit(git_threads_init, Cint, ())
-@libgit(git_threads_shutdown, Cint, ())
-
 # ----- libgit buffer -----
 type GitBuffer
     ptr::Ptr{Cchar}
