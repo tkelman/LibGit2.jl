@@ -37,7 +37,6 @@ function set_symbolic_target(r::GitReference, target::String;
                        ref_ptr, r.ptr, btarget, 
                        &gsig, bmsg)
     end
-    @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
@@ -61,7 +60,6 @@ function set_target(r::GitReference, id::Oid;
                       ref_ptr, r.ptr, id.oid,
                       &gsig, bmsg)
     end
-    @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
@@ -69,7 +67,6 @@ function resolve(r::GitReference)
     @assert r.ptr != C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
     @check api.git_reference_resolve(ref_ptr, r.ptr)
-    @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
@@ -92,7 +89,6 @@ function rename(r::GitReference, name::String;
                       Ptr{api.GitSignature}, Ptr{Cchar}),
                       ref_ptr, r.ptr, bname, force? 1:0, C_NULL, bmsg)
     end
-    @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
@@ -184,7 +180,6 @@ function reflog(r::GitReference)
     @assert r.ptr != C_NULL
     reflog_ptr = Array(Ptr{Void}, 1)
     @check api.git_reflog_read(reflog_ptr, api.git_reference_owner(r.ptr), name(r))
-    @check_null reflog_ptr
     refcount = api.git_reflog_entrycount(reflog_ptr[1])
     entries = {}
     for i in 0:refcount-1
@@ -218,7 +213,6 @@ function log!(r::GitReference, msg=nothing, committer=nothing)
     if committer == nothing
         sig_ptr = Array(Ptr{api.GitSignature}, 1)
         @check api.git_signature_default(sig_ptr, repo_ptr)
-        @check_null sig_ptr 
         gsig = unsafe_load(sig_ptr[1])
     else
         gsig = git_signature(committer)

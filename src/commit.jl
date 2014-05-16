@@ -19,7 +19,6 @@ function GitTree(c::GitCommit)
     @assert c.ptr != C_NULL
     tree_ptr = Array(Ptr{Void}, 1)
     @check api.git_commit_tree(tree_ptr, c.ptr)
-    @check_null tree_ptr
     return GitTree(tree_ptr[1])
 end
 
@@ -67,7 +66,6 @@ function parent(c::GitCommit, n::Integer)
     n >= 0 || throw(ArgumentError("n must be greater than or equal to 0"))
     commit_ptr = Array(Ptr{Void}, 1)
     @check api.git_commit_parent(commit_ptr, c.ptr, n)
-    @check_null commit_ptr
     return GitCommit(commit_ptr[1])
 end
 

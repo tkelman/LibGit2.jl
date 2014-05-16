@@ -348,7 +348,6 @@ Base.diff(repo::Repository,
                  left  != nothing ? left.ptr : C_NULL, 
                  right != nothing ? right.ptr : C_NULL,
                  &gopts)
-    @check_null diff_ptr
     return GitDiff(diff_ptr[1])
 end
 
@@ -368,7 +367,6 @@ Base.diff(repo::Repository, left::GitTree, right::GitIndex, opts=nothing) = begi
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
                   Ptr{Void}, Ptr{api.GitDiffOptions}),
                   diff_ptr, repo.ptr, left.ptr, right.ptr, &gopts)
-    @check_null diff_ptr
     return GitDiff(diff_ptr[1])
 end
 
@@ -383,7 +381,6 @@ Base.diff(repo::Repository, idx::GitIndex, other::Nothing, opts=nothing) = begin
     @check ccall((:git_diff_index_to_workdir, api.libgit2), Cint,
                   (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffOptions}),
                   diff_ptr, repo.ptr, idx.ptr, &gopts)
-    @check_null diff_ptr
     return GitDiff(diff_ptr[1])
 end
 
@@ -398,7 +395,6 @@ Base.diff(repo::Repository, idx::GitIndex, other::GitTree, opts=nothing) = begin
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
                   Ptr{Void}, Ptr{api.GitDiffOptions}),
                   diff_ptr, repo.ptr, other.ptr, idx.ptr, &gopts)
-   @check_null diff_ptr
    return GitDiff(diff_ptr[1])
 end
 
@@ -423,7 +419,6 @@ function diff_workdir(repo::Repository, left::GitTree, opts=nothing)
     @check ccall((:git_diff_tree_to_workdir, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffOptions}),
                  diff_ptr, repo.ptr, left.ptr, &gopts)
-    @check_null diff_ptr
     return GitDiff(diff_ptr[1])
 end
 

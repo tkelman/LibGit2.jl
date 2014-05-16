@@ -34,7 +34,6 @@ Base.diff(repo::Repository, blob::GitBlob, other::Nothing, opts=nothing) = begin
     @check ccall((:git_patch_from_blobs, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Cchar}, Ptr{api.GitDiffOptions}),
                  patch_ptr, blob.ptr, old_path_ptr, C_NULL, new_path_ptr, &gopts)
-    @check_null patch_ptr
     return GitPatch(patch_ptr[1])
 end
 
@@ -54,7 +53,6 @@ Base.diff(repo::Repository, blob::GitBlob, other::GitBlob, opts=nothing) = begin
     @check ccall((:git_patch_from_blobs, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Cchar}, Ptr{api.GitDiffOptions}),
                  patch_ptr, blob.ptr, old_path_ptr, other.ptr, new_path_ptr, &gopts)
-    @check_null patch_ptr
     return GitPatch(patch_ptr[1])
 end
 
@@ -76,7 +74,6 @@ Base.diff(repo::Repository, blob::GitBlob, other::String, opts= nothing) = begin
                   Ptr{Cchar}, Csize_t, Ptr{Cchar}, Ptr{api.GitDiffOptions}),
                  patch_ptr, blob.ptr, old_path_ptr, 
                  buffer, length(buffer), new_path_ptr, &gopts)
-    @check_null patch_ptr
     return GitPatch(patch_ptr[1])
 end
 
@@ -142,7 +139,6 @@ function hunks(p::GitPatch)
         if bool(err)
             break
         end
-        @check_null hunk_ptr
         push!(hs, DiffHunk(p, hunk_ptr[1], i, lines_ptr[1]))
     end
     if err != api.GIT_OK
@@ -209,7 +205,6 @@ function lines(h::DiffHunk)
         if bool(err)
             break
         end
-        @check_null line_ptr
         push!(ls, DiffLine(h, line_ptr[1]))
     end
     if err != api.GIT_OK

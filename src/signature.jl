@@ -19,7 +19,6 @@ function Signature(name::String, email::String, time::Int64, offset::Int)
     bemail = bytestring(email)
     sig_ptr = Array(Ptr{api.GitSignature}, 1)
     @check api.git_signature_new(sig_ptr, bname, bemail, time, offset)
-    @check_null sig_ptr
     gsig = unsafe_load(sig_ptr[1])
     sig = Signature(bytestring(gsig.name),
                     bytestring(gsig.email),
@@ -35,7 +34,6 @@ function Signature(name::String, email::String)
     bemail = bytestring(email)
     sig_ptr = Array(Ptr{api.GitSignature}, 1)
     @check api.git_signature_now(sig_ptr, bname, bemail)
-    @check_null sig_ptr
     gsig = unsafe_load(sig_ptr[1])
     sig = Signature(bytestring(gsig.name),
                     bytestring(gsig.email),
@@ -64,7 +62,6 @@ git_signature_ptr(sig::Signature) = begin
     sig_ptr = Array(Ptr{api.GitSignature}, 1)
     @check api.git_signature_new(sig_ptr, sig.name, sig.email, 
                                  sig.time, sig.time_offset)
-    @check_null sig_ptr
     return sig_ptr[1]
 end
 

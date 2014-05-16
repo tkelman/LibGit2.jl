@@ -24,7 +24,6 @@ function target(t::GitTag)
     @assert t.ptr != C_NULL
     target_ptr = Array(Ptr{Void}, 1)
     @check api.git_tag_target(target_ptr, t.ptr)
-    @check_null target_ptr
     return gitobj_from_ptr(target_ptr[1])
 end
 

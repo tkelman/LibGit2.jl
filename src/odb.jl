@@ -111,7 +111,6 @@ function open_wstream{T<:GitObject}(::Type{T}, odb::Odb, len::Int)
     clen = convert(Csize_t, len)
     stream_ptr = Array(Ptr{Void}, 1)
     @check api.git_odb_open_wstream(stream_ptr, odb.ptr, clen, gtype)
-    @check_null stream_ptr
     return OdbWrite(stream_ptr[1])
 end
 

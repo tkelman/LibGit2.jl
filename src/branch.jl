@@ -35,7 +35,6 @@ function resolve(b::GitBranch)
     @assert b.ptr != C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
     @check api.git_reference_resolve(ref_ptr, b.ptr)
-    @check_null ref_ptr
     return GitReference(ref_ptr[1])
 end
 
@@ -84,7 +83,6 @@ function move(b::GitBranch, new_name::String;
                        Ptr{api.GitSignature}, Ptr{Cchar}),
                        branch_ptr, b.ptr, bname, force? 1:0, C_NULL, bmsg)
     end
-    @check_null branch_ptr
     return GitBranch(branch_ptr[1])
 end
 
@@ -153,7 +151,6 @@ function set_upstream!(b::GitBranch,
     #TODO: memory leak?
     name_ptr = Array(Ptr{Cchar}, 1)
     @check api.git_branch_name(name_ptr, target.ptr)
-    @check_null name_ptr
     @check api.git_branch_set_upstream(b.ptr, name_ptr[1])
     return b
 end 

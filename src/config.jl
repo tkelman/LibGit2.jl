@@ -17,7 +17,6 @@ GitConfig(path::String) = begin
     bpath = bytestring(path)
     cfg_ptr = Array(Ptr{Void}, 1)
     @check api.git_config_open_ondisk(cfg_ptr, bpath)
-    @check_null cfg_ptr
     return GitConfig(cfg_ptr[1])
 end
 
@@ -105,7 +104,6 @@ end
 function global_config()
     cfg_ptr = Array(Ptr{Void}, 1)
     @check api.git_config_open_default(cfg_ptr)
-    @check_null cfg_ptr
     return GitConfig(cfg_ptr[1])
 end
 
