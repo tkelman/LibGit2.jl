@@ -64,7 +64,8 @@ end
 begin
     dir = mktempdir()
     gurl, gusername, gallowed_types = nothing, nothing, nothing
-    @test_throws repo_clone("github.com:libgit2/TestGitRepository", dir, {
+    #TODO: better error
+    @test_throws ErrorException repo_clone("github.com:libgit2/TestGitRepository", dir, {
           :credentials => (args...) -> begin
             gurl, gusername, gallowed_types = args
             return nothing
@@ -81,7 +82,8 @@ end
 begin
     dir = mktempdir()
     gurl, gusername, gallowed_types = nothing, nothing, nothing
-    @test_throws repo_clone("git@github.com:libgit2/TestGitRepository", dir, {
+    #TODO: better error
+    @test_throws ErrorException repo_clone("git@github.com:libgit2/TestGitRepository", dir, {
           :credentials => (args...) -> begin
             gurl, gusername, gallowed_types = args
             return nothing
