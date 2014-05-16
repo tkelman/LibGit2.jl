@@ -1,10 +1,10 @@
 @with_repo_access begin
     # blob
-    @test_throws lookup_tag(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_tag(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
     # commit
-    @test_throws lookup_tag(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    # tag
-    @test_throws lookup_tag(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_tag(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    # tree
+    @test_throws LibGitError{:Invalid,:NotFound} lookup_tag(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
 
     begin # test reading a tag
         id = Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
@@ -65,11 +65,12 @@ end
 # test invalid message type
 @with_tmp_repo_access begin
     sig = Signature("Julia", "julia@julia.com")
-    @test_throws tag!(test_repo, 
-                      name="tag", 
-                      message=:error,
-                      target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"),
-                      tagger=sig)
+    @test_throws TypeError tag!(
+                              test_repo, 
+                              name="tag", 
+                              message=:error,
+                              target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"),
+                              tagger=sig)
 end
 
 # test writing light tags

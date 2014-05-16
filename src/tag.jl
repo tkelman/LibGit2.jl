@@ -1,4 +1,4 @@
-export git_otype, message, target_id, target, tagger
+export git_otype, message, target_id, target, tagger, lookup_tag
 
 function name(t::GitTag)
     @assert t.ptr != C_NULL

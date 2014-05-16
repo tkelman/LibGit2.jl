@@ -92,4 +92,3 @@ macro check_null(boxed_ptr)
         end
     end
 end
-

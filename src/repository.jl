@@ -422,6 +422,7 @@ function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
 end
 
 lookup_remote(r::Repository, remote_name::String) = lookup(GitRemote, r, remote_name)
+lookup_tag(r::Repository, id::Oid) = lookup(GitTag, r, id)
 
 function tags(r::Repository, glob=nothing)
     @assert r.ptr != C_NULL
