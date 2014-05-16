@@ -67,7 +67,7 @@ end
    end
 
    begin # test_fail_to_lookup_inexistant_object 
-       @test_throws test_repo[Oid("a496071c1b46c854b31185ea97743be6a8774479")]
+       @test_throws LibGitError{:Odb,:NotFound} test_repo[Oid("a496071c1b46c854b31185ea97743be6a8774479")]
    end
 
    begin # test_lookup_object
