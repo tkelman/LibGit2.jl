@@ -62,8 +62,8 @@ end
 # -----------------------------------------
 # test fails to open repos that don't exist
 @sandboxed_test "testrepo.git" begin
-    @test_throws Repository("fakepath/123")
-    @test_throws Repository("test")
+    @test_throws LibGitError{:OS,:NotFound} Repository("fakepath/123")
+    @test_throws LibGitError{:OS,:NotFound} Repository("test")
 end
    
 # can check if objects exist 
@@ -95,12 +95,12 @@ end
 
 # test check reads fail on missing objects
 @sandboxed_test "testrepo.git" begin
-    @test_throws read(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
+    @test_throws LibGitError{:Odb,:NotFound} read(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
 # test check read headers fail on missing objects
 @sandboxed_test "testrepo.git" begin
-    @test_throws read_header(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
+    @test_throws LibGitError{:Odb,:NotFound} read_header(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
 # test walking with block
@@ -181,7 +181,7 @@ end
 
 # test_set_head_invalid
 @sandboxed_test "testrepo.git" begin
-    @test_throws set_head!(test_repo, "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    @test_throws LibGitError{:Ref,:InvalidSpec} set_head!(test_repo, "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
 end
 
 # test_access_a_file
@@ -218,7 +218,7 @@ end
 
 # test_alternates_with_invalid_path_type
 @sandboxed_test "testrepo.git" begin
-    @test_throws Repository(repo_path(test_repo), alternates=["error"])
+    @test_throws ArgumentError Repository(repo_path(test_repo), alternates=["error"])
 end
 
 # test_find_merge_base_between_oids
@@ -375,12 +375,12 @@ end
 
 # test discover false
 @discover_test begin
-    @test_throws repo_discover(tmpdir)
+    @test_throws LibGitError{:Repo,:NotFound} repo_discover(tmpdir)
 end
 
 # test discover nested false
 @discover_test begin
-    @test_throws repo_discover(joinpath(tmpdir, "foo"))
+    @test_throws LibGitError{:Repo,:NotFound} repo_discover(joinpath(tmpdir, "foo"))
 end
 
 # test discover true
@@ -588,8 +588,8 @@ end
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-
-    @test_throws push!(test_repo, "origin", ["refs/heads/master"])
+    #TODO: better error message
+    @test_throws ErrorException push!(test_repo, "origin", ["refs/heads/master"])
 end
 
 # test_push_to_remote_instance
@@ -613,7 +613,8 @@ end
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    @test_throws push!(test_repo, "origin",
+        #TODO: better error messages
+    @test_throws ErrorException push!(test_repo, "origin",
                        ["refs/heads/unit_test:refs/heads/master"])
     @test (target(lookup_ref(remote_repo, "refs/heads/master"))
                 == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
@@ -712,7 +713,7 @@ end
 
 #test_checkout_tree_raises_with_bare_repo
 @sandboxed_checkout_test begin 
-    @test_throws checkout_tree!(test_bare, "HEAD", {:strategy => :safe_create})
+    @test_throws LibGitError{:Repo,:BareRepo} checkout_tree!(test_bare, "HEAD", {:strategy => :safe_create})
 end
 
 #test checkout tree works with bare repo and target directory
