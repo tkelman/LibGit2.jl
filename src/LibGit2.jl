@@ -1,19 +1,13 @@
 module LibGit2
 
-include("api.jl")
+type LibGitThreadsHandle
 
-__threads_handle = nothing
-
-type __LibGitThreadsHandle
-    inited::Bool
-
-    function __LibGitThreadsHandle()
-        api.git_threads_init()
-        handle = new(true)
+    function LibGitThreadsHandle()
+        handle = new()
         finalizer(handle, h -> begin
-            if h.inited
-                api.git_threads_shutdown()
-                h.inited = false
+            err = ccall((:git_threads_shutdown, @unix? :libgit2 : :git2), Cint, ())
+            if err != zero(Cint)
+                error("error uninitalizing LibGit2 library")
             end
         end)
         return handle
@@ -21,12 +15,15 @@ type __LibGitThreadsHandle
 end
 
 function __init__()
-    global __threads_handle
-    if __threads_handle == nothing
-	    __threads_handle = __LibGitThreadsHandle()
+    err = ccall((:git_threads_init, @unix? :libgit2 : :git2), Cint, ())
+    if err != zero(Cint)
+        error("could not initialize LibGit2 library")
     end
 end
 
+__threads_handle = LibGitThreadsHandle()
+
+include("api.jl")
 include("macros.jl")
 include("error.jl")
 include("oid.jl")
