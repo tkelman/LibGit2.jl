@@ -21,7 +21,7 @@ macro libgit(func, ret_type, arg_types)
    end
 end
 
-cint(i) = convert(Cint, i)
+cint(i)  = convert(Cint, i)
 cuint(i) = convert(Cuint, i)
 
 # ----- libgit constants -----
