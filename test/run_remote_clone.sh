@@ -18,4 +18,4 @@ export GITTEST_REMOTE_SSH_KEY="$HOME/.ssh/id_rsa"
 export GITTEST_REMOTE_SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
 export GITTEST_REMOTE_SSH_PASSPHRASE=""
 
-julia --code-coverage remote_clone.jl
+julia remote_clone.jl
