@@ -1,6 +1,48 @@
 export Repository, GitObject, GitAny, GitBlob, GitCommit, GitTag,
        GitTree, GitReference, GitBranch, GitRemote, Sym
 
+typealias GitOffT Int64
+typealias GitTimeT Int64
+
+# time in a signature
+
+immutable TimeStruct
+    time::GitTimeT # time in seconds from epoch
+    offset::Cint   # timezone offset in minutes
+end
+
+TimeStruct() = TimeStruct(zero(GitTimeT),
+                          zero(Cint))
+
+# an action signature (committers, taggers, etc)
+
+immutable SignatureStruct
+    name::Ptr{Cchar}  # full name of the author
+    email::Ptr{Cchar} # email of the author
+    when::GitTimeT    # time when the action happened
+end
+
+SignatureStruct() = SignatureStruct(zero(Ptr{Cchar}),
+                                    zero(Ptr{Cchar}),
+                                    zero(GitTimeT))
+
+immutable TransferProgressStruct
+    total_objects::Cuint
+    indexed_objects::Cuint
+    received_objects::Cuint
+    local_objects::Cuint
+    total_deltas::Cuint
+    indexed_deltas::Cuint
+    received_bytes::Csize_t
+end
+
+TransferProgressStruct() = TransferProgressStruct(zero(Cuint),
+                                                  zero(Cuint),
+                                                  zero(Cuint),
+                                                  zero(Cuint),
+                                                  zero(Cuint),
+                                                  zero(Cuint),
+                                                  zero(Csize_t))
 # --------------
 # Git Repository
 # --------------
