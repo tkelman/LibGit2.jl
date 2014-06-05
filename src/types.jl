@@ -69,6 +69,7 @@ free!(r::GitRepo) = begin
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, r::GitRepo) = r.ptr
 Base.pointer(r::GitRepo) = r.ptr
 
 # -------------

@@ -85,7 +85,7 @@ function blob_from_buffer(r::GitRepo, bufptr::Ptr{Uint8}, len::Int)
     id = Oid()
     @check ccall((:git_blob_create_frombuffer, api.libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Csize_t),
-                 &id, pointer(r), bufptr, len)
+                 &id, r, bufptr, len)
     return id
 end
 
@@ -97,7 +97,7 @@ function blob_from_workdir(r::GitRepo, path::String)
     id = Oid()
     @check ccall((:git_blob_create_fromworkdir, api.libgit2), Cint,
                   (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
-                  &id, pointer(r), bytestring(path))
+                  &id, r, bytestring(path))
     return id
 end
 
@@ -105,7 +105,7 @@ function blob_from_disk(r::GitRepo, path::String)
     id = Oid()
     @check ccall((:git_blob_create_fromdisk, api.libgit2), Cint,
                   (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
-                  &id, pointer(r), bytestring(path))
+                  &id, r, bytestring(path))
     return id
 end
 
@@ -140,7 +140,7 @@ function blob_from_stream(r::GitRepo, io::IO, hintpath=nothing)
     payload = {io, nothing}
     err = ccall((:git_blob_create_fromchunks, api.libgit2), Cint,
                 (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
-                &id, pointer(r), pathptr, c_cb_blob_get_chunk, &payload)
+                &id, r, pathptr, c_cb_blob_get_chunk, &payload)
     if isa(payload[2], Exception)
         throw(payload[2])
     end
