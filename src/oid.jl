@@ -90,7 +90,7 @@ iszero(id::Oid) = begin
 end
 
 immutable Sha1
-    sha1::ASCIIString 
+    data::ASCIIString 
     
     Sha1(s::String) = begin
         bstr = bytestring(s)::ASCIIString
@@ -109,3 +109,5 @@ end
 macro sha1_str(s)
     Sha1(s)
 end
+
+Oid(sha::Sha1) = Oid(hex2bytes(sha.data))
