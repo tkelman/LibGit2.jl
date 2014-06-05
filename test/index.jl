@@ -39,7 +39,7 @@ end
 
 function new_idx_entry()
     now = time()
-    return IndexEntry("new_path",
+    return GitIndexEntry("new_path",
                       Oid("d385f264afb75a56a5bec74243be9b367ba4ca08"),
                       now,
                       now,
@@ -126,7 +126,7 @@ end
     entry.stage = 3
     add!(test_index, entry)
     newentry = test_index[entry.path, 3]
-    @test isa(newentry, IndexEntry)
+    @test isa(newentry, GitIndexEntry)
     #TODO: rounding in times causes this test to fail
     #@test newentry == entry
 end
