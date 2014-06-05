@@ -126,7 +126,7 @@ IndexEntryStruct() = IndexEntryStruct(IndexTimeStruct(),
                                       zero(Cushort),  
                                       zero(Cushort),  
                                       zero(Ptr{Uint8})) 
-
+#TODO: get rid of this
 typealias IndexEntry GitIndexEntry
 
 Oid(entry::IndexEntry) = entry.id
