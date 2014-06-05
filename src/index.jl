@@ -297,6 +297,7 @@ update_all!(idx::GitIndex) = update_all!(idx, String[""])
 
 function remove_all!(idx::GitIndex, pathspecs::Vector{String})
     exptr  = Cint[0]
+    # need to hold
     strs   = [bytestring(s) for s in pathspecs]
     ptrs   = [pointer(s) for s in strs]
     strarr = StrArrayStruct(ptrs, length(strs))

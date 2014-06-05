@@ -38,6 +38,9 @@ TransferProgressStruct() = TransferProgressStruct(zero(Cuint),
                                                   zero(Cuint),
                                                   zero(Cuint),
                                                   zero(Csize_t))
+
+# pointers to string data must not be valid references
+# for the entire lifetime of the ccall
 type StrArrayStruct
    strings::Ptr{Ptr{Uint8}}
    count::Csize_t
