@@ -1,74 +1,111 @@
-export Oid, raw, iszero
+export Sha1, Oid, raw, iszero, @sha1_str
 
-type Sha1
-    sha::ByteString
-    
-    Sha1(s::String) = begin
-        if length(s) != api.OID_HEXSZ
-            throw(ArgumentError("invalid sha1 string length"))
-        end
-        return new(bytestring(s))
-    end
+const OID_RAWSZ = 20
+const OID_HEXSZ = OID_RAWSZ * 2
+const OID_MINPREFIXLEN = 4
+
+# immutable Oid
+#   id1::Uint8
+#   id2::Uint8
+#   ...
+# end 
+
+@eval begin
+    $(Expr(:type, false, :Oid,
+        Expr(:block, 
+            [Expr(:(::), symbol("id$i"), :Uint8) for i=1:OID_RAWSZ]...)))
 end
 
-macro sha1_str(s)
-    Sha1(s)
+Oid() = @eval begin
+    $(Expr(:call, :Oid, [:(zero(Uint8)) for _=1:OID_RAWSZ]...))
 end
 
-macro sha_str(s)
-    Sha1(s)
-end
-
-immutable Oid
-    oid::Array{Uint8,1}
-
-    Oid(b::Array{Uint8, 1}) = begin
-        if length(b) != api.OID_RAWSZ
-            throw(ArgumentError("invalid raw buffer size"))
-        end
-        return new(b)
-    end
-end
-
-Oid() = Oid(zeros(Uint8, api.OID_RAWSZ))
-
-Oid(id::String) = begin
-    if length(id) != api.OID_HEXSZ
-        throw(ArgumentError("invalid hex size"))
-    end
-    bytes = hex2bytes(bytestring(id))
-    return Oid(bytes)
-end
+_addrof{T}(obj::T) = ccall(:jl_value_ptr, Ptr{T}, (Ptr{Any},), &obj)
 
 Oid(ptr::Ptr{Uint8}) = begin
-    @assert ptr != C_NULL
-    oid = Array(Uint8, api.OID_RAWSZ)
-    unsafe_copy!(pointer(oid), ptr, api.OID_RAWSZ)
-    return Oid(oid)
+    if ptr == C_NULL
+        throw(ArgumentError("NULL pointer passed to Oid() constructor"))
+    end
+    oid = Oid()
+    ccall((:git_oid_fromraw, api.libgit2), Void, (Ptr{Oid}, Ptr{Uint8}), &oid, ptr)
+    return oid 
+end
+
+Oid(id::Array{Uint8,1}) = begin
+    if length(id) != OID_RAWSZ
+        throw(ArgumentError("invalid raw buffer size"))
+    end
+    return Oid(pointer(id))
+end
+
+Oid(id::String) = begin
+    bstr = bytestring(id)
+    if sizeof(bstr) != OID_HEXSZ
+        throw(ArgumentError("invalid hex size"))
+    end
+    oid = Oid()
+    @check ccall((:git_oid_fromstrp, api.libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Cchar}), &oid, bstr)
+    return oid
 end
 
 Oid(id::Oid) = id
-raw(id::Oid) = copy(id.oid)
+
+Base.copy!(arr::Array{Uint8, 1}, id::Oid) = begin
+    unsafe_copy!(pointer(arr), convert(Ptr{Uint8}, _addrof(id)), OID_RAWSZ)
+    return arr
+end
+
+raw(id::Oid) = copy!(Array(Uint8, OID_RAWSZ), id)
+
+const _hexstr = Array(Uint8, OID_HEXSZ)
+Base.hex(id::Oid) = begin
+    ccall((:git_oid_nfmt, api.libgit2), Void,
+          (Ptr{Uint8}, Csize_t, Ptr{Oid}), 
+           pointer(_hexstr), OID_HEXSZ, &id)
+    return bytestring(pointer(_hexstr), OID_HEXSZ)
+end
 
 Base.string(id::Oid) = hex(id)
+
 Base.show(io::IO, id::Oid) = print(io, "Oid($(string(id)))")
 
-Base.hex(id::Oid)  = bytes2hex(id.oid)
 Base.hash(id::Oid) = hash(hex(id))
 
-Base.cmp(id1::Oid, id2::Oid) = api.git_oid_cmp(pointer(id1.oid), pointer(id2.oid))
+Base.cmp(id1::Oid, id2::Oid) = int(ccall((:git_oid_cmp, api.libgit2), Cint, 
+                                         (Ptr{Oid}, Ptr{Oid}), &id1, &id2))
 
 Base.(:(==))(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
 Base.isequal(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
 Base.isless(id1::Oid, id2::Oid)  = cmp(id1, id2) < 0
 
-Base.copy(id::Oid) = Oid(copy(id.oid))
-
 iszero(id::Oid) = begin
-    for i in api.OID_RAWSZ
-        if id.oid[i] != zero(Uint8)
+    idptr = convert(Ptr{Uint8}, _addrof(id))
+    for i=1:api.OID_RAWSZ
+        if unsafe_load(idptr, i) != zero(Uint8)
             return false
         end
     end
     return true
+end
+
+immutable Sha1
+    sha1::ASCIIString 
+    
+    Sha1(s::String) = begin
+        bstr = bytestring(s)::ASCIIString
+        if sizeof(bstr) != OID_HEXSZ
+            throw(ArgumentError("invalid sha1 string length $(length(bstr))"))
+        end
+        for c in bstr 
+            if !('0' <= c <= '9' || 'a' <= c <= 'f' || 'A' <= c <= 'F')
+                throw(ArgumentError("not a hexadecimal string: $(repr(s))"))
+            end
+        end
+        return new(bstr)
+    end
+end    
+
+macro sha1_str(s)
+    Sha1(s)
 end
