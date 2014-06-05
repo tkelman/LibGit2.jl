@@ -629,68 +629,72 @@ function blob_at(r::Repository, rev::Oid, p::String)
     return blob
 end
 
-function blob_from_buffer(r::Repository, buf::ByteString)
-    @assert  r.ptr != C_NULL
-    blob_id = Oid()
-    @check api.git_blob_create_frombuffer(blob_id.oid, r.ptr, buf, length(buf))
-    return blob_id
+function blob_from_buffer(r::GitRepo, bufptr::Ptr{Uint8}, len::Int)
+    id = Oid()
+    @check ccall((:git_blob_create_frombuffer, api.libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Csize_t),
+                 &id, pointer(r), bufptr, len)
+    return id
+end
+blob_from_buffer(r::GitRepo, buf::Vector{Uint8}) = blob_from_buffer(r::GitRepo, pointer(buf), length(buf))
+blob_from_buffer(r::GitRepo, buf::ByteString)    = blob_from_buffer(r::GitRepo, buf.data)
+blob_from_buffer(r::GitRepo, buf::IOBuffer)      = blob_from_buffer(r::GitRepo, buf.data)
+
+function blob_from_workdir(r::GitRepo, path::String)
+    id = Oid()
+    @check ccall((:git_blob_create_fromworkdir, api.libgit2), Cint,
+                  (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
+                  &id, pointer(r), bytestring(path))
+    return id
 end
 
-function blob_from_workdir(r::Repository, path::String)
-    @assert r.ptr != C_NULL
-    blob_id = Oid()
-    @check api.git_blob_create_fromworkdir(blob_id.oid, r.ptr, bytestring(path))
-    return blob_id
+function blob_from_disk(r::GitRepo, path::String)
+    id = Oid()
+    @check ccall((:git_blob_create_fromdisk, api.libgit2), Cint,
+                  (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
+                  &id, pointer(r), bytestring(path))
+    return id
 end
 
-function blob_from_disk(r::Repository, path::String)
-    @assert r.ptr != C_NULL
-    blob_id = Oid()
-    @check api.git_blob_create_fromdisk(blob_id.oid, r.ptr, bytestring(path))
-    return blob_id
-end
-
-function cb_blob_get_chunk(content_ptr::Ptr{Uint8}, 
-                           max_len::Csize_t, 
-                           payload::Ptr{Void})
-    payload = unsafe_pointer_to_objref(payload)::Array{Any,1}
-    stream = payload[1]
-    local buff::Array{Uint8,1}
+function cb_blob_get_chunk(contentptr::Ptr{Uint8}, 
+                           maxlen::Csize_t, 
+                           payloadptr::Ptr{Void})
+    payload = unsafe_pointer_to_objref(payloadptr)::Array{Any,1}
+    io::IO = payload[1]
+    local buff::Vector{Uint8}
     try
-        buff = readbytes(stream, max_len)
+        buff = readbytes(io, maxlen)
     catch err
         payload[2] = err
         return api.ERROR
     end
     len = length(buff)
-    len = len > max_len ? max_len : len
-    unsafe_copy!(content_ptr, convert(Ptr{Uint8}, buff), len)
+    len > maxlen && (len = maxlen)
+    unsafe_copy!(contentptr, convert(Ptr{Uint8}, buff), len)
     return convert(Cint, len)
 end
 
 const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
-                                         (Ptr{Uint8}, Csize_t, Ptr{Void}))
+                                      (Ptr{Uint8}, Csize_t, Ptr{Void}))
 
-function blob_from_stream(r::Repository, stream, hintpath=nothing)
-    @assert r.ptr != C_NULL
-    blob_id = Oid()
-    local path_ptr::Ptr{Cchar}
+function blob_from_stream(r::GitRepo, io::IO, hintpath=nothing)
+    id = Oid()
     if hintpath != nothing
-        path_ptr = convert(Ptr{Cchar}, pointer(bytestring(hintpath)))
+        pathptr = convert(Ptr{Cchar}, pointer(bytestring(hintpath)))
     else
-        path_ptr = C_NULL
+        pathptr = convert(Ptr{Cchar}, C_NULL)
     end
-    payload = {stream, nothing}
+    payload = {io, nothing}
     err = ccall((:git_blob_create_fromchunks, api.libgit2), Cint,
-                (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
-                blob_id.oid, r.ptr, path_ptr, c_cb_blob_get_chunk, &payload)
+                (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
+                &id, pointer(r), pathptr, c_cb_blob_get_chunk, &payload)
     if isa(payload[2], Exception)
         throw(payload[2])
     end
     if err != api.GIT_OK
         throw(LibGitError(err))
     end
-    return blob_id
+    return id
 end
 
 #TODO: consolidate with odb
