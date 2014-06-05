@@ -174,15 +174,7 @@ function IndexEntry(ptr::Ptr{IndexEntryStruct})
 end
 
 Base.add!(idx::GitIndex, entry::GitIndexEntry) = begin
-    @show entry.mode
-    @show entry.mode == api.FILEMODE_NEW
-    @show entry.mode == api.FILEMODE_TREE 
-    @show entry.mode == api.FILEMODE_BLOB
-    @show entry.mode == api.FILEMODE_BLOB_EXECUTABLE 
-    @show entry.mode == api.FILEMODE_LINK
-    @show entry.mode == api.FILEMODE_COMMIT
     estruct = IndexEntryStruct(entry)
-    @show estruct.mode, int(estruct.mode)
     @check ccall((:git_index_add, api.libgit2), Cint,
                  (Ptr{Void}, Ptr{IndexEntryStruct}),
                  idx, &estruct)
@@ -258,16 +250,16 @@ function add_all!(idx::GitIndex, pathspec::String;
                  force::Bool=false,
                  disable_pathsepc_match::Bool=false,
                  check_pathspec::Bool=false)
-    return add_all!(idx, [pathspec], 
+    return add_all!(idx, String[pathspec], 
                     force=force, 
                     disable_pathsepc_match=disable_pathsepc_match,
                     check_pathspec=check_pathspec)
 end
 
-function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
-                             force::Bool=false,
-                             disable_pathsepc_match::Bool=false,
-                             check_pathspec::Bool=false)
+function add_all!(idx::GitIndex, pathspecs::Vector{String};
+                  force::Bool=false,
+                  disable_pathsepc_match::Bool=false,
+                  check_pathspec::Bool=false)
     flags = api.INDEX_ADD_DEFAULT
     if force
         flags |= api.INDEX_ADD_FORCE
@@ -289,7 +281,7 @@ function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
     return idx
 end
 
-function update_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
+function update_all!(idx::GitIndex, pathspecs::Vector{String})
     exptr  = Cint[0]
     strarr = api.GitStrArray(pathspecs)
     @check ccall((:git_index_update_all, api.libgit2), Cint,
@@ -300,10 +292,10 @@ function update_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
     end
     return idx
 end
-update_all!(idx::GitIndex, pathspec::String) = update_all!(idx, [pathspec])
-update_all!(idx::GitIndex) = update_all!(idx, [""])
+update_all!(idx::GitIndex, pathspec::String) = update_all!(idx, String[pathspec])
+update_all!(idx::GitIndex) = update_all!(idx, String[""])
 
-function remove_all!{T}(idx::GitIndex, pathspecs::Vector{T})
+function remove_all!(idx::GitIndex, pathspecs::Vector{String})
     exptr  = Cint[0]
     strarr = api.GitStrArray(pathspecs)
     @check ccall((:git_index_remove_all, api.libgit2), Cint,
@@ -314,4 +306,4 @@ function remove_all!{T}(idx::GitIndex, pathspecs::Vector{T})
     end
     return idx
 end
-remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, [pathspec])
+remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, String[pathspec])
