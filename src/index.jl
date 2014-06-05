@@ -1,5 +1,5 @@
 export GitIndex, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
-       remove!, remove_dir!, add!, getentry, read_tree!, add_all!, update_all!,
+       remove!, removedir!, add!, getentry, read_tree!, add_all!, update_all!,
        remove_all!, has_conflicts
 
 immutable IndexTimeStruct
@@ -47,57 +47,71 @@ type GitIndex
     end
 end
 
-function GitIndex(path::String)
-    index_ptr = Array(Ptr{Void}, 1)
-    @check api.git_index_open(index_ptr, bytestring(path))
-    return GitIndex(index_ptr[1])
-end
-
 free!(i::GitIndex) = begin
     if i.ptr != C_NULL
-        api.git_index_free(i.ptr)
+        ccall((:git_index_free, api.libgit2), Void, (Ptr{Void},), i.ptr)
         i.ptr = C_NULL
     end
 end
 
+Base.pointer(i::GitIndex) = i.ptr
+
+GitIndex(path::String) = begin
+    idxptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_index_open, api.libgit2), Cint, 
+                 (Ptr{Ptr{Void}}, Ptr{Cchar}), pointer(idxptr), pointer(path))
+    return GitIndex(idxptr[1])
+end
+
+GitIndex(r::GitRepo) = begin
+    idxptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_repository_index, api.libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}), pointer(idxptr), pointer(r))
+    return GitIndex(idxptr[1])
+end
+
 function has_conflicts(i::GitIndex)
-    return bool(api.git_index_has_conflicts(i.ptr))
+    return bool(ccall((:git_index_has_conflicts, api.libgit2), Cint, (Ptr{Void},), pointer(i)))
 end
 
 function clear!(i::GitIndex)
-    api.git_index_clear(i.ptr)
+    ccall((:git_index_clear, api.libgit2), Void, (Ptr{Void},), pointer(i))
     return i
 end
 
 function reload!(i::GitIndex)
-    @check api.git_index_read(i.ptr, 0)
+    @check ccall((:git_index_read, api.libgit2), Cint, (Ptr{Void}, Cint), pointer(i), zero(Cint)) 
     return i
 end
 
 function write!(i::GitIndex)
-    @check api.git_index_write(i.ptr)
+    @check ccall((:git_index_write, api.libgit2), Cint, (Ptr{Void},), pointer(i)) 
     return i
 end 
 
 function remove!(i::GitIndex, path::String, stage::Integer=0)
-    @check api.git_index_remove(i.ptr, bytestring(path), stage)
+    @check ccall((:git_index_remove, api.libgit2), Cint, (Ptr{Void}, Ptr{Cchar}, Cint),
+                 pointer(i), bytestring(path), stage)
     return i
 end
 
-function remove_dir!(i::GitIndex, path::String, stage::Integer=0)
-    @check api.git_index_remove_directory(i.ptr, bytestring(path), stage)
+function removedir!(i::GitIndex, path::String, stage::Integer=0)
+    @check ccall((:git_index_remove_directory, api.libgit2), Cint, (Ptr{Void}, Ptr{Cchar}, Cint),
+                  pointer(i), bytestring(path), stage)
     return i
 end
 
-Base.length(i::GitIndex) = int(api.git_index_entrycount(i.ptr))
+Base.length(i::GitIndex) = int(ccall((:git_index_entrycount, api.libgit2), Cint, 
+                                     (Ptr{Void},), pointer(i)))
 
-Base.getindex(i::GitIndex, idx::Int) = begin
+Base.getindex(i::GitIndex, idx) = begin
     @assert idx > 0
-    entry_ptr = api.git_index_get_byindex(i.ptr, idx-1)
-    if entry_ptr == C_NULL
+    entryptr = ccall((:git_index_get_byindex, api.libgit2), Ptr{IndexEntryStruct},
+                     (Ptr{Void}, Csize_t), pointer(i), idx-1)
+    if entryptr == C_NULL
         return nothing
     end
-    return IndexEntry(entry_ptr)
+    return IndexEntry(entryptr)
 end
 
 Base.getindex(i::GitIndex, path::String) = begin
@@ -105,7 +119,7 @@ Base.getindex(i::GitIndex, path::String) = begin
     if entry_ptr == C_NULL
         return nothing
     end
-    return IndexEntry(entry_ptr)
+    return IndexEntry(entryptr)
 end
 
 function write_tree!(idx::GitIndex)

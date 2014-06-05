@@ -72,13 +72,13 @@ end
 
 # test remove dir
 @with_test_index begin
-    remove_dir!(test_index, "does-not-exist")
+    removedir!(test_index, "does-not-exist")
     @test length(test_index) == 2
 
-    remove_dir!(test_index, "", 2)
+    removedir!(test_index, "", 2)
     @test length(test_index) == 2
 
-    remove_dir!(test_index, "")
+    removedir!(test_index, "")
     @test length(test_index) == 0
 end
 
