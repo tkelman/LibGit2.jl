@@ -187,9 +187,8 @@ Base.add!(idx::GitIndex, path::String) = begin
     return idx
 end
 
-#TODO: throw bounds error
 Base.getindex(idx::GitIndex, i::Integer) = begin
-    @assert i > 0
+    i <= 0 && throw(BoundsError())
     entryptr = ccall((:git_index_get_byindex, api.libgit2), Ptr{IndexEntryStruct},
                      (Ptr{Void}, Csize_t), idx, i-1)
     if entryptr == C_NULL
