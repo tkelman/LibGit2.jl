@@ -739,23 +739,22 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::String)
     len = length(bid)
     objptr = Array(Ptr{Void}, 1)
     @check ccall((:git_oid_fromstrn, api.libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Cchar}, Csize_t), &id, bid, len) 
+                 (Ptr{Oid}, Ptr{Cchar}, Csize_t), &oid, bid, len) 
     if len < OID_HEXSZ
         @check ccall((:git_object_lookup_prefix, api.libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
-                     pointer(objptr), pointer(r), &id, len, git_otype(T))
+                     pointer(objptr), pointer(r), &oid, len, git_otype(T))
     else
         @check ccall((:git_object_lookup, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
-                     pointer(objptr), pointer(r), &id, git_otype(T)) 
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
+                     pointer(objptr), pointer(r), &oid, git_otype(T)) 
     end
     return T(objptr[1]) 
 end
 
-lookup(r::GitRepo, id) = lookup(GitAnyObject, r, id)
-
-lookup_tree(r::GitRepo, id)   = lookup(GitTree, r, id)
-lookup_blob(r::GitRepo, id)   = lookup(GitBlob, r, id)
+lookup(r::GitRepo, id::Oid) = lookup(GitAnyObject, r, id)
+lookup_tree(r::GitRepo, id) = lookup(GitTree, r, id)
+lookup_blob(r::GitRepo, id) = lookup(GitBlob, r, id)
 lookup_commit(r::GitRepo, id) = lookup(GitCommit, r, id)
 
 function lookup_ref(r::Repository, refname::String)
