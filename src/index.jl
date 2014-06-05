@@ -1,4 +1,4 @@
-export GitIndex, GitIndexEntry, IndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
+export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
        remove!, removedir!, add!, read_tree!, add_all!, update_all!,
        remove_all!, has_conflicts
 
@@ -126,10 +126,7 @@ IndexEntryStruct() = IndexEntryStruct(IndexTimeStruct(),
                                       zero(Cushort),  
                                       zero(Cushort),  
                                       zero(Ptr{Uint8})) 
-#TODO: get rid of this
-typealias IndexEntry GitIndexEntry
-
-Oid(entry::IndexEntry) = entry.id
+Oid(entry::GitIndexEntry) = entry.id
 
 IndexEntryStruct(entry::GitIndexEntry) = begin
     flags = uint16(0x0)
@@ -154,7 +151,7 @@ IndexEntryStruct(entry::GitIndexEntry) = begin
                             convert(Ptr{Uint8}, entry.path))
 end
 
-function IndexEntry(ptr::Ptr{IndexEntryStruct})
+function GitIndexEntry(ptr::Ptr{IndexEntryStruct})
     @assert ptr != C_NULL
     entry = unsafe_load(ptr)
     path  = bytestring(entry.path)
@@ -169,7 +166,7 @@ function IndexEntry(ptr::Ptr{IndexEntryStruct})
     stage = int((entry.flags & api.IDXENTRY_STAGEMASK) >> api.IDXENTRY_STAGESHIFT)
     file_size = int(entry.file_size)
     id = entry.id
-    return IndexEntry(path, id, ctime, mtime, file_size,
+    return GitIndexEntry(path, id, ctime, mtime, file_size,
                       dev, ino, mode, uid, gid, valid, stage)
 end
 
@@ -206,7 +203,7 @@ Base.getindex(idx::GitIndex, path::String, stage::Integer=0) = begin
     return GitIndexEntry(entryptr)
 end
 
-Base.(:(==))(e1::IndexEntry, e2::IndexEntry) = begin
+Base.(:(==))(e1::GitIndexEntry, e2::GitIndexEntry) = begin
     return e1.path  == e2.path &&
            e1.id == e2.id &&
            e1.ctime == e2.ctime && 
@@ -220,7 +217,7 @@ Base.(:(==))(e1::IndexEntry, e2::IndexEntry) = begin
            e1.valid == e2.valid && 
            e1.stage == e2.stage
 end
-Base.isequal(e1::IndexEntry, e2::IndexEntry) = e1 == e2
+Base.isequal(e1::GitIndexEntry, e2::GitIndexEntry) = e1 == e2
 
 Base.start(idx::GitIndex) = begin
     if length(idx) == 0
