@@ -8,6 +8,7 @@ const OID_MINPREFIXLEN = 4
 #   id1::Uint8
 #   id2::Uint8
 #   ...
+#   id20::Uint8
 # end 
 
 @eval begin
@@ -16,6 +17,7 @@ const OID_MINPREFIXLEN = 4
             [Expr(:(::), symbol("id$i"), :Uint8) for i=1:OID_RAWSZ]...)))
 end
 
+# default Oid constructor (all zeros)
 Oid() = @eval begin
     $(Expr(:call, :Oid, [:(zero(Uint8)) for _=1:OID_RAWSZ]...))
 end
