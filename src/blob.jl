@@ -1,6 +1,5 @@
-export rawcontent, sloc, text, isbinary, lookup_blob
-
-#TODO: move blob related methods from repository
+export rawcontent, sloc, text, isbinary, lookup_blob, 
+       blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream  
 
 Base.sizeof(b::GitBlob) = begin
     @assert b.ptr != C_NULL
@@ -80,4 +79,73 @@ function isbinary(b::GitBlob)
     @assert b.ptr != C_NULL
     res = api.git_blob_is_binary(b.ptr)
     return bool(res)
+end
+
+function blob_from_buffer(r::GitRepo, bufptr::Ptr{Uint8}, len::Int)
+    id = Oid()
+    @check ccall((:git_blob_create_frombuffer, api.libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Csize_t),
+                 &id, pointer(r), bufptr, len)
+    return id
+end
+
+blob_from_buffer(r::GitRepo, buf::Vector{Uint8}) = blob_from_buffer(r::GitRepo, pointer(buf), length(buf))
+blob_from_buffer(r::GitRepo, buf::ByteString)    = blob_from_buffer(r::GitRepo, buf.data)
+blob_from_buffer(r::GitRepo, buf::IOBuffer)      = blob_from_buffer(r::GitRepo, buf.data)
+
+function blob_from_workdir(r::GitRepo, path::String)
+    id = Oid()
+    @check ccall((:git_blob_create_fromworkdir, api.libgit2), Cint,
+                  (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
+                  &id, pointer(r), bytestring(path))
+    return id
+end
+
+function blob_from_disk(r::GitRepo, path::String)
+    id = Oid()
+    @check ccall((:git_blob_create_fromdisk, api.libgit2), Cint,
+                  (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
+                  &id, pointer(r), bytestring(path))
+    return id
+end
+
+function cb_blob_get_chunk(contentptr::Ptr{Uint8}, 
+                           maxlen::Csize_t, 
+                           payloadptr::Ptr{Void})
+    payload = unsafe_pointer_to_objref(payloadptr)::Array{Any,1}
+    io::IO = payload[1]
+    local buff::Vector{Uint8}
+    try
+        buff = readbytes(io, maxlen)
+    catch err
+        payload[2] = err
+        return api.ERROR
+    end
+    len = length(buff)
+    len > maxlen && (len = maxlen)
+    unsafe_copy!(contentptr, convert(Ptr{Uint8}, buff), len)
+    return convert(Cint, len)
+end
+
+const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
+                                      (Ptr{Uint8}, Csize_t, Ptr{Void}))
+
+function blob_from_stream(r::GitRepo, io::IO, hintpath=nothing)
+    id = Oid()
+    if hintpath != nothing
+        pathptr = convert(Ptr{Cchar}, pointer(bytestring(hintpath)))
+    else
+        pathptr = convert(Ptr{Cchar}, C_NULL)
+    end
+    payload = {io, nothing}
+    err = ccall((:git_blob_create_fromchunks, api.libgit2), Cint,
+                (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
+                &id, pointer(r), pathptr, c_cb_blob_get_chunk, &payload)
+    if isa(payload[2], Exception)
+        throw(payload[2])
+    end
+    if err != api.GIT_OK
+        throw(LibGitError(err))
+    end
+    return id
 end
