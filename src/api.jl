@@ -277,7 +277,6 @@ type GitStrArray
        return sa
    end
 end
-
     
 free!(sa::GitStrArray) = begin
     if sa.strings != C_NULL && sa.count > 0
@@ -286,8 +285,7 @@ free!(sa::GitStrArray) = begin
             @assert cptr != C_NULL
             c_free(cptr)
         end
-        sa.strings = C_NULL
-        sa.count  = 0
+        sa.strings, sa.count = C_NULL, 0
     end
 end
 

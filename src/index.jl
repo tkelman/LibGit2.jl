@@ -267,9 +267,11 @@ function add_all!(idx::GitIndex, pathspecs::Vector{String};
         flags |= api.INDEX_ADD_CHECK_PATHSPEC
     end
     exptr  = Cint[0]
-    strarr = api.GitStrArray(pathspecs)
+    strs   = [bytestring(s) for s in pathspecs]
+    ptrs   = [pointer(s) for s in strs]
+    strarr = StrArrayStruct(ptrs, length(ptrs))
     @check ccall((:git_index_add_all, api.libgit2), Cint,
-                 (Ptr{Void}, Ptr{api.GitStrArray}, Cuint, Ptr{Void}, Ptr{Cint}),
+                 (Ptr{Void}, Ptr{StrArrayStruct}, Cuint, Ptr{Void}, Ptr{Cint}),
                  idx, &strarr, flags, C_NULL, exptr)
     if exptr[1] != api.GIT_OK
         throw(LibGitError(exptr[1]))
@@ -279,9 +281,11 @@ end
 
 function update_all!(idx::GitIndex, pathspecs::Vector{String})
     exptr  = Cint[0]
-    strarr = api.GitStrArray(pathspecs)
+    strs   = [bytestring(s) for s in pathspecs]
+    ptrs   = [pointer(s) for s in strs]
+    strarr = StrArrayStruct(ptrs, length(ptrs))
     @check ccall((:git_index_update_all, api.libgit2), Cint,
-                 (Ptr{Void}, Ptr{api.GitStrArray}, Ptr{Void}, Ptr{Cint}),
+                 (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
                  idx, &strarr, C_NULL, exptr)
     if exptr[1] != api.GIT_OK
         throw(LibGitError(exptr[1]))
@@ -293,9 +297,11 @@ update_all!(idx::GitIndex) = update_all!(idx, String[""])
 
 function remove_all!(idx::GitIndex, pathspecs::Vector{String})
     exptr  = Cint[0]
-    strarr = api.GitStrArray(pathspecs)
+    strs   = [bytestring(s) for s in pathspecs]
+    ptrs   = [pointer(s) for s in strs]
+    strarr = StrArrayStruct(ptrs, length(strs))
     @check ccall((:git_index_remove_all, api.libgit2), Cint,
-                 (Ptr{Void}, Ptr{api.GitStrArray}, Ptr{Void}, Ptr{Cint}),
+                 (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
                  idx, &strarr, C_NULL, exptr)
     if exptr[1] != api.GIT_OK
         throw(LibGitError(exptr[1]))

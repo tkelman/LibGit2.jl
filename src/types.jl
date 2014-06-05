@@ -10,9 +10,7 @@ immutable TimeStruct
     time::GitTimeT # time in seconds from epoch
     offset::Cint   # timezone offset in minutes
 end
-
-TimeStruct() = TimeStruct(zero(GitTimeT),
-                          zero(Cint))
+TimeStruct() = TimeStruct(zero(GitTimeT), zero(Cint))
 
 # an action signature (committers, taggers, etc)
 
@@ -21,7 +19,6 @@ immutable SignatureStruct
     email::Ptr{Cchar} # email of the author
     when::GitTimeT    # time when the action happened
 end
-
 SignatureStruct() = SignatureStruct(zero(Ptr{Cchar}),
                                     zero(Ptr{Cchar}),
                                     zero(GitTimeT))
@@ -34,7 +31,6 @@ immutable TransferProgressStruct
     indexed_deltas::Cuint
     received_bytes::Csize_t
 end
-
 TransferProgressStruct() = TransferProgressStruct(zero(Cuint),
                                                   zero(Cuint),
                                                   zero(Cuint),
@@ -42,6 +38,12 @@ TransferProgressStruct() = TransferProgressStruct(zero(Cuint),
                                                   zero(Cuint),
                                                   zero(Cuint),
                                                   zero(Csize_t))
+type StrArrayStruct
+   strings::Ptr{Ptr{Uint8}}
+   count::Csize_t
+end
+StrArrayStruct() = StrArrayStruct(zero(Ptr{Uint8}), zero(Csize_t))
+
 # --------------
 # Git Repository
 # --------------
