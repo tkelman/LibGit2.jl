@@ -143,6 +143,8 @@ type GitTree <: GitObject
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, o::GitTree) = o.ptr
+
 git_otype(::Type{GitBlob})      = api.OBJ_BLOB
 git_otype(::Type{GitCommit})    = api.OBJ_COMMIT
 git_otype(::Type{GitTag})       = api.OBJ_TAG 

@@ -266,8 +266,8 @@ type GitStrArray
        finalizer(sa, free!)
        return sa
    end
-   
-   function GitStrArray(s::Array{String, 1})
+    
+   function GitStrArray{T<:String}(s::Vector{T})
        #TODO: memory management?
        str_ptr = Array(Ptr{Cchar}, length(s))
        for i in length(s)
