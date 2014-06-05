@@ -43,11 +43,11 @@ function gitobj_from_ptr(ptr::Ptr{Void})
     return T(ptr)
 end
 
-function gitobj_const_type(obj_type::Integer)
-    obj_type == api.OBJ_BLOB   && return GitBlob
-    obj_type == api.OBJ_TREE   && return GitTree
-    obj_type == api.OBJ_COMMIT && return GitCommit
-    obj_type == api.OBJ_TAG    && return GitTag
-    obj_type == api.OBJ_ANY    && return GitAny
+function gitobj_const_type(typ::Cint)
+    typ == api.OBJ_BLOB   && return GitBlob
+    typ == api.OBJ_TREE   && return GitTree
+    typ == api.OBJ_COMMIT && return GitCommit
+    typ == api.OBJ_TAG    && return GitTag
+    typ == api.OBJ_ANY    && return GitAnyObject
     error("Unknown git type const: $obj_type")
 end

@@ -83,18 +83,18 @@ end
         txt = text(b, -100)
         @test length(split(txt, "\n")) - 1 == 464 
     end
-
+    
+    #= TODO: blob encoding 
     begin :test_blob_text_default_encoding
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
-        #Encoding.default_external, blob.text.encoding
     end
 
-   begin :test_blob_text_set_encoding
+    begin :test_blob_text_set_encoding
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
-#        assert_equal Encoding::ASCII_8BIT, blob.text(0, Encoding::ASCII_8BIT).encoding
     end
+    =#
 end
 
 # test write blob data

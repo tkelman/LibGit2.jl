@@ -211,7 +211,7 @@ function repo_init(path::String; bare::Bool=false)
         end
         throw(LibGitError(err_code))
     end
-    return Repository(repo_ptr[1])
+    return GitRepo(repo_ptr[1])
 end
 
 
@@ -788,58 +788,38 @@ function repo_index(r::Repository)
     return GitIndex(idx_ptr[1])
 end
 
-function lookup{T<:GitObject}(::Type{T}, r::Repository, id::Oid)
-    @assert r.ptr != C_NULL
-    obj_ptr = Array(Ptr{Void}, 1)
-    @check api.git_object_lookup(obj_ptr, r.ptr, id.oid, git_otype(T))
-    return T(obj_ptr[1])
+function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::Oid)
+    objptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_object_lookup, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
+                 pointer(objptr), pointer(r), &id, git_otype(T))
+    return T(objptr[1])
 end
 
-function lookup{T<:GitObject}(::Type{T}, r::Repository, id::String)
-    id_arr  = Array(Uint8, api.OID_RAWSZ)
-    @check api.git_oid_fromstrn(id_arr, bytestring(id), length(id))
-    obj_ptr = Array(Ptr{Void}, 1)
-    if length(id) < api.OID_HEXSZ
-        @check api.git_object_lookup_prefix(obj_ptr, r.ptr, 
-                                           id_arr, length(id),
-                                           git_otype(T))
+function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::String)
+    oid = Oid()
+    bid = bytestring(id)
+    len = length(bid)
+    objptr = Array(Ptr{Void}, 1)
+    @check ccall((:git_oid_fromstrn, api.libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Cchar}, Csize_t), &id, bid, len) 
+    if len < OID_HEXSZ
+        @check ccall((:git_object_lookup_prefix, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
+                     pointer(objptr), pointer(r), &id, len, git_otype(T))
     else
-        @check api.git_object_lookup(obj_ptr, r.ptr, 
-                                     id_arr, length(id),
-                                     git_otype(T))
+        @check ccall((:git_object_lookup, api.libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
+                     pointer(objptr), pointer(r), &id, git_otype(T)) 
     end
-    return T(obj_ptr[1]) 
+    return T(objptr[1]) 
 end
 
-function lookup(r::Repository, id::String)
-    id_arr  = Array(Uint8, api.OID_RAWSZ)
-    @check api.git_oid_fromstrn(id_arr, bytestring(id), length(id))
-    obj_ptr = Array(Ptr{Void}, 1)
-    if length(id) < api.OID_HEXSZ
-        @check api.git_object_lookup_prefix(obj_ptr, r.ptr, 
-                                           id_arr, length(id),
-                                           api.OBJ_ANY)
-    else
-        @check api.git_object_lookup(obj_ptr, r.ptr, 
-                                     id_arr, length(id),
-                                     api.OBJ_ANY)
-    end
-    return gitobj_from_ptr(obj_ptr[1]) 
-end
+lookup(r::GitRepo, id) = lookup(GitAnyObject, r, id)
 
-function lookup(r::Repository, id::Oid)
-    @assert r.ptr != C_NULL
-    obj_ptr = Array(Ptr{Void}, 1)
-    @check api.git_object_lookup(obj_ptr, r.ptr, id.oid, api.OBJ_ANY)
-    return gitobj_from_ptr(obj_ptr[1]) 
-end
-
-lookup_tree(r::Repository, id::Oid) = lookup(GitTree, r, id)
-lookup_tree(r::Repository, id::String) = lookup(GitTree, r, id)
-lookup_blob(r::Repository, id::Oid) = lookup(GitBlob, r, id)
-lookup_blob(r::Repository, id::String) = lookup(GitBlob, r, id)
-lookup_commit(r::Repository, id::Oid) = lookup(GitCommit, r, id)
-lookup_commit(r::Repository, id::String) = lookup(GitCommit, r, id)
+lookup_tree(r::GitRepo, id)   = lookup(GitTree, r, id)
+lookup_blob(r::GitRepo, id)   = lookup(GitBlob, r, id)
+lookup_commit(r::GitRepo, id) = lookup(GitCommit, r, id)
 
 function lookup_ref(r::Repository, refname::String)
     @assert r.ptr != C_NULL
@@ -920,36 +900,29 @@ function commit(r::Repository,
                 msg::String,
                 tree::GitTree,
                 parents::GitCommit...)
-    @assert r.ptr != C_NULL
-    @assert tree.ptr != C_NULL
-    commit_oid  = Oid()
+    cid  = Oid()
     bref = bytestring(refname)
     bmsg = bytestring(msg)
-    nparents = convert(Cint, length(parents))
-    cparents = Array(Ptr{Void}, nparents)
-    if nparents > zero(Cint)
-        for (i, commit) in enumerate(parents)
-            @assert commit.ptr != C_NULL
-            cparents[i] = commit.ptr
-
-        end
+    nparents   = length(parents)
+    parentptrs = Array(Ptr{Void}, nparents)
+    for i=1:nparents
+        commit = parents[i]
+        @assert commit.ptr != C_NULL
+        parentptrs[i] = commit.ptr
     end
     gauthor = git_signature(author)
     gcommitter = git_signature(committer)
     #TODO: encoding?
-    err_code = ccall((:git_commit_create, api.libgit2), Cint,
-                     (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar}, 
-                      Ptr{api.GitSignature}, Ptr{api.GitSignature}, 
-                      Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
-                      Csize_t, Ptr{Ptr{Void}}),
-                      commit_oid.oid, r.ptr, bref,
-                      &gauthor, &gcommitter,
-                      C_NULL, bmsg, tree.ptr, 
-                      nparents, nparents > 0 ? cparents : C_NULL)
-    if err_code < 0
-        throw(LibGitError(err_code))
-    end
-    return commit_oid
+    @check ccall((:git_commit_create, api.libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Cchar},
+                  Ptr{api.GitSignature}, Ptr{api.GitSignature}, 
+                  Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
+                  Csize_t, Ptr{Ptr{Void}}),
+                 &cid, r.ptr, bref,
+                 &gauthor, &gcommitter,
+                 C_NULL, bmsg, tree.ptr, 
+                 nparents, nparents > 0 ? parentptrs : C_NULL)
+    return cid
 end
 
 function repo_set_workdir(r::Repository, dir::String, update::Bool)

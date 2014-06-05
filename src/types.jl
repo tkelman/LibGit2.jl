@@ -1,4 +1,4 @@
-export Repository, GitObject, GitAny, GitBlob, GitCommit, GitTag,
+export Repository, GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
        GitTree, GitReference, GitBranch, GitRemote, Sym
 
 typealias GitOffT Int64
@@ -25,7 +25,6 @@ end
 SignatureStruct() = SignatureStruct(zero(Ptr{Cchar}),
                                     zero(Ptr{Cchar}),
                                     zero(GitTimeT))
-
 immutable TransferProgressStruct
     total_objects::Cuint
     indexed_objects::Cuint
@@ -46,27 +45,31 @@ TransferProgressStruct() = TransferProgressStruct(zero(Cuint),
 # --------------
 # Git Repository
 # --------------
-type Repository
+type GitRepo
     ptr::Ptr{Void}
     
-    function Repository(ptr::Ptr{Void}, owns::Bool=true)
-        if ptr == C_NULL
-            throw(ArgumentError("Repository initialized with NULL pointer"))
-        end
-        this = new(ptr)
-        owns && finalizer(this, free!)
-        return this
+    function GitRepo(ptr::Ptr{Void}, own::Bool=true)
+        @assert ptr != C_NULL
+        r = new(ptr)
+        own && finalizer(r, free!)
+        return r
     end
 end
 
-free!(r::Repository) = begin
+typealias Repository GitRepo
+
+free!(r::GitRepo) = begin
     if r.ptr != C_NULL
-        close(r)
-        api.git_repository_free(r.ptr)
-        r.ptr = C_NULL
+        try 
+            close(r)
+        finally
+            ccall((:git_repository_free, api.libgit2), Void, (Ptr{Void},), r.ptr)
+            r.ptr = C_NULL
+        end
     end
 end
 
+Base.pointer(r::GitRepo) = r.ptr
 
 # -------------
 # Git Objects
@@ -75,12 +78,19 @@ abstract GitObject
 
 free!(o::GitObject) = begin
     if o.ptr != C_NULL
-        api.git_object_free(o.ptr)
+        ccall((:git_object_free, api.libgit2), Void, (Ptr{Void},), o.ptr)
         o.ptr = C_NULL
     end
 end
 
-immutable GitAny <: GitObject end
+type GitAnyObject <: GitObject end
+
+GitAnyObject(ptr::Ptr{Void}) = begin
+    @assert ptr != C_NULL
+    typ = ccall((:git_object_type, api.libgit2), Cint, (Ptr{Void},), ptr)
+    T = gitobj_const_type(typ)
+    return T(ptr)
+end
 
 type GitBlob <: GitObject
     ptr::Ptr{Void}
@@ -93,6 +103,7 @@ type GitBlob <: GitObject
     end
 end
 
+Base.pointer(o::GitBlob) = o.ptr
 
 type GitCommit <: GitObject
     ptr::Ptr{Void}
@@ -105,6 +116,8 @@ type GitCommit <: GitObject
     end
 end
 
+Base.pointer(o::GitCommit) = o.ptr
+
 type GitTag <: GitObject
     ptr::Ptr{Void}
 
@@ -115,6 +128,8 @@ type GitTag <: GitObject
         return this
     end
 end
+
+Base.pointer(o::GitTag) = o.ptr
 
 type GitTree <: GitObject
     ptr::Ptr{Void}
@@ -127,11 +142,12 @@ type GitTree <: GitObject
     end
 end
 
-git_otype(::Type{GitAny})     = api.OBJ_ANY
-git_otype(::Type{GitBlob})    = api.OBJ_BLOB
-git_otype(::Type{GitCommit})  = api.OBJ_COMMIT
-git_otype(::Type{GitTag})     = api.OBJ_TAG 
-git_otype(::Type{GitTree})    = api.OBJ_TREE
+git_otype(::Type{GitBlob})      = api.OBJ_BLOB
+git_otype(::Type{GitCommit})    = api.OBJ_COMMIT
+git_otype(::Type{GitTag})       = api.OBJ_TAG 
+git_otype(::Type{GitTree})      = api.OBJ_TREE
+git_otype(::Type{GitAnyObject}) = api.OBJ_ANY
+
 git_otype{T<:GitObject}(o::T) = git_otype(T)
 
 # ---------------
@@ -146,10 +162,12 @@ end
 
 free!(r::GitReference) = begin
     if r.ptr != C_NULL
-        api.git_reference_free(r.ptr)
+        ccall((:git_reference_free, api.libgit2), Void, (Ptr{Void},), r.ptr)
         r.ptr = C_NULL
     end
 end
+
+Base.pointer(r::GitReference) = r.ptr
 
 type GitBranch #<: GitReference{Sym}
     ptr::Ptr{Void}
@@ -164,10 +182,12 @@ end
 
 free!(b::GitBranch) = begin
     if b.ptr != C_NULL
-        api.git_reference_free(b.ptr)
+        ccall((:git_reference_free, api.libgit2), Void, (Ptr{Void},), b.ptr)
         b.ptr = C_NULL
     end
 end
+
+Base.pointer(b::GitBranch) = b.ptr
 
 # ---------------
 # Git Remote
@@ -185,7 +205,9 @@ end
 
 free!(r::GitRemote) = begin
     if r.ptr != C_NULL
-        api.git_remote_free(r.ptr)
+        ccall((:git_remote_free, api.libgit2), Void, (Ptr{Void},), r.ptr)
         r.ptr = C_NULL
     end
 end
+
+Base.pointer(r::GitRemote) = r.ptr

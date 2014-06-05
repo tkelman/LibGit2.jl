@@ -70,7 +70,7 @@ end
 LibGitError(code::Integer) = begin
     err_code = git_error_code[int(code)]
     err_class, err_msg = last_error()
-    LibGitError{err_class, err_code}(err_msg)
+    return LibGitError{err_class, err_code}(err_msg)
 end
 
 macro check(git_func)

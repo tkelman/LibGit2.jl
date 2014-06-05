@@ -70,31 +70,31 @@ end
        @test_throws LibGitError{:Odb,:NotFound} test_repo[Oid("a496071c1b46c854b31185ea97743be6a8774479")]
    end
 
-   begin # test_lookup_object
+   begin :test_lookup_object
         obj = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         @test isa(obj, GitCommit)
         @test Oid("8496071c1b46c854b31185ea97743be6a8774479") == Oid(obj)
    end
 
-   begin # test_objects_are_the_same
+   begin :test_objects_are_the_same
         obj1 = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         obj2 = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         @test obj1 == obj2
    end
   
-   begin # test_read_raw_data
+   begin :test_read_raw_data
         obj = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
         @test isa(raw(obj), OdbObject)
    end
-   
-   begin # test_lookup_by_rev
+
+   begin :test_lookup_by_rev
         obj = rev_parse(test_repo, "v1.0")
         @test Oid(obj) == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
         obj = rev_parse(test_repo, "v1.0^1")
         @test Oid(obj) == Oid("8496071c1b46c854b31185ea97743be6a8774479")
    end 
    
-   begin # test_lookup_oid_by_rev
+   begin :test_lookup_oid_by_rev
        o = rev_parse_oid(test_repo, "v1.0")
        @test o == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
        o = rev_parse_oid(test_repo, "v1.0^1")
