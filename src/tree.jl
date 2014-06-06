@@ -4,35 +4,40 @@ export GitTreeEntry,
        walk_trees, walk_blobs
 
 type GitTreeEntry{T<:GitObject}
-    name::String
-    oid::Oid
+    name::ByteString
+    id::Oid
     filemode::Cint
     owns::Bool
 end
 
-Oid(te::GitTreeEntry)  = te.oid
+Oid(te::GitTreeEntry)  = te.id
 name(te::GitTreeEntry) = te.name
 
 Base.isless(te1::GitTreeEntry, te2::GitTreeEntry) = isless(Oid(te1), Oid(te2))
 
-Base.length(t::GitTree) = int(api.git_tree_entrycount(t.ptr))
-Base.filemode(te::GitTreeEntry) = convert(Cint, te.filemode)
+Base.length(t::GitTree) = 
+    int(ccall((:git_tree_entrycount, api.libgit2), Csize_t, (Ptr{Void},), t))
+                               
+Base.filemode(te::GitTreeEntry) = te.filemode
 
 let 
     function tree_entry_name(ptr::Ptr{Void})
-        nptr::Ptr{Cchar} = api.git_tree_entry_name(ptr)
+        nptr = ccall((:git_tree_entry_name, api.libgit2), Ptr{Uint8},
+                     (Ptr{Void},), ptr)
         @assert nptr != C_NULL
         return bytestring(nptr)
     end
 
     function tree_entry_oid(ptr::Ptr{Void})
-        idptr::Ptr{Uint8} = api.git_tree_entry_id(ptr)
+        idptr = ccall((:git_tree_entry_id, api.libgit2), Ptr{Uint8}, 
+                      (Ptr{Void},), ptr)
         @assert idptr != C_NULL
         return Oid(idptr)
     end
 
     function tree_entry_type(ptr::Ptr{Void})
-        t = api.git_tree_entry_type(ptr)
+        t = ccall((:git_tree_entry_type, api.libgit2), Cint, 
+                  (Ptr{Void},), ptr)
         t == api.OBJ_BLOB   && return GitBlob
         t == api.OBJ_COMMIT && return GitCommit
         t == api.OBJ_TAG    && return GitTag
@@ -40,7 +45,10 @@ let
         error("unknown git_type $(t)")
     end
 
-    tree_entry_filemode(ptr::Ptr{Void}) = api.git_tree_entry_filemode(ptr)
+    function tree_entry_filemode(ptr::Ptr{Void})
+        ccall((:git_tree_entry_filemode, api.libgit2), Cint,
+              (Ptr{Void},), ptr)
+    end
 
     #TODO: ownership of tree entry pointer 
 
@@ -48,46 +56,44 @@ let
         @assert ptr != C_NULL
         ty   = tree_entry_type(ptr)
         name = tree_entry_name(ptr)
-        oid  = tree_entry_oid(ptr)
+        id   = tree_entry_oid(ptr)
         fm   = tree_entry_filemode(ptr)
-        return GitTreeEntry{ty}(name, oid, fm, owns)
+        return GitTreeEntry{ty}(name, id, fm, owns)
     end
 end
 
 function entry_byname(t::GitTree, filename::String)
-    @assert t.ptr != C_NULL
-    bname = bytestring(filename)
-    entry_ptr = api.git_tree_entry_byname(t.ptr, bname)
-    entry_ptr == C_NULL && return nothing
-    return GitTreeEntry(entry_ptr)
+    eptr = ccall((:git_tree_entry_byname, api.libgit2), Ptr{Void},
+                 (Ptr{Void}, Ptr{Uint8}), t, filename)
+    if eptr == C_NULL
+        return nothing
+    end
+    return GitTreeEntry(eptr)
 end
 
 function entry_bypath(t::GitTree, path::String)
-    @assert t.ptr != C_NULL
-    bpath = bytestring(path)
-    entry_ptr = Array(Ptr{Void}, 1)
-    @check api.git_tree_entry_bypath(entry_ptr, t.ptr, bpath)
-    return GitTreeEntry(entry_ptr[1], true)
+    eptr = Ptr{Void}[0]
+    @check ccall((:git_tree_entry_bypath, api.libgit2), Cint,
+                  (Ptr{Ptr{Void}}, Ptr{Uint8}), eptr, path)
+    return GitTreeEntry(eptr[1], true)
 end
 
 function entry_byindex(t::GitTree, idx::Integer)
-    @assert t.ptr != C_NULL
-    entry_ptr = api.git_tree_entry_byindex(t.ptr, idx - 1)
-    if entry_ptr == C_NULL
+    eptr = ccall((:git_tree_entry_byindex, api.libgit2), Ptr{Void},
+                 (Ptr{Void}, Csize_t), t, idx - 1) 
+    if eptr == C_NULL
         return nothing
-    else
-        return GitTreeEntry(entry_ptr)
     end
+    return GitTreeEntry(eptr)
 end
 
 function entry_byid(t::GitTree, id::Oid)
-    @assert t.ptr != C_NULL
-    entry_ptr = api.git_tree_entry_byid(t.ptr, id.oid)
-    if entry_ptr == C_NULL
+    eptr = ccall((:git_tree_entry_byid, api.libgit2), Ptr{Void},
+                 (Ptr{Void}, Ptr{Oid}), t, &id)
+    if eptr == C_NULL
         return nothing
-    else
-        return GitTreeEntry(entry_ptr)
     end
+    return GitTreeEntry(eptr)
 end
 
 Base.getindex(t::GitTree, entry::Integer) = entry_byindex(t, entry)
@@ -95,7 +101,6 @@ Base.getindex(t::GitTree, entry::String)  = entry_byname(t, entry)
 Base.getindex(t::GitTree, entry::Oid)     = entry_byid(t, entry)
 
 Base.start(t::GitTree) = begin
-    @assert t.ptr != C_NULL
     te = entry_byindex(t, 1)
     return (1, te)
 end
@@ -108,20 +113,18 @@ Base.next(t::GitTree, state) = begin
 end
 
 function each_blob(t::GitTree)
-    @assert t.ptr != C_NULL
     @task for te in t
         isa(te, GitTreeEntry{GitBlob}) && produce(te)
     end
 end
 
 function each_tree(t::GitTree)
-    @assert t.ptr != C_NULL
     @task for te in t
         isa(te, GitTreeEntry{GitTree}) && produce(te)
     end
 end
 
-function cb_treewalk(root::Ptr{Cchar}, entry::Ptr{Void}, data::Ptr{Void})
+function cb_treewalk(root::Ptr{Uint8}, entry::Ptr{Void}, data::Ptr{Void})
     try 
         produce(bytestring(root), GitTreeEntry(entry))
         return api.GIT_OK
@@ -130,10 +133,10 @@ function cb_treewalk(root::Ptr{Cchar}, entry::Ptr{Void}, data::Ptr{Void})
     end
 end
 
-const c_cb_treewalk = cfunction(cb_treewalk, Cint, (Ptr{Cchar}, Ptr{Void}, Ptr{Void}))
+const c_cb_treewalk = cfunction(cb_treewalk, Cint, 
+                                (Ptr{Uint8}, Ptr{Void}, Ptr{Void}))
  
 function walk(t::GitTree, order=:postorder)
-    @assert t.ptr != C_NULL
     local mode::Cint
     if order == :postorder
         mode = api.TREEWALK_POST
@@ -142,29 +145,74 @@ function walk(t::GitTree, order=:postorder)
     else
         throw(ArgumentError("walk order can be :preorder or :postorder, got :$order"))
     end
-    @task api.git_tree_walk(t.ptr, mode, c_cb_treewalk, C_NULL)  
+    @task ccall((:git_tree_walk, api.libgit2), Cint,
+                (Ptr{Void}, Cint, Ptr{Void}, Ptr{Void}), 
+                t, mode, c_cb_treewalk, C_NULL)
 end
 
-function walk_blobs(t::GitTree, order=:postorder)
+function walk_blobs(t::GitTree, order::Symbol=:postorder)
     @task for res in walk(t, order)
         isa(res[2], GitTreeEntry{GitBlob}) && produce(res)
     end
 end
 
-function walk_blobs(f::Function, t::GitTree, order=:postorder)
+function walk_blobs(f::Function, t::GitTree, order::Symbol=:postorder)
     for res in walk_blobs(t, order) 
         f(res)
     end
 end
 
-function walk_trees(t::GitTree, order=:postorder)
+function walk_trees(t::GitTree, order::Symbol=:postorder)
     @task for res in walk(t, order)
         isa(res[2], GitTreeEntry{GitTree}) && produce(res)
     end
 end
 
-function walk_trees(f::Function, t::GitTree, order=:postorder)
+function walk_trees(f::Function, t::GitTree, order::Symbol=:postorder)
     for te in walk_trees(t, order)
         f(te)
     end
+end
+
+#------- Tree Builder -------
+type GitTreeBuilder
+    ptr::Ptr{Void}
+    repo::GitRepo
+    
+    function GitTreeBuilder(ptr::Ptr{Void}, r::GitRepo)
+        @assert ptr != C_NULL
+        tb = new(ptr, r)
+        finalizer(tb, free!)
+        return tb
+    end
+end
+
+GitTreeBuilder(r::GitRepo) = begin
+    tbptr = Ptr{Void}[0] 
+    @check ccall((:git_treebuilder_create, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}), tbptr, C_NULL)
+    return GitTreeBuilder(tbptr[1], r)
+end 
+
+free!(tb::GitTreeBuilder) = begin
+    if tb.ptr != C_NULL
+        ccall((:git_treebuilder_free, api.libgit2), Void, (Ptr{Void},), tb.ptr)
+        tb.ptr = C_NULL
+    end
+end
+
+Base.convert(::Type{Ptr{Void}}, tb::GitTreeBuilder) = tb.ptr
+
+Base.insert!(tb::GitTreeBuilder, filename::String, id::Oid, filemode::Int) = begin
+    @check ccall((:git_treebuilder_insert, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}, Cint),
+                 C_NULL, tb, filename, &id, filemode)
+    return tb
+end
+
+function write!(tb::GitTreeBuilder)
+    id = Oid()
+    @check ccall((:git_treebuilder_write, api.libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Void}), &id, tb.repo, tb) 
+    return id
 end

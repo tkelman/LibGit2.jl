@@ -2,7 +2,7 @@ export repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        repo_open, repo_init, repo_index, head, set_head!, tags, tag!, commits, references,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
-       repo_odb, iter_refs, config, repo_treebuilder, TreeBuilder,
+       repo_odb, iter_refs, config,  GitTreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
        ahead_behind, merge_base, merge_commits,  blob_at, is_shallow, hash_data,
        default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
@@ -1545,54 +1545,47 @@ end
 
 
 #------- Tree Builder -------
-type TreeBuilder
+type GitTreeBuilder
     ptr::Ptr{Void}
-    repo::Repository
+    repo::GitRepo
     
-    function TreeBuilder(ptr::Ptr{Void}, r::Repository)
+    function GitTreeBuilder(ptr::Ptr{Void}, r::GitRepo)
         @assert ptr != C_NULL
-        bld = new(ptr, r)
-        finalizer(bld, free!)
-        return bld
+        tb = new(ptr, r)
+        finalizer(tb, free!)
+        return tb
     end
 end
 
-free!(t::TreeBuilder) = begin
-    if t.ptr != C_NULL
-        api.git_treebuilder_free(t.ptr)
-        t.ptr = C_NULL
+GitTreeBuilder(r::GitRepo) = begin
+    tbptr = Ptr{Void}[0] 
+    @check ccall((:git_treebuilder_create, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}), tbptr, C_NULL)
+    return GitTreeBuilder(tbptr[1], r)
+end 
+
+free!(tb::GitTreeBuilder) = begin
+    if tb.ptr != C_NULL
+        ccall((:git_treebuilder_free, api.libgit2), Void, (Ptr{Void},), tb.ptr)
+        tb.ptr = C_NULL
     end
 end
 
-Base.insert!(t::TreeBuilder, filename::String,
-                 id::Oid, filemode::Int) = begin
-    @assert t.ptr != C_NULL
-    bfilename = bytestring(filename)
-    cfilemode = convert(Cint, filemode)
-    @check api.git_treebuilder_insert(C_NULL,
-                                      t.ptr,
-                                      bfilename, 
-                                      id.oid, 
-                                      cfilemode)
-    return t
+Base.convert(::Type{Ptr{Void}}, tb::GitTreeBuilder) = tb.ptr
+
+Base.insert!(tb::GitTreeBuilder, filename::String, id::Oid, filemode::Int) = begin
+    @check ccall((:git_treebuilder_insert, api.libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}, Cint),
+                 C_NULL, tb, filename, &id, filemode)
+    return tb
 end
 
-function write!(t::TreeBuilder)
-    @assert t.ptr != C_NULL
-    @assert t.repo.ptr != C_NULL
-    oid_arr = Array(Uint8, api.OID_RAWSZ)
-    @check api.git_treebuilder_write(oid_arr, t.repo.ptr, t.ptr)
-    return Oid(oid_arr)
+function write!(tb::GitTreeBuilder)
+    id = Oid()
+    @check ccall((:git_treebuilder_write, api.libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Void}), &id, tb.repo, tb) 
+    return id
 end
-
-function repo_treebuilder(r::Repository)
-    @assert r.ptr != C_NULL
-    bld_ptr = Array(Ptr{Void}, 1)
-    @check api.git_treebuilder_create(bld_ptr, C_NULL)
-    return TreeBuilder(bld_ptr[1], r)
-end
-
-TreeBuilder(r::Repository) = repo_treebuilder(r)
 
 #-------- Reference Iterator --------
 #TODO: handle error's when iterating (see branch)

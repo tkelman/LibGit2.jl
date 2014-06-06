@@ -82,7 +82,7 @@ end
 
 #TODO: treebuilder api is akward
 @with_tmp_repo_access begin
-  builder = TreeBuilder(test_repo)
+  builder = GitTreeBuilder(test_repo)
 
   insert!(builder, "README.txt", 
                    Oid("1385f264afb75a56a5bec74243be9b367ba4ca08"),
@@ -92,4 +92,3 @@ end
   @test isa(obj, GitTree)
   @test length(raw(obj)) == 38
 end
-
