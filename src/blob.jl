@@ -57,9 +57,9 @@ function text(b::GitBlob, max_lines=-1)
     @assert b.ptr != C_NULL
     data_ptr = api.git_blob_rawcontent(b.ptr)
     if data_ptr == C_NULL || max_lines == 0
-        return bytestring("")
+        return UTF8String("")
     elseif max_lines < 0
-        return bytestring(data_ptr)
+        return utf8(bytestring(data_ptr))
     end
     lines, i = 0, 1
     data_size = api.git_blob_rawsize(b.ptr)
