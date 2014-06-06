@@ -4,12 +4,11 @@ abstract GitSortType
 type SortDate <: GitSortType end 
 
 type GitRevWalker
-    repo::Repository
+    repo::GitRepo
     ptr::Ptr{Void}
 
-    function GitRevWalker(repo::Repository, ptr::Ptr{Void})
+    function GitRevWalker(repo::GitRepo, ptr::Ptr{Void})
         @assert ptr != C_NULL
-        @assert repo.ptr != C_NULL
         w = new(repo, ptr)
         finalizer(w, free!)
         return w
@@ -17,83 +16,83 @@ type GitRevWalker
 end
 
 GitRevWalker(r::Repository) = begin
-    @assert r.ptr != C_NULL
-    walk_ptr = Array(Ptr{Void}, 1)
-    @check api.git_revwalk_new(walk_ptr, r.ptr)
-    return GitRevWalker(r, walk_ptr[1])
+    wptr = Ptr{Void}[0]
+    @check ccall((:git_revwalk_new, api.libgit2), Cint,
+                  (Ptr{Ptr{Void}}, Ptr{Void}), wptr, r) 
+    return GitRevWalker(r, wptr[1])
 end
 
 free!(w::GitRevWalker) = begin
     if w.ptr != C_NULL
-        api.git_revwalk_free(w.ptr)
+        ccall((:git_revwalk_free, api.libgit2), Void, (Ptr{Void},), w.ptr)
         w.ptr = C_NULL
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, w::GitRevWalker) = w.ptr
+
 Base.start(w::GitRevWalker) = begin
-    @assert w.ptr != C_NULL
-    commit_oid = Oid()
-    err = api.git_revwalk_next(commit_oid.oid, w.ptr)
-    if err == api.GIT_OK
-        gitcommit = lookup_commit(w.repo, commit_oid)
-        return (gitcommit, false)
-    elseif err == api.ITEROVER
+    cid = Oid()
+    err = ccall((:git_revwalk_next, api.libgit2), Cint,
+                (Ptr{Oid}, Ptr{Void}), &cid, w)
+    if err == api.ITEROVER
         return (nothing, true)
+    elseif err != api.GIT_OK
+        throw(LibGitError(err))
     end
-    throw(LibGitError(err))
+    return (lookup_commit(w.repo, cid), false)
 end
 
 Base.done(w::GitRevWalker, state) = state[2]::Bool
 
 Base.next(w::GitRevWalker, state) = begin
-    commit_oid = Oid()
-    err = api.git_revwalk_next(commit_oid.oid, w.ptr)
-    if err == api.GIT_OK
-        gitcommit = lookup_commit(w.repo, commit_oid)
-        return (state[1], (gitcommit, false))
-    elseif err == api.ITEROVER
+    cid = Oid()
+    err = ccall((:git_revwalk_next, api.libgit2), Cint,
+                (Ptr{Oid}, Ptr{Void}), &cid, w)
+    if err == api.ITEROVER
         return (state[1], (nothing, true))
+    elseif err != api.GIT_OK
+        throw(LibGitError(err))
     end
-    throw(LibGitError(err))
+    return (state[1], (lookup_commit(w.repo, cid), false))
 end
 
 Base.push!(w::GitRevWalker, cid::Oid) = begin
-    @assert w.ptr != C_NULL
-    @check api.git_revwalk_push(w.ptr, cid.oid)
-    return 
+    @check ccall((:git_revwalk_push, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{Oid}), w, &cid)
+    return w 
+end
+
+function _symbol_to_gitsort(s::Symbol)
+    s == :none && return api.SORT_NONE
+    s == :topo && return api.SORT_TOPOLOGICAL
+    s == :date && return api.SORT_TIME
+    error("unknown git sort flag :$s")
 end
 
 #TODO: this does not mimic Base's sortby! functionality so it should be renamed
 Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false) = begin
-    s = symbol_to_gitsort(sort_mode)
+    s = _symbol_to_gitsort(sort_mode)
     rev && (s |= api.SORT_REVERSE)
     sortby!(w, s)
     return 
 end
 
 Base.sortby!(w::GitRevWalker, sort_mode::Cint) = begin
-    @assert w.ptr != C_NULL
-    api.git_revwalk_sorting(w.ptr, sort_mode)
-    return 
+    ccall((:git_revwalk_sorting, api.libgit2), Void,
+           (Ptr{Void}, Cint), w, sort_mode)
+    return w 
 end
 
 function hide!(w::GitRevWalker, cid::Oid)
-    @assert w.ptr != C_NULL
-    @check api.git_revwalk_hide(w.ptr, cid.oid)
-    return 
+    @check ccall((:git_revwalk_hide, api.libgit2), Cint,
+                 (Ptr{Void}, Ptr{Oid}), w, &cid)
+    return w 
 end
 
 function reset!(w::GitRevWalker)
-    @assert w.ptr != C_NULL
-    api.git_revwalk_reset(w.ptr)
-    return 
-end
-
-function symbol_to_gitsort(s::Symbol)
-    s == :none && return api.SORT_NONE
-    s == :topo && return api.SORT_TOPOLOGICAL
-    s == :date && return api.SORT_TIME
-    error("unknown git sort flag :$s")
+    ccall((:git_revwalk_reset, api.libgit2), Void, (Ptr{Void},), w)
+    return w 
 end
 
 function walk(r::Repository, from::Oid, sorting=SortDate)
