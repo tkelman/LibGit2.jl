@@ -122,6 +122,7 @@ type GitCommit <: GitObject
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, o::GitCommit) = o.ptr
 Base.pointer(o::GitCommit) = o.ptr
 
 type GitTag <: GitObject
@@ -135,7 +136,7 @@ type GitTag <: GitObject
     end
 end
 
-Base.pointer(o::GitTag) = o.ptr
+Base.convert(::Type{Ptr{Void}}, o::GitTag) = o.ptr 
 
 type GitTree <: GitObject
     ptr::Ptr{Void}

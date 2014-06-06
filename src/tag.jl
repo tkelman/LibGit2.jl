@@ -1,34 +1,29 @@
 export git_otype, message, target_id, target, tagger, lookup_tag
 
-function name(t::GitTag)
-    @assert t.ptr != C_NULL
-    return bytestring(api.git_tag_name(t.ptr))
-end
+name(t::GitTag) = bytestring(ccall((:git_tag_name, api.libgit2), Ptr{Uint8}, (Ptr{Void},), t))
 
 function message(t::GitTag)
-    @assert t.ptr != C_NULL
-    msg_ptr = api.git_tag_message(t.ptr)
-    if msg_ptr == C_NULL
+    msgptr = ccall((:git_tag_message, api.libgit2), Ptr{Uint8}, (Ptr{Void},), t)
+    if msgptr == C_NULL
         return nothing
     end
-    return bytestring(msg_ptr)
+    return bytestring(msgptr)
 end
 
 function target_id(t::GitTag)
-    @assert t.ptr != C_NULL
-    oid_ptr = api.git_tag_target_id(t.ptr)
-    return Oid(oid_ptr)
+    idptr = ccall((:git_tag_target_id, api.libgit2), Ptr{Uint8}, (Ptr{Void},), t)
+    return Oid(idptr)
 end
 
 function target(t::GitTag)
-    @assert t.ptr != C_NULL
-    target_ptr = Array(Ptr{Void}, 1)
-    @check api.git_tag_target(target_ptr, t.ptr)
-    return gitobj_from_ptr(target_ptr[1])
+    tptr = Ptr{Void}[0]
+    @check ccall((:git_tag_target, api.libgit2), Cint, 
+                 (Ptr{Ptr{Void}}, Ptr{Void}), tptr, t)
+    return gitobj_from_ptr(tptr[1])
 end
 
+#TODO: rework Signature handling
 function tagger(t::GitTag)
-    @assert t.ptr != C_NULL
     sig_ptr = api.git_tag_tagger(t.ptr)
     if sig_ptr == C_NULL
         return nothing

@@ -438,13 +438,12 @@ function tags(r::Repository, glob=nothing)
     return out
 end
 
-function tag!(r::Repository; 
+function tag!(r::Repository;
               name::String="",
               message::String="",
               target::Union(Nothing,Oid)=nothing,
               tagger::Union(Nothing,Signature)=nothing,
               force::Bool=false)
-   @check r.ptr != C_NULL
    if target != nothing
        obj = lookup(r, target)
    end
@@ -456,16 +455,13 @@ function tag!(r::Repository;
            gsig = git_signature(default_signature(r))
        end
        @check ccall((:git_tag_create, api.libgit2), Cint,
-                    (Ptr{Uint8}, Ptr{Void}, Ptr{Cchar},
-                     Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}, Cint),
-                     tid.oid, r.ptr, bytestring(name), obj.ptr, 
-                     &gsig, bytestring(message), force)
+                    (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
+                     Ptr{Void}, Ptr{api.GitSignature}, Ptr{Uint8}, Cint),
+                     &tid, r.ptr, name, obj, &gsig, message, force)
    else
-       @check api.git_tag_create_lightweight(tid.oid,
-                                             r.ptr,
-                                             bytestring(name),
-                                             obj.ptr,
-                                             force? 1 : 0)
+       @check ccall((:git_tag_create_lightweight, api.libgit2), Cint,
+                    (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Cint),
+                    &tid, r, name, obj, force? 1 : 0)
    end
    return tid
 end
@@ -1543,49 +1539,6 @@ function repo_clone(url::String, path::String, opts=nothing)
     return Repository(repo_ptr[1])
 end
 
-
-#------- Tree Builder -------
-type GitTreeBuilder
-    ptr::Ptr{Void}
-    repo::GitRepo
-    
-    function GitTreeBuilder(ptr::Ptr{Void}, r::GitRepo)
-        @assert ptr != C_NULL
-        tb = new(ptr, r)
-        finalizer(tb, free!)
-        return tb
-    end
-end
-
-GitTreeBuilder(r::GitRepo) = begin
-    tbptr = Ptr{Void}[0] 
-    @check ccall((:git_treebuilder_create, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}), tbptr, C_NULL)
-    return GitTreeBuilder(tbptr[1], r)
-end 
-
-free!(tb::GitTreeBuilder) = begin
-    if tb.ptr != C_NULL
-        ccall((:git_treebuilder_free, api.libgit2), Void, (Ptr{Void},), tb.ptr)
-        tb.ptr = C_NULL
-    end
-end
-
-Base.convert(::Type{Ptr{Void}}, tb::GitTreeBuilder) = tb.ptr
-
-Base.insert!(tb::GitTreeBuilder, filename::String, id::Oid, filemode::Int) = begin
-    @check ccall((:git_treebuilder_insert, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}, Cint),
-                 C_NULL, tb, filename, &id, filemode)
-    return tb
-end
-
-function write!(tb::GitTreeBuilder)
-    id = Oid()
-    @check ccall((:git_treebuilder_write, api.libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Void}, Ptr{Void}), &id, tb.repo, tb) 
-    return id
-end
 
 #-------- Reference Iterator --------
 #TODO: handle error's when iterating (see branch)
