@@ -444,16 +444,12 @@ function tag!(r::Repository;
               target::Union(Nothing,Oid)=nothing,
               tagger::Union(Nothing,Signature)=nothing,
               force::Bool=false)
-   if target != nothing
-       obj = lookup(r, target)
-   end
    tid = Oid()
+   target != nothing && (obj = lookup(r, target))
    if !isempty(message)
-       if tagger != nothing
-           gsig = git_signature(tagger)
-       else
-           gsig = git_signature(default_signature(r))
-       end
+       gsig = tagger != nothing ? git_signature(tagger) :
+                                  git_signature(default_signature(r))
+
        @check ccall((:git_tag_create, api.libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
                      Ptr{Void}, Ptr{api.GitSignature}, Ptr{Uint8}, Cint),
