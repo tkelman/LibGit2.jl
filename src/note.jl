@@ -1,24 +1,19 @@
-export message 
+export message, GitNote 
 
 type GitNote
-    msg::String
+    msg::ByteString
     id::Oid
 end
 
-message(n::GitNote) = n.msg
-Oid(n::GitNote) = n.id
-
 let
-    function git_note_message(n_ptr::Ptr{Void})
-        @assert n_ptr != C_NULL
-        msg_ptr = api.git_note_message(n_ptr)
-        return bytestring(msg_ptr)
+    function git_note_message(nptr::Ptr{Void})
+        msgptr = ccall((:git_note_message, api.libgit2), Ptr{Uint8}, (Ptr{Void},), nptr)
+        return bytestring(msgptr)
     end
 
-    function git_note_oid(n_ptr::Ptr{Void})
-        @assert n_ptr != C_NULL
-        oid_ptr = api.git_note_id(n_ptr)
-        return Oid(oid_ptr)
+    function git_note_oid(nptr::Ptr{Void})
+        idptr = ccall((:git_note_id, api.libgit2), Ptr{Uint8}, (Ptr{Void},), nptr)
+        return Oid(idptr)
     end
 
     function GitNote(ptr::Ptr{Void})
@@ -28,3 +23,5 @@ let
     end
 end
 
+Oid(n::GitNote) = n.id
+message(n::GitNote) = n.msg
