@@ -24,7 +24,7 @@ provides(SimpleBuild,
         @build_steps begin
             ChangeDirectory(srcdir)
             `cmake . -DCMAKE_INSTALL_PREFIX=$prefix`
-            `cmake --build . --target install`
+            `make install`
         end
     end), libgit2, os = :Unix)
 
