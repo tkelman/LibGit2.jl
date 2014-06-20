@@ -3,7 +3,7 @@ using BinDeps
 @BinDeps.setup
 
 libgit2 = library_dependency("libgit2")
-version = "0.21.0-rc2"
+version = "0.21.0"
 provides(Sources,
          URI("https://github.com/libgit2/libgit2/archive/v$version.tar.gz"),
          libgit2,
@@ -13,7 +13,7 @@ provides(Sources,
 # /d/code/CMake-2.8/bin/cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/usr -G"MSYS Makefiles"
 # /d/code/CMake-2.8/bin/cmake --build . --target install
 provides(Binaries, URI("http://sourceforge.net/projects/juliadeps-win/files/libgit2-v$version.7z"),
-         libgit2, os = :Windows)
+         libgit2, unpacked_dir="usr$WORD_SIZE/bin", os = :Windows)
 
 prefix = joinpath(BinDeps.depsdir(libgit2),"usr")
 srcdir = joinpath(BinDeps.depsdir(libgit2),"src","libgit2-$version") 
