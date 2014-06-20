@@ -1,10 +1,9 @@
 module api
 
-@unix_only begin
-    const libgit2 = "libgit2"
-end
-@windows_only begin
-    const libgit2 = "git2"
+if isfile(joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl"))
+    include("../deps/deps.jl")
+else
+    error("LibGit2 not properly installed. Please run Pkg.build(\"LibGit2\")")
 end
 
 macro libgit(func, ret_type, arg_types)
