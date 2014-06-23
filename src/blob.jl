@@ -2,14 +2,12 @@ export rawcontent, sloc, text, isbinary, lookup_blob,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream  
 
 Base.sizeof(b::GitBlob) = begin
-    @assert b.ptr != C_NULL
     return api.git_blob_rawsize(b.ptr)::Int64
 end
 
-#TODO: it would be better to implement julia's file api's
+# TODO: it would be better to implement julia's file api's to work with blobs
 
 function rawcontent(b::GitBlob, max_bytes=-1)
-    @assert b.ptr != C_NULL
     data_ptr = api.git_blob_rawcontent(b.ptr)
     data_size = api.git_blob_rawsize(b.ptr)
     if data_ptr == C_NULL || max_bytes == 0
@@ -30,7 +28,6 @@ end
 Base.bytestring(b::GitBlob) = bytestring(rawcontent(b))
 
 function sloc(b::GitBlob)
-    @assert b.ptr != nothing
     data_ptr = api.git_blob_rawcontent(b.ptr)
     data_end = data_ptr + api.git_blob_rawsize(b.ptr)
     if data_ptr == data_end
@@ -54,7 +51,6 @@ function sloc(b::GitBlob)
 end
 
 function text(b::GitBlob, max_lines=-1)
-    @assert b.ptr != C_NULL
     data_ptr = api.git_blob_rawcontent(b.ptr)
     if data_ptr == C_NULL || max_lines == 0
         return UTF8String("")
@@ -76,7 +72,6 @@ function text(b::GitBlob, max_lines=-1)
 end
 
 function isbinary(b::GitBlob)
-    @assert b.ptr != C_NULL
     res = api.git_blob_is_binary(b.ptr)
     return bool(res)
 end
