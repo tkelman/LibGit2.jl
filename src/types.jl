@@ -110,6 +110,7 @@ type GitBlob <: GitObject
 end
 
 Base.pointer(o::GitBlob) = o.ptr
+Base.convert(::Type{Ptr{Void}}, o::GitBlob) = pointer(o)
 
 type GitCommit <: GitObject
     ptr::Ptr{Void}
