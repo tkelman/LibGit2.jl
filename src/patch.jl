@@ -126,9 +126,9 @@ type DiffHunk
         @assert ptr != C_NULL
         h = unsafe_load(ptr)
         head_arr = zeros(Uint8, 128)
-        h = h.header
+        head = h.header
         for i=1:128
-            head_arr[i] = getfield(h, symbol("c$i"))
+            head_arr[i] = getfield(head, symbol("c$i"))
         end
         return new(p,
                    bytestring(convert(Ptr{Uint8}, head_arr)),
@@ -142,7 +142,6 @@ type DiffHunk
 end 
 
 function hunks(p::GitPatch)
-    @assert p.ptr != C_NULL
     nhunks = ccall((:git_patch_num_hunks, :libgit2), Csize_t, (Ptr{Void},), p)
     if nhunks == 0
         return nothing
@@ -191,7 +190,7 @@ end
 type DiffLine
     hunk::DiffHunk
     line_origin::Symbol
-    content::String
+    content::ByteString
     old_lineno::Int
     new_lineno::Int
     content_offset::Union(Nothing, Int)
@@ -286,7 +285,7 @@ function line_stats(p::GitPatch)
     @check ccall((:git_patch_line_stats, :libgit2), Cint,
                  (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}),
                  lines, additions, deletions, p)
-    return (lines[1], additions[1], deletions[1])
+    return (int(lines[1]), int(additions[1]), int(deletions[1]))
 end
 
 nlines(p::GitPatch) = reduce(+, 0, line_stats(p))
