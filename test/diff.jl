@@ -38,7 +38,7 @@ end
   @show sum(x -> x.line_origin == :addition? 1 : 0, ls) == (24 + 1 + 5 + 5)
   @show sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1)
 end
-error()
+
 @sandboxed_test "attr" begin
   d = diff(test_repo, "605812a", nothing,
            {:context_lines=>1, :interhunk_lines=>1})
