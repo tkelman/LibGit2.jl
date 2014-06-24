@@ -7,57 +7,54 @@ type GitConfig
 
     function GitConfig(ptr::Ptr{Void})
         @assert ptr != C_NULL
-        c = new(ptr)
-        finalizer(c, free!)
-        return c
+        cfg = new(ptr)
+        finalizer(cfg, free!)
+        return cfg
     end
 end
 
 GitConfig(path::String) = begin
-    bpath = bytestring(path)
-    cfg_ptr = Array(Ptr{Void}, 1)
-    @check api.git_config_open_ondisk(cfg_ptr, bpath)
+    cfg_ptr = Ptr{Void}[0]
+    @check ccall((:git_config_open_ondisk, :libgit2), Cint, 
+                 (Ptr{Ptr{Void}}, Ptr{Uint8}), cfg_ptr, path)
     return GitConfig(cfg_ptr[1])
 end
 
-free!(c::GitConfig) = begin
-    if c.ptr != C_NULL
-        api.git_config_free(c.ptr)
-        c.ptr == C_NULL
+free!(cfg::GitConfig) = begin
+    if cfg.ptr != C_NULL
+        ccall((:git_config_free, :libgit2), Void, (Ptr{Void},), cfg.ptr)
+        cfg.ptr == C_NULL
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, cfg::GitConfig) = cfg.ptr
+
 typealias GitConfigType Union(Bool,Int32,Int64,String)
 
-Base.getindex(c::GitConfig, key::String) = begin
-    return lookup(String, c, key)
-end
-
-Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::String) = begin
-    set!(T, c, key, v)
-end
+Base.getindex(c::GitConfig, key::String) = lookup(String, c, key)
+Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::String) = set!(T, c, key, v)
 
 Base.delete!(c::GitConfig, key::String) = begin
-    @assert c.ptr != C_NULL
-    err = api.git_config_delete_entry(c.ptr, bytestring(key))
+    err = ccall((:git_config_delete_entry, :libgit2), Cint, 
+                (Ptr{Void}, Ptr{Uint8}), c, key)
     return err == api.ENOTFOUND ? false : true
 end
 
-function cb_each_key(entry_ptr::Ptr{api.GitConfigEntry}, o::Ptr{Void})
+function cb_each_key(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
     entry = unsafe_load(entry_ptr) 
     n = bytestring(entry.name)
     produce(n)
     return api.GIT_OK
 end
 
-function cb_each_val(entry_ptr::Ptr{api.GitConfigEntry}, o::Ptr{Void})
+function cb_each_val(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
     entry = unsafe_load(entry_ptr)
     v = bytestring(entry.value)
     produce(v)
     return api.GIT_OK
 end
 
-function cb_each_pair(entry_ptr::Ptr{api.GitConfigEntry}, o::Ptr{Void})
+function cb_each_pair(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
     entry = unsafe_load(entry_ptr)
     n = bytestring(entry.name)
     v = bytestring(entry.value)
@@ -65,53 +62,45 @@ function cb_each_pair(entry_ptr::Ptr{api.GitConfigEntry}, o::Ptr{Void})
     return api.GIT_OK
 end
 
-const c_cb_each_key = cfunction(cb_each_key, Cint, 
-                               (Ptr{api.GitConfigEntry}, Ptr{Void}))
-const c_cb_each_val = cfunction(cb_each_val, Cint, 
-                               (Ptr{api.GitConfigEntry}, Ptr{Void}))
-const c_cb_each_kvpair = cfunction(cb_each_pair, Cint, 
-                                  (Ptr{api.GitConfigEntry}, Ptr{Void}))
+const c_cb_each_key    = cfunction(cb_each_key,  Cint, (Ptr{ConfigEntryStruct}, Ptr{Void}))
+const c_cb_each_val    = cfunction(cb_each_val,  Cint, (Ptr{ConfigEntryStruct}, Ptr{Void}))
+const c_cb_each_kvpair = cfunction(cb_each_pair, Cint, (Ptr{ConfigEntryStruct}, Ptr{Void}))
 
+#! tasks need special attention
 Base.keys(c::GitConfig) = begin
-    @assert c.ptr != C_NULL
-    @task api.git_config_foreach(c.ptr, c_cb_each_key, C_NULL)
+    @task ccall((:git_config_foreach, :libgit2), Cint,
+                (Ptr{Void}, Ptr{Void}, Ptr{Void}), c, c_cb_each_key, C_NULL)
 end
 
 Base.values(c::GitConfig) = begin
-    @assert c.ptr != C_NULL
-    @task api.git_config_foreach(c.ptr, c_cb_each_key, C_NULL)
+    @task ccall((:git_config_foreach, :libgit2), Cint, 
+                (Ptr{Void}, Ptr{Void}, Ptr{Void}), c, c_cb_each_val, C_NULL)
 end
 
 Base.start(c::GitConfig) = begin
-    @assert c.ptr != C_NULL
-    t = @task api.git_config_foreach(c.ptr, c_cb_each_kvpair, C_NULL)
+    t = @task ccall((:git_config_foreach, :libgit2), Cint,
+                    (Ptr{Void}, Ptr{Void}, Ptr{Void}), c, c_cb_each_kvpair, C_NULL)
     (consume(t), t)
 end
 
-Base.done(c::GitConfig, state) = begin
-    istaskdone(state[2])
-end
-
+Base.done(c::GitConfig, state) = istaskdone(state[2])
 Base.next(c::GitConfig, state) = begin
     v = consume(last(state))
     (state[1], (v, state[2]))
 end
 
-Base.Dict(c::GitConfig) = begin
-   Dict{String,String}(c)
-end
+Base.Dict(c::GitConfig) = Dict{ByteString, ByteString}(c)
 
 function global_config()
-    cfg_ptr = Array(Ptr{Void}, 1)
-    @check api.git_config_open_default(cfg_ptr)
+    cfg_ptr = Ptr{Void}[0]
+    @check ccall((:git_config_open_default, :libgit2), Cint, (Ptr{Ptr{Void}},), cfg_ptr)
     return GitConfig(cfg_ptr[1])
 end
 
 function lookup(::Type{Bool}, c::GitConfig, name::String)
-    @assert c.ptr != C_NULL
-    out = Int32[0]
-    bname = bytestring(name)
-    @check api.git_config_get_bool(out, c.ptr, name)
+    out = Cint[0]
+    @check ccall((:git_config_get_bool, :libgit2), Cint,
+                 (Ptr{Cint}, Ptr{Void}, Ptr{Uint8}), out, c, name)
     if err == api.GIT_OK
         return out[1] > 0 ? true : false
     elseif err == api.ENOTFOUND
@@ -121,22 +110,20 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
     end
 end
 
-function set!(::Type{Bool}, c::GitConfig, value::Bool)
-    @assert c.ptr != C_NULL
-    bname = bytestring(name)
-    cval  = value? 1 : 0
-    @check api.git_config_get_bool(out, c.ptr, cval)
-    return nothing
+function set!(::Type{Bool}, c::GitConfig, name::String, value::Bool)
+    cval = value ? 1 : 0
+    @check ccall((:git_config_set_bool, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{Uint8}, Cint), c, name, value)
+    return c
 end
 
 function lookup(::Type{Int32}, c::GitConfig, name::String)
-    @assert c.ptr != C_NULL
-    out = Cint[0]
-    bname = bytestring(n)
-    err = api.git_config_get_int32(out, c.ptr, bname)
+    out = Int32[0]
+    err = ccall((:git_config_get_int32, :libgit2), Cint,
+                (Ptr{Int32}, Ptr{Void}, Ptr{Uint8}), out, c, name)
     if err == api.GIT_OK
         return out[1]
-    elseif err == api.ENOTFOUND
+    elseif err == ENOTFOUND
         return nothing
     else
         throw(GitError(err))
@@ -144,17 +131,15 @@ function lookup(::Type{Int32}, c::GitConfig, name::String)
 end
 
 function set!(::Type{Int32}, c::GitConfig, name::String, value::Int32)
-    @assert c.ptr != C_NULL
-    bname = bytestring(name)
-    @check api.git_config_set_int32(c.ptr, bname, bvalue)
-    return nothing
+    @check ccall((:git_config_set_int32, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{Uint8}, Int32), c, name, value)
+    return c 
 end
 
 function lookup(::Type{Int64}, c::GitConfig, name::String)
-    @assert c.ptr != C_NULL
     out = Int64[0]
-    bname = bytestring(name)
-    err = api.git_config_get_int64(out, c.ptr, bname)
+    err = ccall((:git_config_get_int64, :libgit2), Cint,
+                (Ptr{Int64}, Ptr{Void}, Ptr{Uint8}), out, c, name)
     if err == api.GIT_OK
         return out[1]
     elseif err == api.ENOTFOUND
@@ -165,19 +150,17 @@ function lookup(::Type{Int64}, c::GitConfig, name::String)
 end
 
 function set!(::Type{Int64}, c::GitConfig, name::String, value::Int64)
-    @assert c.ptr != C_NULL
-    bname = bytestring(name)
-    @check api.git_config_set_int64(c.ptr, bname, bvalue)
-    return nothing
+    @check ccall((:git_config_set_int64, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{Uint8}, Int64), c, name, value)
+    return c 
 end
 
 function lookup{T<:String}(::Type{T}, c::GitConfig, name::String)
-    @assert c.ptr != C_NULL
-    ptr = Array(Ptr{Cchar}, 1)
-    bname = bytestring(name)
-    err = api.git_config_get_string(ptr, c.ptr, bname)
+    out = Ptr{Uint8}[0] 
+    err = ccall((:git_config_get_string, :libgit2), Cint,
+                (Ptr{Ptr{Uint8}}, Ptr{Void}, Ptr{Uint8}), out, c, name)
     if err == api.GIT_OK
-        return bytestring(ptr[1])
+        return bytestring(out[1])
     elseif err == api.ENOTFOUND
         return nothing
     else
@@ -186,9 +169,7 @@ function lookup{T<:String}(::Type{T}, c::GitConfig, name::String)
 end
 
 function set!{T<:String}(::Type{T}, c::GitConfig, name::String, value::String)
-    @assert c.ptr != C_NULL
-    bname  = bytestring(name)
-    bvalue = bytestring(value)
-    @check api.git_config_set_string(c.ptr, bname, bvalue)
-    return nothing
+    @check ccall((:git_config_set_string, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}), c, name, value)
+    return c 
 end
