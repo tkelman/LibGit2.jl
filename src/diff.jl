@@ -18,6 +18,8 @@ free!(d::GitDiff) = begin
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, d::GitDiff) = d.ptr
+
 type DiffStats
     files::Int
     adds::Int
@@ -44,12 +46,11 @@ end
 const c_cb_diff_file_stats = cfunction(cb_diff_file_stats, Cint,
                                        (Ptr{DiffDeltaStruct}, Cfloat, Ptr{Void}))
 
-
 function cb_diff_line_stats(delta_ptr::Ptr{Void},
                             hunk_ptr::Ptr{Void},
-                            line_ptr::Ptr{api.GitDiffLine},
+                            line_ptr::Ptr{DiffLineStruct},
                             payload::Ptr{Void})
-    line = unsafe_load(line_ptr)
+    line  = unsafe_load(line_ptr)::DiffLineStruct
     stats = unsafe_pointer_to_objref(payload)::DiffStats
     if line.origin == api.DIFF_LINE_ADDITION
         stats.adds += 1
@@ -60,15 +61,12 @@ function cb_diff_line_stats(delta_ptr::Ptr{Void},
 end
 
 const c_cb_diff_line_stats = cfunction(cb_diff_line_stats, Cint,
-                                       (Ptr{Void}, Ptr{Void}, 
-                                        Ptr{api.GitDiffLine}, Ptr{Void}))
-
-
+                                       (Ptr{Void}, Ptr{Void}, Ptr{DiffLineStruct}, Ptr{Void}))
 Base.stat(d::GitDiff) = begin
     stats = DiffStats()
     ccall((:git_diff_foreach, api.libgit2), Void,
           (Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Any),
-          d.ptr, c_cb_diff_file_stats, C_NULL, c_cb_diff_line_stats, &stats)
+          d, c_cb_diff_file_stats, C_NULL, c_cb_diff_line_stats, &stats)
     return stats
 end
 

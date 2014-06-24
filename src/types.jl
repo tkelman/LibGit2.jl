@@ -73,6 +73,17 @@ immutable DiffDeltaStruct
     new_file::DiffFileStruct
 end
 
+immutable DiffLineStruct
+    origin::Cchar
+    old_lineno::Cint
+    new_lineno::Cint
+    num_lines::Cint
+    content_len::Csize_t
+    content_offset::Coff_t
+    # pointer to diff text, ! this is not NULL byte terminated
+    content::Ptr{Uint8}
+end
+
 # --------------
 # Git Repository
 # --------------
