@@ -4,7 +4,6 @@ const PKGDIR = Pkg.dir("LibGit2")
 const TESTDIR = joinpath(PKGDIR, "test")
 const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 
-
 macro repo_clone_test(body)
     local tmp_dir = tempname()
     quote
@@ -45,6 +44,15 @@ macro with_test_index(body)
         end
     end
 end
+
+function with_test_index(f::Function)
+    try
+        test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index")
+        test_index = GitIndex(test_index_path)
+        f(test_index, test_index_path)
+    finally
+    end
+end 
 
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
@@ -194,6 +202,15 @@ macro with_repo_access(body)
     end
 end
 
+function with_repo_access(f::Function)
+    ra = setup(RepoAccess)
+    try
+        f(ra.repo, ra.path)
+    finally
+        close(ra.repo)
+    end
+end
+
 type TmpRepoAccess
     path::String
     repo::Repository
@@ -235,5 +252,14 @@ macro with_tmp_repo_access(body)
         finally
             teardown(ra)
         end
+    end
+end
+
+function with_tmp_repo_access(f::Function)
+    ra = setup(TmpRepoAccess)
+    try
+        f(ra.repo, ra.path)
+    finally
+        teardown(ra)
     end
 end
