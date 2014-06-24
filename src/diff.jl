@@ -483,7 +483,7 @@ function parse_git_diff_options(opts::Dict)
     pathspec = StrArrayStruct()
     if haskey(opts, :paths)
         paths = opts[:paths]
-        if !(isa(paths, Array{ASCIIString, 1}) || isa(paths, Array{ByteString, 1}))
+        if !(isa(paths, Vector{ASCIIString}) || isa(paths, Vector{UTF8String}))
             throw(ArgumentError("opts[:paths] must be of type Array{ByteString}"))
         end
         str_ptrs = Array(Ptr{Uint8}, length(paths))
