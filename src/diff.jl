@@ -13,24 +13,20 @@ end
 
 free!(d::GitDiff) = begin
     if d.ptr != C_NULL
-        api.git_diff_free(d.ptr)
+        ccall((:git_diff_free, :libgit2), Void, (Ptr{Void},), d.ptr)
         d.ptr = C_NULL
     end
 end
-
 
 type DiffStats
     files::Int
     adds::Int
     dels::Int
-
-    function DiffStats()
-        return new(0, 0, 0)
-    end
 end
+DiffStats() = DiffStats(0, 0, 0)
 
 function cb_diff_file_stats(delta_ptr::Ptr{api.GitDiffDelta}, 
-                            progress::Cfloat, 
+                            progress::Cfloat,
                             payload::Ptr{Void})
     delta = unsafe_load(delta_ptr)
     stats = unsafe_pointer_to_objref(payload)::DiffStats

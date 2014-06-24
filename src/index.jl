@@ -3,7 +3,7 @@ export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear
        remove_all!, has_conflicts
 
 type GitIndex
-    handle::Ptr{Void}
+    ptr::Ptr{Void}
 
     function GitIndex(ptr::Ptr{Void})
         @assert ptr != C_NULL
@@ -14,13 +14,13 @@ type GitIndex
 end
 
 free!(idx::GitIndex) = begin
-    if idx.handle != C_NULL
-        ccall((:git_index_free, :libgit2), Void, (Ptr{Void},), idx.handle)
-        idx.handle = C_NULL
+    if idx.ptr != C_NULL
+        ccall((:git_index_free, :libgit2), Void, (Ptr{Void},), idx.ptr)
+        idx.ptr = C_NULL
     end
 end
 
-Base.convert(::Type{Ptr{Void}}, idx::GitIndex) = idx.handle
+Base.convert(::Type{Ptr{Void}}, idx::GitIndex) = idx.ptr
 
 GitIndex(path::String) = begin
     idxptr = Ptr{Void}[0]

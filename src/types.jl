@@ -47,7 +47,8 @@ type StrArrayStruct
 end
 StrArrayStruct() = StrArrayStruct(zero(Ptr{Uint8}), zero(Csize_t))
 
-# config entry 
+# git config entry struct
+
 immutable ConfigEntryStruct
     name::Ptr{Uint8}
     value::Ptr{Uint8}
