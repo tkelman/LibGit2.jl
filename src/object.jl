@@ -1,4 +1,3 @@
-
 Base.(:(==))(o1::GitObject, o2::GitObject) = isequal(Oid(o1), Oid(o2))
 Base.isequal(o1::GitObject, o2::GitObject) = isequal(Oid(o1), Oid(o2))
 Base.isless(o1::GitObject, o2::GitObject)  = isless(Oid(o1), Oid(o2))
@@ -7,39 +6,37 @@ Base.hash(o::GitObject) = hash(hex(o))
 Base.cmp(o1::GitObject, o2::GitObject) = cmp(Oid(o1), Oid(o2))
 
 Oid(o::GitObject) = begin
-    @assert o.ptr != C_NULL
-    oid_ptr::Ptr{Uint8} = api.git_object_id(o.ptr)
-    @assert oid_ptr != C_NULL
+    oid_ptr = ccall((:git_object_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), o)
     return Oid(oid_ptr)
 end
 
 Base.hex(o::GitObject) = begin
-    @assert o.ptr != C_NULL
-    oid_ptr::Ptr{Uint8} = api.git_object_id(o.ptr)
-    @assert oid_ptr != C_NULL
+    oid_ptr = ccall((:git_object_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), o)
     hex_buff = Array(Uint8, api.OID_HEXSZ)
-    @check api.git_oid_fmt(pointer(hex_buff), oid_ptr)
+    @check ccall((:git_oid_fmt, :libgit2), Cint, (Ptr{Uint8}, Ptr{Uint8}), hex_buff, oid_ptr)
     return bytestring(hex_buff)
 end
 
 function raw(o::GitObject)
-    repo_ptr = api.git_object_owner(o.ptr)
-    oid_ptr  = api.git_object_id(o.ptr)
-    odb_ptr  = Array(Ptr{Void}, 1)
-    obj_ptr  = Array(Ptr{Void}, 1)
-    @check api.git_repository_odb(odb_ptr, repo_ptr)
-    err = api.git_odb_read(obj_ptr, odb_ptr[1], oid_ptr)
-    api.git_odb_free(odb_ptr[1])
-    if err < 0
+    repo_ptr = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), o)
+    oid_ptr  = ccall((:git_object_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), o)
+    odb_ptr  = Ptr{Void}[0]
+    @check ccall((:git_repository_odb, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}), odb_ptr, repo_ptr)
+    obj_ptr  = Ptr{Void}[0]
+    err = ccall((:git_odb_read, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, odb_ptr[1], oid_ptr)
+    ccall((:git_odb_free, :libgit2), Void, (Ptr{Void},), odb_ptr[1])
+    if err != api.GIT_OK
         throw(GitError(err))
     end
     return OdbObject(obj_ptr[1])
 end
 
 function gitobj_from_ptr(ptr::Ptr{Void})
-    @assert ptr != C_NULL
-    obj_type = api.git_object_type(ptr) 
+    obj_type = ccall((:git_object_type, :libgit2), Cint, (Ptr{Void},), ptr)
     T = gitobj_const_type(obj_type)
+    @assert T <: GitObject
     return T(ptr)
 end
 
