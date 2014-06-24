@@ -145,6 +145,16 @@ macro sandboxed_test(reponame, body)
     end
 end
 
+function sandboxed_test(f::Function, reponame::String)
+    sbt = setup(SandBoxedTest, reponame)
+    try
+        f(sbt.repo, sbt.path)
+    finally
+        close(sbt.repo)
+        teardown(sbt)
+    end
+end
+
 macro sandboxed_checkout_test(body)
     quote
         sbt = setup(SandBoxedTest, "testrepo")
