@@ -20,50 +20,30 @@ function GitTree(c::GitCommit)
     return GitTree(tree_ptr[1])
 end
 
-function git_tree_id(c::GitCommit)
-    @assert c.ptr != C_NULL
-    oid_ptr = api.get_commit_tree_id(c.ptr)
-    if oid_ptr == C_NULL
-        error("tree id pointer is NULL")
-    end
-    return Oid(oid_ptr)
-end
+git_tree_id(c::GitCommit) = Oid(ccall((:git_commit_tree_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), c))
 
-#TODO; memory leak with signature
 function author(c::GitCommit)
-    @assert c.ptr != C_NULL
-    ptr::Ptr{api.GitSignature} = api.git_commit_author(c.ptr)
-    if ptr == C_NULL
-        error("git commit author pointer is NULL")
-    end
-    gsig = unsafe_load(ptr)
-    sig = Signature(gsig)
-    #api.free!(gsig)
-    return sig
+    ptr = ccall((:git_commit_author, :libgit2), Ptr{SignatureStruct}, (Ptr{Void},), c)
+    @assert ptr != C_NULL
+    #! memory leak
+    return Signature(unsafe_load(ptr)::SignatureStruct)
 end
 
 function committer(c::GitCommit)
-    @assert c.ptr != C_NULL
-    ptr::Ptr{api.GitSignature} = api.git_commit_committer(c.ptr)
-    if ptr == C_NULL
-        error("git committer pointer is NULL")
-    end
-    gsig = unsafe_load(ptr)
-    sig = Signature(gsig)
-    #api.free!(gsig)
-    return sig
+    ptr = ccall((:git_commit_committer, :libgit2), Ptr{SignatureStruct}, (Ptr{Void},), c)
+    @assert ptr != C_NULL
+    #! memory leak
+    return Signature(unsafe_load(ptr)::SignatureStruct)
 end
 
 function parent(c::GitCommit, n::Integer)
-    @assert c.ptr != C_NULL
     n >= 0 || throw(ArgumentError("n must be greater than or equal to 0"))
-    commit_ptr = Array(Ptr{Void}, 1)
-    @check api.git_commit_parent(commit_ptr, c.ptr, n)
+    commit_ptr = Ptr{Void}[0]
+    @check ccall((:git_commit_parent, :libgit2), Cint, (Ptr{Ptr{Void}}, Ptr{Void}, Cuint), commit_ptr, c, n) 
     return GitCommit(commit_ptr[1])
 end
 
 function parents(c::GitCommit)
-    @assert c.ptr != C_NULL
     n = parent_count(c)
     ps = GitCommit[]
     for i in 0:n-1
@@ -73,19 +53,9 @@ function parents(c::GitCommit)
 end
 
 function parent_id(c::GitCommit, n::Integer)
-    @assert c.ptr != C_NULL
-    if n < 0
-        throw(ArgumentError("n must be greater than or equal to 0"))
-    end
-    cn = convert(Cuint, n)
-    oid_ptr::Ptr{Uint8} = api.git_commit_parent_id(c.ptr, cn)
-    if oid_ptr == C_NULL
-        error("parent id pointer is NULL")
-    end
+    n >= 0 || throw(ArgumentError("n must be greater than or equal to 0"))
+    oid_ptr = ccall((:git_commit_parent_id, :libgit2), Ptr{Uint8}, (Ptr{Void}, Cuint), c, n)
     return Oid(oid_ptr)
 end
 
-function parent_count(c::GitCommit)
-    @assert c.ptr != C_NULL
-    return int(api.git_commit_parentcount(c.ptr))
-end
+parent_count(c::GitCommit) = int(ccall((:git_commit_parentcount, :libgit2), Csize_t, (Ptr{Void},), c))

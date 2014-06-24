@@ -43,6 +43,14 @@ function Signature(name::String, email::String)
     return sig
 end
 
+function Signature(sig::SignatureStruct)
+    return Signature(bytestring(sig.name),
+                     bytestring(sig.email),
+                     sig.time,
+                     sig.time_offset)
+end
+
+#TODO: remove this
 function Signature(gsig::api.GitSignature)
     return Signature(bytestring(gsig.name),
                      bytestring(gsig.email),

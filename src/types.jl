@@ -15,8 +15,8 @@ TimeStruct() = TimeStruct(zero(GitTimeT), zero(Cint))
 # an action signature (committers, taggers, etc)
 
 immutable SignatureStruct
-    name::Ptr{Cchar}  # full name of the author
-    email::Ptr{Cchar} # email of the author
+    name::Ptr{Uint8}  # full name of the author
+    email::Ptr{Uint8} # email of the author
     when::GitTimeT    # time when the action happened
 end
 SignatureStruct() = SignatureStruct(zero(Ptr{Cchar}),
