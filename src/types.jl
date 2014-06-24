@@ -84,6 +84,38 @@ immutable DiffLineStruct
     content::Ptr{Uint8}
 end
 
+# git diff option struct
+immutable DiffOptionsStruct
+    version::Cint
+    flags::Uint32 
+
+    # options controlling which files are in the diff
+    ignore_submodules::Cint
+    pathspec::StrArrayStruct
+    notify_cb::Ptr{Void}
+    notify_payload::Ptr{Void}
+
+    # options controlling how the diff text is generated
+    context_lines::Uint16
+    interhunk_lines::Uint16
+    id_abbrev::Uint16
+    max_size::Coff_t
+    old_prefix::Ptr{Uint8}
+    new_prefix::Ptr{Uint8}
+end 
+
+DiffOptionsStruct() = DiffOptionsStruct(api.DIFF_OPTIONS_VERSION,
+                                        zero(Uint32),
+                                        api.SUBMODULE_IGNORE_DEFAULT, 
+                                        StrArrayStruct(),
+                                        zero(Ptr{Void}),
+                                        zero(Ptr{Void}),
+                                        convert(Uint16, 3),
+                                        zero(Uint16),
+                                        zero(Uint16),
+                                        zero(Coff_t),
+                                        zero(Ptr{Void}),
+                                        zero(Ptr{Void}))
 # --------------
 # Git Repository
 # --------------

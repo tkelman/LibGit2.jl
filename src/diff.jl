@@ -25,12 +25,13 @@ type DiffStats
     adds::Int
     dels::Int
 end
+
 DiffStats() = DiffStats(0, 0, 0)
 
 function cb_diff_file_stats(delta_ptr::Ptr{DiffDeltaStruct}, 
                             progress::Cfloat,
                             payload::Ptr{Void})
-    delta = unsafe_load(delta_ptr)::DiffDeltaStruct
+    delta = unsafe_load(delta_ptr)
     stats = unsafe_pointer_to_objref(payload)::DiffStats
     if delta.status == api.DELTA_ADDED ||
        delta.status == api.DELTA_DELETED ||
@@ -50,7 +51,7 @@ function cb_diff_line_stats(delta_ptr::Ptr{Void},
                             hunk_ptr::Ptr{Void},
                             line_ptr::Ptr{DiffLineStruct},
                             payload::Ptr{Void})
-    line  = unsafe_load(line_ptr)::DiffLineStruct
+    line  = unsafe_load(line_ptr)
     stats = unsafe_pointer_to_objref(payload)::DiffStats
     if line.origin == api.DIFF_LINE_ADDITION
         stats.adds += 1
@@ -64,7 +65,7 @@ const c_cb_diff_line_stats = cfunction(cb_diff_line_stats, Cint,
                                        (Ptr{Void}, Ptr{Void}, Ptr{DiffLineStruct}, Ptr{Void}))
 Base.stat(d::GitDiff) = begin
     stats = DiffStats()
-    ccall((:git_diff_foreach, api.libgit2), Void,
+    ccall((:git_diff_foreach, :libgit2), Void,
           (Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Any),
           d, c_cb_diff_file_stats, C_NULL, c_cb_diff_line_stats, &stats)
     return stats
@@ -72,7 +73,7 @@ end
 
 type DiffFile
     oid::Oid
-    path::String
+    path::ByteString
     size::Int
     flags::Int
     mode::Int
@@ -109,7 +110,6 @@ function delta_status_symbol(s::Integer)
     return :unknown
 end
 
-
 type DiffDelta
     old_file::DiffFile
     new_file::DiffFile
@@ -117,74 +117,59 @@ type DiffDelta
     status::Symbol
     isbinary::Bool
 
-    function DiffDelta(ptr::Ptr{api.GitDiffDelta})
+    function DiffDelta(ptr::Ptr{DiffDeltaStruct})
         @assert ptr != C_NULL
         d = unsafe_load(ptr)
-        
-        arr = Array(Uint8, api.OID_RAWSZ)
-        @get_oid_fieldnames(arr, d, old_file_oid)
-        old_file_oid = Oid(arr)
-        
-        fold = DiffFile(old_file_oid,
-                        d.old_file_path != C_NULL ? bytestring(d.old_file_path) : "",
-                        int(d.old_file_size),
-                        int(d.old_file_flags),
-                        int(d.old_file_mode))
-        
-        arr = Array(Uint8, api.OID_RAWSZ)
-        @get_oid_fieldnames(arr, d, new_file_oid)
-        new_file_oid = Oid(arr)
-                        
-        fnew = DiffFile(new_file_oid,
-                        d.new_file_path != C_NULL ? bytestring(d.new_file_path) : "",
-                        int(d.new_file_size),
-                        int(d.new_file_flags),
-                        int(d.new_file_mode))
-        return new(fold, 
-                   fnew, 
-                   int(d.similarity),
-                   delta_status_symbol(d.status),
+        #! todo copy contents from offset here
+        old_file_id = d.old_file.id::Oid
+        fold = DiffFile(old_file_id,
+                        d.old_file.path != C_NULL ? bytestring(d.old_file.path) : "",
+                        int(d.old_file.size),
+                        int(d.old_file.flags),
+                        int(d.old_file.mode))
+        #! todo copy contents from offset here
+        new_file_id = d.new_file.id::Oid 
+        fnew = DiffFile(new_file_id,
+                        d.new_file.path != C_NULL ? bytestring(d.new_file.path) : "",
+                        int(d.new_file.size),
+                        int(d.new_file.flags),
+                        int(d.new_file.mode))
+        return new(fold, fnew, int(d.similarity), delta_status_symbol(d.status),
                    (bool(d.flags & api.DIFF_FLAG_NOT_BINARY) &&
                     bool(d.flags & api.DIFF_FLAG_BINARY)))
     end
 end
 
-
-Base.length(d::GitDiff) = begin
-    @assert d.ptr != C_NULL
-    return int(api.git_diff_num_deltas(d.ptr))
-end
-
+Base.length(d::GitDiff) = int(ccall((:git_diff_num_deltas, :libgit2), Csize_t,
+                                    (Ptr{Void},), d))
 function deltas(d::GitDiff)
-    @assert d.ptr != C_NULL
-    ndelta = api.git_diff_num_deltas(d.ptr)
+    ndelta = length(d) 
     if ndelta == 0
         return nothing
     end
     ds = Array(DiffDelta, ndelta)
     for i in 1:ndelta
-        delta_ptr = api.git_diff_get_delta(d.ptr, i-1)
-        @assert delta_ptr != C_NULL
+        delta_ptr = ccall((:git_diff_get_delta, :libgit2), Ptr{DiffDeltaStruct},
+                          (Ptr{Void}, Csize_t), d, i-1) 
         ds[i] = DiffDelta(delta_ptr)
     end
     return ds
 end
 
 function patches(d::GitDiff)
-    @assert d.ptr != C_NULL
-    ndelta = api.git_diff_num_deltas(d.ptr)
+    ndelta = length(d)
     if ndelta == 0
         return nothing
     end 
-    err::Cint = 0
     ps = GitPatch[]
-    patch_ptr = Array(Ptr{Void}, 1)
+    patch_ptr = Ptr{Void}[0]
+    err = zero(Cint) 
     for i in 1:ndelta
-        err = api.git_patch_from_diff(patch_ptr, d.ptr, i-1)
+        err = ccall((:git_patch_from_diff, :libgit2), Cint,
+                    (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t), patch_ptr, d, i-1) 
         if err != api.GIT_OK
             break
         end
-        @assert patch_ptr != C_NULL
         push!(ps, GitPatch(patch_ptr[1]))
     end
     if err != api.GIT_OK
@@ -194,9 +179,10 @@ function patches(d::GitDiff)
 end 
 
 #TODO: memory leaks?
-#TODO: unsafe_pointer_to_objref for payload?
-function cb_diff_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
-                       line_ptr::Ptr{api.GitDiffLine}, payload::Ptr{Void})
+function cb_diff_print(delta_ptr::Ptr{Void},
+                       hunk_ptr::Ptr{Void},
+                       line_ptr::Ptr{DiffLineStruct},
+                       payload::Ptr{Void})
     l = unsafe_load(line_ptr)
     s = unsafe_pointer_to_objref(payload)::Array{Uint8,1}
     add_origin = false
@@ -221,48 +207,35 @@ function cb_diff_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
     return api.GIT_OK
 end
 
-
 const c_cb_diff_print = cfunction(cb_diff_print, Cint,
-                                  (Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffLine}, Ptr{Void}))
+                                  (Ptr{Void}, Ptr{Void}, Ptr{DiffLineStruct}, Ptr{Void}))
 
 function patch(d::GitDiff; format::Symbol=:patch)
     @assert d.ptr != C_NULL
-    s = Uint8[]
-    if format == :name_status
-        ccall((:git_diff_print, api.libgit2), Cint,
-              (Ptr{Void}, Cuint, Ptr{Void}, Any),
-              d.ptr, api.DIFF_FORMAT_NAME_STATUS, c_cb_diff_print, &s)
-    elseif format == :name_only
-        ccall((:git_diff_print, api.libgit2), Cint,
-              (Ptr{Void}, Cuint, Ptr{Void}, Any),
-              d.ptr, api.DIFF_FORMAT_NAME_ONLY, c_cb_diff_print, &s)
-    elseif format == :raw
-        ccall((:git_diff_print, api.libgit2), Cint,
-              (Ptr{Void}, Cuint, Ptr{Void}, Any),
-              d.ptr, api.DIFF_FORMAT_RAW, c_cb_diff_print, &s)
-    elseif format == :header
-        ccall((:git_diff_print, api.libgit2), Cint,
-              (Ptr{Void}, Cuint, Ptr{Void}, Any),
-              d.ptr, api.DIFF_FORMAT_PATCH_HEADER, c_cb_diff_print, &s)
-    elseif format == :patch
-        ccall((:git_diff_print, api.libgit2), Cint,
-              (Ptr{Void}, Cuint, Ptr{Void}, Any),
-              d.ptr, api.DIFF_FORMAT_PATCH, c_cb_diff_print, &s)
+    cformat = zero(Cint)
+    if format === :name_status
+        cformat = api.DIFF_FORMAT_NAME_STATUS
+    elseif format === :name_only
+        cformat = api.DIFF_FORMAT_NAME_ONLY
+    elseif format === :raw
+        cformat = api.DIFF_FORMAT_RAW
+    elseif format === :header
+        cformat = api.DIFF_FORMAT_PATCH_HEADER
+    elseif format === :patch
+        cformat = api.DIFF_FORMAT_PATCH
     else
       error("Unknown diff output format ($format)")
     end
+    s = Uint8[]
+    ccall((:git_diff_print, :libgit2), Cint,
+           (Ptr{Void}, Cint, Ptr{Void}, Any), d, cformat, c_cb_diff_print, &s)
     return UTF8String(s)
 end
 
 # diffable GitTree, GitCommit, GitIndex, or Nothing
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
-Base.diff(repo::Repository, 
-         left::Nothing, 
-         right::Nothing, 
-         opts=nothing) = begin
-    return nothing
-end
+Base.diff(repo::Repository, left::Nothing, right::Nothing, opts=nothing) = nothing
 
 Base.diff(repo::Repository,
           left::Union(Nothing, String),
@@ -334,11 +307,15 @@ Base.diff(repo::Repository,
           right::Union(Nothing, GitTree),
           opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
-    diff_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_diff_tree_to_tree, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
-                  Ptr{Void}, Ptr{api.GitDiffOptions}),
-                 diff_ptr, repo.ptr, 
+    diff_ptr = Ptr{Void}[0]
+    @check ccall((:git_diff_tree_to_tree, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, 
+                  Ptr{Void}, 
+                  Ptr{Void}, 
+                  Ptr{Void}, 
+                  Ptr{DiffOptionsStruct}),
+                 diff_ptr,
+                 repo, 
                  left  != nothing ? left.ptr : C_NULL, 
                  right != nothing ? right.ptr : C_NULL,
                  &gopts)
@@ -356,11 +333,14 @@ end
 
 Base.diff(repo::Repository, left::GitTree, right::GitIndex, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
-    diff_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_diff_tree_to_index, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
-                  Ptr{Void}, Ptr{api.GitDiffOptions}),
-                  diff_ptr, repo.ptr, left.ptr, right.ptr, &gopts)
+    diff_ptr = Ptr{Void}[0]
+    @check ccall((:git_diff_tree_to_index, :libgit2), Cint,
+                 (Ptr{Ptr{Void}},
+                  Ptr{Void},
+                  Ptr{Void}, 
+                  Ptr{Void},
+                  Ptr{DiffOptionsStruct}),
+                 diff_ptr, repo, left, right, &gopts)
     return GitDiff(diff_ptr[1])
 end
 
@@ -371,10 +351,13 @@ end
 
 Base.diff(repo::Repository, idx::GitIndex, other::Nothing, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
-    diff_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_diff_index_to_workdir, api.libgit2), Cint,
-                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffOptions}),
-                  diff_ptr, repo.ptr, idx.ptr, &gopts)
+    diff_ptr = Ptr{Void}[0]
+    @check ccall((:git_diff_index_to_workdir, :libgit2), Cint,
+                  (Ptr{Ptr{Void}}, 
+                   Ptr{Void}, 
+                   Ptr{Void}, 
+                   Ptr{DiffOptionsStruct}),
+                  diff_ptr, repo, idx, &gopts)
     return GitDiff(diff_ptr[1])
 end
 
@@ -384,17 +367,19 @@ end
 
 Base.diff(repo::Repository, idx::GitIndex, other::GitTree, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
-    diff_ptr = Array(Ptr{Void}, 1)
+    diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_tree_to_index, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
-                  Ptr{Void}, Ptr{api.GitDiffOptions}),
-                  diff_ptr, repo.ptr, other.ptr, idx.ptr, &gopts)
+                 (Ptr{Ptr{Void}},
+                  Ptr{Void},
+                  Ptr{Void}, 
+                  Ptr{Void}, 
+                  Ptr{DiffOptionsStruct}),
+                  diff_ptr, repo, other, idx, &gopts)
    return GitDiff(diff_ptr[1])
 end
 
-
 Base.merge!(d1::GitDiff, d2::GitDiff) = begin
-    @check api.git_diff_merge(d1.ptr, d2.ptr)
+    @check ccall((:git_diff_merge, :libgit2), Cint, (Ptr{Void}, Ptr{Void}), d1, d2)
     return d1
 end
 
@@ -409,102 +394,116 @@ end
 
 function diff_workdir(repo::Repository, left::GitTree, opts=nothing)
     gopts = parse_git_diff_options(opts)
-    diff_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_diff_tree_to_workdir, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{api.GitDiffOptions}),
-                 diff_ptr, repo.ptr, left.ptr, &gopts)
+    diff_ptr = Ptr{Void}[0]
+    @check ccall((:git_diff_tree_to_workdir, :libgit2), Cint,
+                 (Ptr{Ptr{Void}},
+                  Ptr{Void}, 
+                  Ptr{Void}, 
+                  Ptr{DiffOptionsStruct}),
+                 diff_ptr, repo, left, &gopts)
     return GitDiff(diff_ptr[1])
 end
 
-function parse_git_diff_options()
-    return api.GitDiffOptions()
-end
+parse_git_diff_options(o::Nothing) = DiffOptionsStruct()
 
-function parse_git_diff_options(o::Nothing)
-    return api.GitDiffOptions()
-end
-
-#TODO: better type error handling
-#TODO: git str array leaks memory?
+#! we are doing bad things with memory here 
 function parse_git_diff_options(opts::Dict)
-    gdiff = api.GitDiffOptions()
+    max_size = zero(Coff_t)
     if haskey(opts, :max_size)
-        gdiff.max_size = int64(opts[:max_size])
+        max_size = convert(Coff_t, opts[:max_size])
     end
+    context_lines = uint16(3)
     if haskey(opts, :context_lines)
-        gdiff.context_lines = uint16(opts[:context_lines])
+        @assert opts[:context_lines] <= typemax(Uint16)
+        context_lines = convert(Uint16, opts[:context_lines])
     end
+    interhunk_lines = zero(Uint16)
     if haskey(opts, :interhunk_lines)
-        gdiff.interhunk_lines = uint16(opts[:interhunk_lines])
+        @assert opts[:interhunk_lines] <= typemax(Uint16)
+        interhunk_lines = convert(Uint16, opts[:interhunk_lines])
     end
+    flags = zero(Uint32) 
     if get(opts, :reverse, false)
-        gdiff.flags |= api.DIFF_REVERSE
+        flags |= api.DIFF_REVERSE
     end
     if get(opts, :force_text, false)
-        gdiff.flags |= api.DIFF_FORCE_TEXT
+        flags |= api.DIFF_FORCE_TEXT
     end
     if get(opts, :ignore_whitespace, false)
-        gdiff.flags |= api.DIFF_IGNORE_WHITESPACE
+        flags |= api.DIFF_IGNORE_WHITESPACE
     end
     if get(opts, :ignore_whitespace_change, false)
-        gdiff.flags |= api.DIFF_IGNORE_WHITESPACE_CHANGE
+        flags |= api.DIFF_IGNORE_WHITESPACE_CHANGE
     end
     if get(opts, :ignore_whitespace_eol, false)
-        gdiff.flags |= api.DIFF_IGNORE_WHITESPACE_EOL
+        flags |= api.DIFF_IGNORE_WHITESPACE_EOL
     end
     if get(opts, :ignore_submodules, false)
-        gdiff.flags |= api.DIFF_IGNORE_SUBMODULES
+        flags |= api.DIFF_IGNORE_SUBMODULES
     end
     if get(opts, :patience, false)
-        gdiff.flags |= api.DIFF_PATIENCE
+        flags |= api.DIFF_PATIENCE
     end
     if get(opts, :minimal, false)
-        gdiff.flags |= api.DIFF_MINIMAL
+        flags |= api.DIFF_MINIMAL
     end
     if get(opts, :include_ignored, false)
-        gdiff.flags |= api.DIFF_INCLUDE_IGNORED
+        flags |= api.DIFF_INCLUDE_IGNORED
     end
     if get(opts, :include_untracked, false)
-        gdiff.flags |= api.DIFF_INCLUDE_UNTRACKED
+        flags |= api.DIFF_INCLUDE_UNTRACKED
     end
     if get(opts, :include_unmodified, false)
-       gdiff.flags |= api.DIFF_INCLUDE_UNMODIFIED
+        flags |= api.DIFF_INCLUDE_UNMODIFIED
     end
     if get(opts, :recurse_untracked_dirs, false)
-       gdiff.flags |= api.DIFF_RECURSE_UNTRACKED_DIRS
+       flags |= api.DIFF_RECURSE_UNTRACKED_DIRS
     end
     if get(opts, :disable_pathspec_match, false)
-       gdiff.flags |= api.DIFF_DISABLE_PATHSPEC_MATCH
+       flags |= api.DIFF_DISABLE_PATHSPEC_MATCH
     end
     if get(opts, :show_untracked_content, false)
-       gdiff.flags |= api.DIFF_SHOW_UNTRACKED_CONTENT
+       flags |= api.DIFF_SHOW_UNTRACKED_CONTENT
     end
     if get(opts, :skip_binary_check, false)
-       gdiff.flags |= api.DIFF_SKIP_BINARY_CHECK
+       flags |= api.DIFF_SKIP_BINARY_CHECK
     end
     if get(opts, :include_typechange, false)
-       gdiff.flags |= api.DIFF_INCLUDE_TYPECHANGE
+       flags |= api.DIFF_INCLUDE_TYPECHANGE
     end
     if get(opts, :include_typechange_trees, false)
-       gdiff.flags |= api.DIFF_INCLUDE_TYPECHANGE_TREES
+       flags |= api.DIFF_INCLUDE_TYPECHANGE_TREES
     end
     if get(opts, :ignore_filemode, false)
-       gdiff.flags |= api.DIFF_IGNORE_FILEMODE
+       flags |= api.DIFF_IGNORE_FILEMODE
     end
     if get(opts, :recurse_ignored_dirs, false)
-       gdiff.flags |= api.DIFF_RECURSE_IGNORED_DIRS
+       flags |= api.DIFF_RECURSE_IGNORED_DIRS
     end
+    pathspec = StrArrayStruct()
     if haskey(opts, :paths)
         paths = opts[:paths]
-        if !(isa(paths, Array{ASCIIString, 1}))
-            throw(ArgumentError("opts[:paths] must be of type Array{String}"))
+        if !(isa(paths, Array{ASCIIString, 1}) || isa(paths, Array{ByteString, 1}))
+            throw(ArgumentError("opts[:paths] must be of type Array{ByteString}"))
         end
-        gdiff.pathspec_count = convert(Csize_t, length(paths))
-        str_ptrs = Array(Ptr{Cchar}, length(paths))
+        str_ptrs = Array(Ptr{Uint8}, length(paths))
         for i in 1:length(paths)
-            str_ptrs[i] = convert(Ptr{Cchar}, pointer(bytestring(paths[i])))
+            str_ptrs[i] = convert(Ptr{Uint8}, bytestring(paths[i]))
         end
-        gdiff.pathspec_strings = convert(Ptr{Ptr{Cchar}}, str_ptrs)
-    end 
-    return gdiff
+        #XXX: this is just wrong 
+        pathspec = StrArrayStruct(str_ptrs, length(paths))
+    end
+    #TODO: rest of the options
+    return DiffOptionsStruct(api.DIFF_OPTIONS_VERSION,
+                             flags,
+                             api.SUBMODULE_IGNORE_DEFAULT,
+                             pathspec,
+                             zero(Ptr{Void}),
+                             zero(Ptr{Void}),
+                             context_lines,  # defaults to 3
+                             interhunk_lines,
+                             convert(Uint16, 0),
+                             max_size,
+                             zero(Ptr{Void}),
+                             zero(Ptr{Void}))
 end
