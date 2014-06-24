@@ -240,4 +240,3 @@ git_reftype{T}(r::GitReference{T}) = begin
         error("Unknown reference type $T")
     end
 end
-

@@ -2,12 +2,11 @@ export git_otype, message, tree, tree_id,
        author, committer, parent, parent_id, parent_count, parents
 
 function message(c::GitCommit, raw::Bool=false)
-    @assert c.ptr != C_NULL
-    local msg_ptr::Ptr{Cchar}
+    local msg_ptr::Ptr{Uint8}
     if raw
-        msg_ptr = api.git_commit_message_raw(c.ptr)
+        msg_ptr = ccall((:git_commit_message_raw, :libgit2), Ptr{Uint8}, (Ptr{Void},), c)
     else
-        msg_ptr = api.git_commit_message(c.ptr)
+        msg_ptr = ccall((:git_commit_message, :libgit2), Ptr{Uint8}, (Ptr{Void},), c)
     end
     if msg_ptr == C_NULL 
         return nothing
@@ -16,15 +15,9 @@ function message(c::GitCommit, raw::Bool=false)
 end
 
 function GitTree(c::GitCommit)
-    @assert c.ptr != C_NULL
-    tree_ptr = Array(Ptr{Void}, 1)
-    @check api.git_commit_tree(tree_ptr, c.ptr)
+    tree_ptr = Ptr{Void}[0]
+    @check ccall((:git_commit_tree, :libgit2), Cint, (Ptr{Ptr{Void}}, Ptr{Void}), tree_ptr, c.ptr)
     return GitTree(tree_ptr[1])
-end
-
-
-function git_tree(c::GitCommit)
-    GitTree(c)
 end
 
 function git_tree_id(c::GitCommit)

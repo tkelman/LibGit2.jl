@@ -8,7 +8,7 @@ testnames = ["oid",
              "repository", 
              "config", 
              "signature", 
-             #"index", 
+             "index", 
              "object",
              "odb", 
              "reference", 
@@ -21,7 +21,7 @@ testnames = ["oid",
              "repository_pack", 
              "patch", 
              "merge", 
-             "remote"
+             #"remote"
              ]
 
 tests = isempty(ARGS) || ARGS == ["all"] ? testnames : ARGS
