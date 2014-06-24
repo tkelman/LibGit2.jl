@@ -2,14 +2,14 @@ export tip, resolve, owner, name, canonical_name, ishead, move,
        remote_name, remote, isremote, upstream, set_upstream!
 
 Base.delete!(b::GitBranch) = begin
-    @assert b.ptr != C_NULL  
-    @check api.git_branch_delete(b.ptr)
+    @check ccall((:git_branch_delete, :libgit2), Cint, (Ptr{Void},), b)
     return nothing
 end
 
 Base.(:(==))(b1::GitBranch, b2::GitBranch) = canonical_name(b1) == canonical_name(b2)
 Base.isequal(b1::GitBranch, b2::GitBranch) = b1 == b2 
 
+#! branch iteration 
 Base.start(b::GitBranch) = begin
     @assert b.ptr != C_NULL
 end
@@ -20,117 +20,92 @@ end
 Base.next(b::GitBranch, state) = begin
 end
 
-function tip(b::GitBranch)
-    lookup(owner(b), target(resolve(b)))
-end
+tip(b::GitBranch) = lookup(owner(b), target(resolve(b)))
 
 function owner(b::GitBranch)
-    @assert b.ptr != C_NULL
-    repo_ptr = api.git_reference_owner(b.ptr)
-    #XXX: do not free repository handle
+    repo_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), b)
+    #! do not free repository handle
     return Repository(repo_ptr, false)
 end
 
 function resolve(b::GitBranch)
-    @assert b.ptr != C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
-    @check api.git_reference_resolve(ref_ptr, b.ptr)
+    ref_ptr = Ptr{Void}[0]
+    @check ccall((:git_reference_resolve, :libgit2), Cint, (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, b)
     return GitReference(ref_ptr[1])
 end
 
 function name(b::GitBranch)
-    @assert b.ptr != C_NULL
-    name_ptr = Array(Ptr{Cchar}, 1)
-    api.git_branch_name(name_ptr, b.ptr)
-    ret = bytestring(name_ptr[1])
-    #TODO: memory leak...
-    #c_free(ptr)
-    return ret
+    name_ptr = Ptr{Uint8}[0]
+    @check ccall((:git_branch_name, :libgit2), Cint, (Ptr{Ptr{Uint8}}, Ptr{Void}), name_ptr, b)
+    return bytestring(name_ptr[1])
 end
 
-#TODO: this is redundant with git_reference
-function canonical_name(b::GitBranch)
-    @assert b.ptr != C_NULL
-    return bytestring(api.git_reference_name(b.ptr))
-end
+#! this is redundant with git_reference
+ishead(b::GitBranch) = bool(ccall((:git_branch_is_head, :libgit2), Cint, (Ptr{Void},), b))
+isremote(b::GitBranch) = bool(ccall((:git_reference_is_remote, :libgit2), Cint, (Ptr{Void},), b))
+canonical_name(b::GitBranch) = bytestring(ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), b))
 
-function ishead(b::GitBranch)
-    @assert b.ptr != C_NULL
-    return bool(api.git_branch_is_head(b.ptr))
-end
-
-function isremote(b::GitBranch)
-    @assert b.ptr != C_NULL
-    return bool(api.git_reference_is_remote(b.ptr))
-end
-
-function move(b::GitBranch, new_name::String; 
-              force::Bool=false, sig=nothing, logmsg=nothing)
-    @assert b.ptr != C_NULL
-    branch_ptr = Array(Ptr{Void}, 1)
+function move(b::GitBranch, new_name::String; force::Bool=false, sig=nothing, logmsg=nothing)
+    branch_ptr = Ptr{Void}[0]
     bname = bytestring(new_name)
     bmsg  = logmsg != nothing ? bytestring(logmsg) : C_NULL
     if sig != nothing
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
         @check ccall((:git_branch_move, api.libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
-                       Ptr{api.GitSignature}, Ptr{Cchar}),
-                       branch_ptr, b.ptr, bname, force? 1:0, &gsig, bmsg)
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
+                       Ptr{api.GitSignature}, Ptr{Uint8}),
+                       branch_ptr, b, bname, force? 1:0, &gsig, bmsg)
     else
         @check ccall((:git_branch_move, api.libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
-                       Ptr{api.GitSignature}, Ptr{Cchar}),
-                       branch_ptr, b.ptr, bname, force? 1:0, C_NULL, bmsg)
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
+                       Ptr{api.GitSignature}, Ptr{Uint8}),
+                       branch_ptr, b, bname, force? 1:0, C_NULL, bmsg)
     end
     return GitBranch(branch_ptr[1])
 end
 
 function remote_name(b::GitBranch)
-    @assert b.ptr != C_NULL
     return_ref = nothing
-    ref_ptr = Array(Ptr{Void}, 1)
+    ref_ptr = Ptr{Void}[0]
     if isremote(b)
         ref_ptr[1] = b.ptr 
     else
-        err = api.git_branch_upstream(ref_ptr, b.ptr)
+        err = ccall((:git_branch_upstream, :libgit2), Cint, (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, b)
         if err == api.ENOTFOUND
             return nothing
         elseif err != api.GIT_OK
-            #TODO: free ref pointer??
+            #! free ref ptr??
             throw(GitError(err))
         end
     end
-    refname = bytestring(api.git_reference_name(ref_ptr[1]))
-    repo_ptr = api.git_reference_owner(b.ptr)
+    refname = bytestring(ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), ref_ptr[1]))
+    repo_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), b)
     buf = api.GitBuffer()
     err = ccall((:git_branch_remote_name, api.libgit2), Cint,
-                (Ptr{api.GitBuffer}, Ptr{Void}, Ptr{Cchar}),
-                 &buf, repo_ptr, refname)
+                (Ptr{api.GitBuffer}, Ptr{Void}, Ptr{Uint8}),
+                &buf, repo_ptr, refname)
     if err == api.GIT_OK
         return bytestring(buf.ptr)
-        #return UTF8String(rname[1:end-1])
     elseif err != api.GIT_OK
         throw(GitError(err))
     end
 end
 
 function remote(b::GitBranch)
-    @assert b.ptr != C_NULL
     rname = remote_name(b)
     if rname != nothing
         return lookup_remote(owner(b), "origin")
     end
 end
 
-function upstream(b::GitBranch)
-    @assert b.ptr != C_NULL
-    isremote = api.git_reference_is_remote(b.ptr)
+function upstream(b::GitBranch) 
+    isremote = ccall((:git_reference_is_remote, :libgit2), Cint, (Ptr{Void},), b)
     if bool(isremote)
         return nothing
     end
-    ubranch_ptr = Array(Ptr{Void}, 1)
-    err = api.git_branch_upstream(ubranch_ptr, b.ptr)
+    ubranch_ptr = Ptr{Void}[0]
+    err = ccall((:git_branch_upstream, :libgit2), Cint, (Ptr{Ptr{Void}}, Ptr{Void}), ubranch_ptr, b)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
@@ -140,18 +115,14 @@ function upstream(b::GitBranch)
 end
 
 function set_upstream!(b::GitBranch, target::Nothing)
-    @assert b.ptr != C_NULL
-    @check api.git_branch_set_upstream(b.ptr, C_NULL)
+    @check ccall((:git_branch_set_upstream, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), b, C_NULL)
     return b
 end
 
-function set_upstream!(b::GitBranch,
-                      target::Union(GitBranch, GitReference))
-    @assert b.ptr != C_NULL && target.ptr != C_NULL
-    #TODO: memory leak?
-    name_ptr = Array(Ptr{Cchar}, 1)
-    @check api.git_branch_name(name_ptr, target.ptr)
-    @check api.git_branch_set_upstream(b.ptr, name_ptr[1])
+function set_upstream!(b::GitBranch, target::Union(GitBranch, GitReference))
+    name_ptr = Ptr{Uint8}[0]
+    @check ccall((:git_branch_name, :libgit2), Cint, (Ptr{Ptr{Uint8}}, Ptr{Void}), name_ptr, target)
+    @check ccall((:git_branch_set_upstream, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), b, name_ptr[1])
     return b
 end 
 

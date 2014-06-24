@@ -177,7 +177,7 @@ free!(r::GitReference) = begin
     end
 end
 
-Base.pointer(r::GitReference) = r.ptr
+Base.convert(::Type{Ptr{Void}}, r::GitReference) = r.ptr
 
 type GitBranch #<: GitReference{Sym}
     ptr::Ptr{Void}
@@ -189,6 +189,8 @@ type GitBranch #<: GitReference{Sym}
         return this
     end
 end
+
+Base.convert(::Type{Ptr{Void}}, o::GitBranch) = o.ptr
 
 free!(b::GitBranch) = begin
     if b.ptr != C_NULL
