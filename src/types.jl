@@ -48,11 +48,29 @@ end
 StrArrayStruct() = StrArrayStruct(zero(Ptr{Uint8}), zero(Csize_t))
 
 # git config entry struct
-
 immutable ConfigEntryStruct
     name::Ptr{Uint8}
     value::Ptr{Uint8}
     level::Cint
+end
+
+typealias DiffDeltaT Cint
+
+immutable DiffFileStruct
+    id::Oid
+    path::Ptr{Uint8}
+    size::Coff_t
+    flags::Uint32
+    mode::Uint16
+end
+
+immutable DiffDeltaStruct 
+    status::DiffDeltaT
+    flags::Uint32
+    similarity::Uint16
+    nfiles::Uint16
+    old_file::DiffFileStruct
+    new_file::DiffFileStruct
 end
 
 # --------------

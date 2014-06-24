@@ -25,10 +25,10 @@ type DiffStats
 end
 DiffStats() = DiffStats(0, 0, 0)
 
-function cb_diff_file_stats(delta_ptr::Ptr{api.GitDiffDelta}, 
+function cb_diff_file_stats(delta_ptr::Ptr{DiffDeltaStruct}, 
                             progress::Cfloat,
                             payload::Ptr{Void})
-    delta = unsafe_load(delta_ptr)
+    delta = unsafe_load(delta_ptr)::DiffDeltaStruct
     stats = unsafe_pointer_to_objref(payload)::DiffStats
     if delta.status == api.DELTA_ADDED ||
        delta.status == api.DELTA_DELETED ||
@@ -42,7 +42,7 @@ function cb_diff_file_stats(delta_ptr::Ptr{api.GitDiffDelta},
 end
 
 const c_cb_diff_file_stats = cfunction(cb_diff_file_stats, Cint,
-                                       (Ptr{api.GitDiffDelta}, Cfloat, Ptr{Void}))
+                                       (Ptr{DiffDeltaStruct}, Cfloat, Ptr{Void}))
 
 
 function cb_diff_line_stats(delta_ptr::Ptr{Void},
