@@ -1,5 +1,5 @@
 # test 2alt
-@sandboxed_test "merge-resolve" begin
+sandboxed_test("merge-resolve") do test_repo, path
     ours   = rev_parse(test_repo, "trivial-2alt")
     theirs = rev_parse(test_repo, "trivial-2alt-branch")
     base   = rev_parse(test_repo, merge_base(test_repo, ours, theirs))
@@ -11,7 +11,7 @@
 end
 
 # test_4
-@sandboxed_test "merge-resolve" begin
+sandboxed_test("merge-resolve") do test_repo, path
     ours   = rev_parse(test_repo, "trivial-4")
     theirs = rev_parse(test_repo, "trivial-4-branch")
     base   = rev_parse(test_repo, merge_base(test_repo, ours, theirs))
