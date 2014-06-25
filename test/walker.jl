@@ -1,5 +1,6 @@
 with_repo_access() do test_repo, path
-    context("test walk revlist") do test_repo, path
+
+    context("test walk revlist") do 
         walker = GitRevWalker(test_repo)
         push!(walker, Oid("9fd738e8f7967c078dceed8190330fc8648ee56a"))
         data = collect(walker)
@@ -24,7 +25,7 @@ with_repo_access() do test_repo, path
         @test length(collect(walker)) == 2
     end
 
-    context("test resetting walker") do
+    context("test reset walker") do
         walker = GitRevWalker(test_repo)
         id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
         push!(walker, id)
@@ -91,7 +92,7 @@ with_repo_access() do test_repo, path
         @test t == "84960.5b5b0.4a202.9fd73.c4780.a4a7d"
     end
 
-    context("test sort by topo reverse") do 
+    context("test sort by topo reversed") do 
         walker = GitRevWalker(test_repo)
         sort_list = do_sort(walker, :topo, rev=true)
         reverse!(sort_list)
