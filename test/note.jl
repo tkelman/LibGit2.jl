@@ -1,5 +1,5 @@
-@with_repo_access begin
-    begin # test read note for object
+with_repo_access() do test_repo, path
+    context("test read note for object") do 
         id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
         obj = test_repo[id]
         n = notes(obj)
@@ -7,7 +7,7 @@
         @test Oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
     end
 
-    begin # test read note for object from ref
+    context("test read note for object from ref") do
         id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
         obj = test_repo[id]
         n = notes(obj, "refs/notes/commits")
@@ -15,36 +15,35 @@
         @test Oid(n) == Oid("94eca2de348d5f672faf56b0decafa5937e3235e")
     end
 
-    begin # test_object_without_note
+    context("test object without note") do 
         id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
         obj = test_repo[id]
         @test notes(obj) == nothing
     end
 
-    begin # test_nil_ref_lookup
+    context("test nothing ref lookup") do
         id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
         obj = test_repo[id]
         @test notes(obj, "refs/notes/missing") == nothing
     end
 
-    begin # iterate over notes
+    context("iterate over notes") do 
         for (note_blob, ann_obj) in iter_notes(test_repo, "refs/notes/commits")
             @test content(note_blob) == "note text\n"
             @test Oid(ann_obj) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
         end
     end
 
-    begin # test each note iterable
+    context("test each note iterable") do
         @test isa(iter_notes(test_repo, "refs/notes/commits"), Task)
     end
 
-    begin # test default ref
+    context("test default ref") do 
         @test note_default_ref(test_repo) == "refs/notes/commits"
     end
 end
 
-# Test create note
-@with_tmp_repo_access begin
+with_tmp_repo_access("test create note") do test_repo, path
     sig = Signature("Julia", "julia@julia.com")
     id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg = "This is the note message\n\nThis note is created from Rugged"
@@ -64,8 +63,7 @@ end
     @test message(n) == msg
 end
 
-# test_create_note_without_signature
-@with_tmp_repo_access begin
+with_tmp_repo_access("test create note without signature") do test_repo, path
     testname = "Julia"
     testemail = "julia@julia.com"
     config(test_repo)["user.name"] = testname
@@ -87,8 +85,7 @@ end
     @test testemail == author(note_commit).email
 end
 
-# test_create_note_on_object_with_notes_raises
-@with_tmp_repo_access begin
+with_tmp_repo_access("test create note on object with notes raises exception") do test_repo, path
     sig = Signature("Julia", "julia@julia.com")
     id  = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg = "This is the note message\n\nThis note is created from Rugged"
@@ -98,9 +95,7 @@ end
     @test_throws LibGitError{:Repo,:Exists} create_note!(obj, msg, committer=sig, author=sig, ref="refs/notes/test") 
 end
 
-
-#test_overwrite_object_note
-@with_tmp_repo_access begin
+with_tmp_repo_access("test overwrite object note") do test_repo, path
     sig = Signature("Julia", "julia@julia.com")
     id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg ="This is the note message\n\nThis note is created from Rugged"
@@ -112,8 +107,7 @@ end
     @test message(note) == "new msg"
 end
 
-# test_remove_note
-@with_tmp_repo_access begin 
+with_tmp_repo_access("test remove note") do test_repo, path
     id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     sig = Signature("Julia", "julia@julia.com")
     msg ="This is the note message\n\nThis note is created from Rugged"
@@ -125,8 +119,7 @@ end
     @test notes(obj, "refs/notes/test") == nothing
 end
 
-# test_remote_without_signature
-@with_tmp_repo_access begin
+with_tmp_repo_access("test remote without signature") do test_repo, path
     testname = "Julia"
     testemail = "rugged@example.com"
     config(test_repo)["user.name"] = testname
@@ -145,8 +138,7 @@ end
     @test notes(obj) == nothing
 end
 
-#test_remove_missing_note
-@with_tmp_repo_access begin
+with_tmp_repo_access("test remove missing note") do test_repo, path
     sig = Signature("Julia", "julia@julia.com")
     id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     obj = test_repo[id]
