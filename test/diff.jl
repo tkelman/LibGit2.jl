@@ -1,10 +1,10 @@
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
     opts = parse_git_diff_options({:context_lines=>1, :interhunk_lines=>1})
     @test opts.context_lines == 1
     @test opts.interhunk_lines == 1
 end
 
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
   d = diff(test_repo, "605812a", "370fe9ec22",
            {:context_lines=>1, :interhunk_lines=>1})
   @test isa(d, GitDiff)
@@ -39,7 +39,7 @@ end
   @show sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1)
 end
 
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
   d = diff(test_repo, "605812a", nothing,
            {:context_lines=>1, :interhunk_lines=>1})
   @test isa(d, GitDiff)
@@ -75,7 +75,7 @@ end
   @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 113
 end
 
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
   d = diff(test_repo, nothing, "605812a", 
            {:context_lines=>1, :interhunk_lines=>1})
   @test isa(d, GitDiff)
@@ -112,7 +112,7 @@ end
 end
 
 
-@sandboxed_test "status" begin
+sandboxed_test("status") do test_repo, path
     d = diff_workdir(
              test_repo, "26a125ee1bf",
              {:context_lines => 3,
@@ -152,7 +152,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4
 end
 
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
     c = lookup_commit(test_repo, "605812a")
     @test isa(c, GitCommit)
     
@@ -190,7 +190,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 46
 end
 
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
     c = lookup_commit(test_repo, 
                 Oid("6bab5c79cd5140d0f800917f550eb2a3dc32b0da"))
     @test isa(c, GitCommit)
@@ -230,7 +230,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 0
 end
 
-@sandboxed_test "status" begin
+sandboxed_test("status") do test_repo, path
     c = lookup_commit(test_repo, "26a125ee1bf")
     @test isa(c, GitCommit)
     
@@ -274,7 +274,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4 
 end 
 
-@sandboxed_test "status" begin
+sandboxed_test("status") do test_repo, path
     c = lookup_commit(test_repo, "26a125ee1bf")
     t = GitTree(c)
     @test isa(t, GitTree)
@@ -319,7 +319,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4 
 end 
 
-@sandboxed_test "status" begin 
+sandboxed_test("status") do test_repo, path
     idx = repo_index(test_repo)
     c = lookup_commit(test_repo, "26a125ee1bf")
     t = GitTree(c)
@@ -363,7 +363,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 5 
 end
 
-@sandboxed_test "status" begin 
+sandboxed_test("status") do test_repo, path
     idx = repo_index(test_repo)
     c = lookup_commit(test_repo, "26a125ee1bf")
     t = GitTree(c)
@@ -408,7 +408,7 @@ end
     end
 end
 
-@sandboxed_test "attr" begin 
+sandboxed_test("attr") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "605812a"))
     b = GitTree(lookup_commit(test_repo, "370fe9ec22"))
     c = GitTree(lookup_commit(test_repo, "f5b0af1fb4f5c"))
@@ -473,7 +473,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 14) 
 end
 
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "605812a"))
     d = diff(test_repo, a, nothing, {:context_lines => 1, :interhunk_lines => 1})
     ds = deltas(d)
@@ -506,7 +506,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 113 
 end
 
-@sandboxed_test "attr" begin 
+sandboxed_test("attr") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "605812a"))
     d = diff(test_repo, a, "370fe9ec22", 
                 {:context_lines => 1, :interhunk_lines => 1})
@@ -541,7 +541,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1) 
 end
 
-@sandboxed_test "attr" begin
+sandboxed_test("attr") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "605812a"))
     b = GitTree(lookup_commit(test_repo, "370fe9ec22"))
     c = GitTree(lookup_commit(test_repo, "f5b0af1fb4f5c"))
@@ -580,7 +580,7 @@ end
     @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 22
 end
 
-@sandboxed_test "unsymlinked.git" begin
+sandboxed_test("unsymlinked.git") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "7fccd7"))
     b = GitTree(lookup_commit(test_repo, "806999"))
 
@@ -599,7 +599,7 @@ end
     @test sum(x -> x.status == :typechange? 1 : 0, ds) == 0
 end
 
-@sandboxed_test "unsymlinked.git" begin
+sandboxed_test("unsymlinked.git") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "7fccd7"))
     b = GitTree(lookup_commit(test_repo, "806999"))
 
@@ -619,7 +619,7 @@ end
 end 
 
 
-@sandboxed_test "unsymlinked.git" begin
+sandboxed_test("unsymlinked.git") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "806999"))
     b = GitTree(lookup_commit(test_repo, "a8595c"))
 
@@ -638,7 +638,7 @@ end
     @test sum(x -> x.status == :typechange? 1 : 0, ds) == 0
 end 
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69"))
     b = lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10"))
 
@@ -646,7 +646,7 @@ end
     @test length(d) == 2
 end
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69"))
     b = lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10"))
 
@@ -666,7 +666,7 @@ end
     @test ds[2].isbinary == false
 end
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69"))
     b = lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10"))
     d = diff(test_repo, GitTree(a), GitTree(b), {:max_size=>10})
@@ -680,7 +680,7 @@ Binary files a/readme.txt and b/readme.txt differ
 "
 end
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
     
@@ -700,7 +700,7 @@ end
     @test "M\treadme.txt\n" == patch(d, format=:name_status)
 end
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
     d = diff(test_repo, a, b, {:context_lines => 0})
@@ -745,7 +745,7 @@ index 7b808f7..29ab705 100644
 " 
 end
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
     d = diff(test_repo, a, b)
@@ -819,7 +819,7 @@ end
     @test 1289 == ls[13].content_offset
 end
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = GitTree(test_repo[Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")])
     b = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d = diff(test_repo, a, b)
@@ -828,7 +828,7 @@ M\treadme.txt
 "
 end
 
-@sandboxed_test "diff" begin
+sandboxed_test("diff") do test_repo, path
     a = GitTree(test_repo[Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")])
     b = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d = diff(test_repo, a, b)
