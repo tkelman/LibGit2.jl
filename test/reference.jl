@@ -8,92 +8,93 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-test_path = joinpath(pwd(), "testrepo")
-try
+context() do
+    test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
-    cid, tid = seed_test_repo(repo)
-    
-    _ = create_ref(repo, "refs/tags/tree", tid, force=true)
-    tag = lookup_ref(repo, "refs/tags/tree")
-    @test git_reftype(tag) == 1 #api.REF_OID 
-    @test isa(tag, GitReference{Oid})
-    
-    ref = lookup_ref(repo, "HEAD")
-    @test git_reftype(ref) == 2 #api.REF_SYMBOLIC
-    @test isa(ref, GitReference{Sym})
+    try
+        cid, tid = seed_test_repo(repo)
+        
+        _ = create_ref(repo, "refs/tags/tree", tid, force=true)
+        tag = lookup_ref(repo, "refs/tags/tree")
+        @test git_reftype(tag) == 1 #api.REF_OID 
+        @test isa(tag, GitReference{Oid})
+        
+        ref = lookup_ref(repo, "HEAD")
+        @test git_reftype(ref) == 2 #api.REF_SYMBOLIC
+        @test isa(ref, GitReference{Sym})
 
-    @test target(ref) == nothing
-    ref = resolve(ref)
-    @test isa(ref, GitReference{Oid})
-    @test isa(target(ref), Oid)
-    @test symbolic_target(ref) == ""
-    @test hex(cid) == hex(target(ref))
+        @test target(ref) == nothing
+        ref = resolve(ref)
+        @test isa(ref, GitReference{Oid})
+        @test isa(target(ref), Oid)
+        @test symbolic_target(ref) == ""
+        @test hex(cid) == hex(target(ref))
 
-    _ = rename(tag, "refs/tags/renamed", force=false)
-    tag = lookup_ref(repo, "refs/tags/renamed")
-    @test isa(tag, GitReference{Oid})
-
-catch err
-    rethrow(err)
-finally 
-    cleanup_dir(test_path)
-end
+        _ = rename(tag, "refs/tags/renamed", force=false)
+        tag = lookup_ref(repo, "refs/tags/renamed")
+        @test isa(tag, GitReference{Oid})
+    finally 
+        close(repo)
+        cleanup_dir(test_path)
+    end
+end 
 
 #= TODO:
-test_path = joinpath(pwd(), "testrepo")
-try
+context() do
+    test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
-    cid, tid = seed_test_repo(repo)
+    try
+        cid, tid = seed_test_repo(repo)
 
-    sig = Signature("test", "test@test.com")
-    idx = repo_index(repo)
-    add!(idx, "README")
-    tid = write_tree!(idx)
+        sig = Signature("test", "test@test.com")
+        idx = repo_index(repo)
+        add!(idx, "README")
+        tid = write_tree!(idx)
 
-    message = "This is a commit\n"
-    tree = lookup_tree(repo, tid)
-  
-    cid = commit(repo, "HEAD", sig, sig, message, tree)
+        message = "This is a commit\n"
+        tree = lookup_tree(repo, tid)
+      
+        cid = commit(repo, "HEAD", sig, sig, message, tree)
 
-    _ = create_ref(repo, "refs/heads/one",   cid, force=true)
-    _ = create_ref(repo, "refs/heads/two",   cid, force=true)
-    _ = create_ref(repo, "refs/heads/three", cid, force=true)
+        _ = create_ref(repo, "refs/heads/one",   cid, force=true)
+        _ = create_ref(repo, "refs/heads/two",   cid, force=true)
+        _ = create_ref(repo, "refs/heads/three", cid, force=true)
 
-    expected = [join(["refs/heads", x], "/") 
-                for x in ["master","one","two","three"]]
-    test_names = String[]
-    for r in iter_refs(repo)
-        push!(test_names, name(r))
+        expected = [join(["refs/heads", x], "/") 
+                    for x in ["master","one","two","three"]]
+        test_names = String[]
+        for r in iter_refs(repo)
+            push!(test_names, name(r))
+        end
+        sort!(expected)
+        sort!(test_names)
+        for (exp, tst) in zip(expected, test_names)
+            @test exp == tst
+        end
+
+        # test glob
+        expected = ["refs/heads/two", "refs/heads/three"]
+        test_names = String[]
+        for r in iter_refs(repo, "refs/heads/t*")
+            push!(test_names, name(r))
+        end
+        sort!(expected)
+        sort!(test_names)
+        for (exp, tst) in zip(expected, test_names)
+            @test exp == tst
+        end
+    finally 
+        close(repo)
+        cleanup_dir(test_path)
     end
-    sort!(expected)
-    sort!(test_names)
-    for (exp, tst) in zip(expected, test_names)
-        @test exp == tst
-    end
-
-    # test glob
-    expected = ["refs/heads/two", "refs/heads/three"]
-    test_names = String[]
-    for r in iter_refs(repo, "refs/heads/t*")
-        push!(test_names, name(r))
-    end
-    sort!(expected)
-    sort!(test_names)
-    for (exp, tst) in zip(expected, test_names)
-        @test exp == tst
-    end
-catch err
-    rethrow(err)
-finally 
-    cleanup_dir(test_path)
 end
 =#
 
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
-@with_repo_access begin
-    begin # test_reference validity
+with_repo_access() do test_repo, path
+    context("test_reference validity") do 
         valid = "refs/foobar"
         invalid = "refs/nope^*"
         @test isvalid_ref(valid) == true
@@ -102,26 +103,26 @@ end
 
     # test can handle exceptions
 
-    begin # test list references
+    context("test list references") do 
         tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo))
         @test join(sort(tmp), ":") == "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0"
     end
     
-    begin # test can filter refs with regex
+    context("test can filter refs with regex") do
         tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo, "refs/tags/*"))
         refs = join(sort(tmp), ":")
         @test refs == "tags/v0.9:tags/v1.0"
     end
 
-    begin #test_can_filter_refs_with_string
+    context("test can filter refs with string") do 
         tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo, "*0.9*"))
         refs = join(sort(tmp), ":")
         @test refs == "tags/v0.9"
     end
 end
 
-@with_repo_access begin
-  begin :test_can_open_reference
+with_repo_access() do test_repo, path
+  context("test can open reference") do
     ref = lookup_ref(test_repo, "refs/heads/master")
     @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test isa(ref, GitReference{Oid})
@@ -129,7 +130,7 @@ end
     @test peel(ref) == nothing
   end
 
-  begin :test_can_open_a_symbolic_reference
+  context("test can open a symbolic reference") do
     ref = lookup_ref(test_repo, "HEAD")
     @test symbolic_target(ref) == "refs/heads/master"
     @test isa(ref, GitReference{Sym})
@@ -140,12 +141,12 @@ end
     @test target(resolved) == peel(ref)
   end
 
-  begin :test_looking_up_missing_ref_returns_nil
+  context("test looking up missing ref returns nil") do
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
   end
 
-  begin :test_load_reflog
+  context("test load reflog") do
       ref = lookup_ref(test_repo, "refs/heads/master")
       #@test has_reflog(ref) == true
       rlog = reflog(ref)
@@ -158,19 +159,19 @@ end
       @test email(entry.committer) == "schacon@gmail.com"
   end
   
-  begin :test_reference_exists
+  context("test reference exists") do
     @test exists(test_repo, "refs/heads/master") == true
     @test exists(test_repo, "lol/wut") == false
   end
 
-  begin :test_load_packed_ref
+  context("test load packed ref") do
     ref = lookup_ref(test_repo, "refs/heads/packed")
     @test target(ref) == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")
     @test isa(ref, GitReference{Oid})
     @test name(ref) == "refs/heads/packed"
   end
 
-  begin :test_resolve_head
+  context("test resolve head") do
     ref = lookup_ref(test_repo, "HEAD")
     #TODO: make target work for both direct and symboloic
     @test symbolic_target(ref) == "refs/heads/master"
@@ -181,14 +182,14 @@ end
     @test isa(head, GitReference{Oid})
   end
 
-  begin :test_reference_to_tag
+  context("test reference to tag") do
     ref = lookup_ref(test_repo, "refs/tags/v1.0")
     @test target(ref) == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
     @test peel(ref) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
   end
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     create_ref(test_repo, 
                "refs/heads/unit_test",
                "refs/heads/master")
@@ -199,7 +200,7 @@ end
                force=true)
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
     create_ref(test_repo,
                "refs/heads/$UNICODE_REF_NAME",
@@ -208,12 +209,12 @@ end
     @test "heads/$UNICODE_REF_NAME" in refs
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
    @test repo_workdir(test_repo) == test_repo_path
    
    o = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
@@ -225,7 +226,7 @@ end
    delete!(test_repo, ref)
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     ref = create_ref(test_repo,
       "refs/heads/unit_test",
       Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
@@ -239,7 +240,7 @@ end
     delete!(test_repo, new_ref)
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     ref = create_ref(test_repo,
                      "refs/heads/unit_test",
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
@@ -253,14 +254,14 @@ end
     delete!(test_repo, new_ref)
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
     ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
     @test name(ref1) == "refs/heads/Ångström"
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
@@ -286,7 +287,7 @@ end
     @test email(rlog[end].committer) == "foo@bar"
 end
 
-@with_tmp_repo_access begin
+with_tmp_repo_access() do test_repo, path
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
