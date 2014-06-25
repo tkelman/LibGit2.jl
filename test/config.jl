@@ -12,7 +12,7 @@ with_repo_access() do test_repo, path
     end
 
     context("test read from path") do
-        cfg = GitConfig(joinpath(path(test_repo), "config"))
+        cfg = GitConfig(joinpath(LibGit2.path(test_repo), "config"))
         @test isa(cfg, GitConfig)
         @test cfg["core.bare"] == "false"
     end
@@ -32,7 +32,7 @@ with_tmp_repo_access() do test_repo, path
        cfg2 = config(test_repo)
        @test cfg2["custom.value"] == "my value"
 
-       content = open(readall, joinpath(path(test_repo), "config"))
+       content = open(readall, joinpath(LibGit2.path(test_repo), "config"))
        @test match(r"value = my value", content) != nothing
    end
 
