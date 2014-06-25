@@ -8,30 +8,31 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-test_path = joinpath(pwd(), "testrepo")
-try
+context() do
+    test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
-    @test isdir(repo_workdir(repo)) 
-    idx = repo_index(repo)
-    @test isa(idx, GitIndex)
-    add!(idx, "README")
-    tree_id = write_tree!(idx)
-    @test isa(tree_id, Oid)
-    @test isequal(hex(tree_id), "b7119b11e8ef7a1a5a34d3ac87f5b075228ac81e")
-    tree1 = lookup(GitTree, repo, tree_id)
-    tree2 = lookup_tree(repo, tree_id)
+    try
+        @test isdir(repo_workdir(repo)) 
+        idx = repo_index(repo)
+        @test isa(idx, GitIndex)
+        add!(idx, "README")
+        tree_id = write_tree!(idx)
+        @test isa(tree_id, Oid)
+        @test isequal(hex(tree_id), "b7119b11e8ef7a1a5a34d3ac87f5b075228ac81e")
+        tree1 = lookup(GitTree, repo, tree_id)
+        tree2 = lookup_tree(repo, tree_id)
 
-    @test tree1 == tree2
-    tree = tree1
-    @test isa(tree, GitTree)
-    @test tree.ptr != C_NULL
-    @test isa(Oid(tree), Oid)
-    @test isa(hex(tree), ASCIIString)
-catch err
-    rethrow(err)
-finally 
-    cleanup_dir(test_path)
-end
+        @test tree1 == tree2
+        tree = tree1
+        @test isa(tree, GitTree)
+        @test tree.ptr != C_NULL
+        @test isa(Oid(tree), Oid)
+        @test isa(hex(tree), ASCIIString)
+    finally 
+        close(repo)
+        cleanup_dir(test_path)
+    end
+end 
 
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
@@ -53,25 +54,21 @@ function new_idx_entry()
                       3)
 end
 
-# test index size
-@with_test_index begin
+with_test_index("test index size") do test_index, path
     @test length(test_index) == 2
 end
 
-# test empty index
-@with_test_index begin
+with_test_index("test empty index") do test_index, path
     clear!(test_index)
     @test length(test_index) == 0
 end
 
-# test remove entries
-@with_test_index begin
+with_test_index("test remove entries") do test_index, path
     remove!(test_index, "new.txt")
     @test length(test_index) == 1
 end
 
-# test remove dir
-@with_test_index begin
+with_test_index("test rmeove dir") do test_index, path
     removedir!(test_index, "does-not-exist")
     @test length(test_index) == 2
 
@@ -82,8 +79,7 @@ end
     @test length(test_index) == 0
 end
 
-# test get entry data
-@with_test_index begin
+with_test_index("test get entry data") do test_index, path
     entry = test_index[1]
     @test "README" == entry.path 
     @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == Oid(entry)
@@ -104,14 +100,12 @@ end
     @test Oid("fa49b077972391ad58037050f2a75f74e3671e92") == Oid(entry)
 end
 
-# test iterate entries
-@with_test_index begin
+with_test_index("test iterate entries") do test_index, path
     c = sort(collect(test_index), by=x->Oid(x))
     @test join(map(x->x.path, c), ":") == "README:new.txt"
 end
 
-# test update entries
-@with_test_index begin
+with_test_index("test update entries") do test_index, path
     now = int(time())
     entry = test_index[1]
     Oid(entry) = Oid("12ea3153a78002a988bb92f4123e7e831fd1138a")
@@ -131,16 +125,14 @@ end
     #@test newentry == entry
 end
 
-# test add new entries
-@with_test_index begin
+with_test_index("test add new entries") do test_index, path
     add!(test_index, new_idx_entry())
     @test length(test_index) == 3
     c = sort(collect(test_index), by=x->Oid(x))
     @test join(map(x -> x.path, c), ":") == "README:new_path:new.txt"
 end
 
-# test can write index
-@with_test_index begin
+with_test_index("test can write index") do test_index, path
     tmp_path, tmp_io = mktemp()
     write(tmp_io, readall(test_index_path))
     close(tmp_io)
@@ -158,55 +150,56 @@ end
     @test length(test_index2) == 4
 end
 
-# ------------------
-# test adding a path
-# ------------------
-tmp_path = mktempdir()
-test_repo  = repo_init(tmp_path, bare=false)
-test_index1 = repo_index(test_repo)
-fh = open(joinpath(tmp_path, "test.txt"), "w")
-write(fh, "test content")
-close(fh)
-add!(test_index1, "test.txt")
-write!(test_index1)
+context("test adding a path") do
+    tmp_path = mktempdir()
+    test_repo  = repo_init(tmp_path, bare=false)
+    try
+        test_index1 = repo_index(test_repo)
+        fh = open(joinpath(tmp_path, "test.txt"), "w")
+        write(fh, "test content")
+        close(fh)
+        add!(test_index1, "test.txt")
+        write!(test_index1)
 
-test_index2 = GitIndex(joinpath(tmp_path, ".git/index"))
-@test test_index2[1].path == "test.txt"
+        test_index2 = GitIndex(joinpath(tmp_path, ".git/index"))
+        @test test_index2[1].path == "test.txt"
+    finally
+        close(test_repo)
+        run(`rm -rf $tmp_path`)
+    end
+end
 
-close(test_repo)
-run(`rm -rf $tmp_path`)
+content("test reloading index") do 
+    tmp_path = mktempdir()
+    test_repo = repo_init(tmp_path, bare=false)
+    try
+        index = repo_index(test_repo)
+        fh = open(joinpath(tmp_path, "test.txt"), "w")
+        write(fh, "test content")
+        close(fh)
+        add!(index, "test.txt")
+        write!(index)
 
-# --------------------
-# test reloading index
-# --------------------
-tmp_path = mktempdir()
-test_repo = repo_init(tmp_path, bare=false)
-index = repo_index(test_repo)
-fh = open(joinpath(tmp_path, "test.txt"), "w")
-write(fh, "test content")
-close(fh)
-add!(index, "test.txt")
-write!(index)
+        rindex = GitIndex(joinpath(tmp_path, ".git/index"))
+        entry = rindex["test.txt"]
+        @test entry.stage == 0
 
-rindex = GitIndex(joinpath(tmp_path, ".git/index"))
-entry = rindex["test.txt"]
-@test entry.stage == 0
+        add!(rindex, new_idx_entry())
+        write!(rindex)
 
-add!(rindex, new_idx_entry())
-write!(rindex)
+        @test length(index) == 1
+        reload!(index)
+        @test length(index) == 2
 
-@test length(index) == 1
-reload!(index)
-@test length(index) == 2
+        entry = index["new_path", 3]
+        @test entry.mode == 33188
+    finally
+        close(test_repo)
+        run(`rm -rf $tmp_path`)
+    end
+end
 
-entry = index["new_path", 3]
-@test entry.mode == 33188
-
-close(test_repo)
-run(`rm -rf $tmp_path`)
-
-# test idempotent read write
-@with_tmp_repo_access begin
+with_tmp_repo_access("test idempotent read write") do test_repo, path
     head_id = lookup_ref(test_repo, "HEAD") |> resolve |> target
     tree = GitTree(lookup(test_repo, head_id))
     index = repo_index(test_repo)
@@ -217,8 +210,7 @@ run(`rm -rf $tmp_path`)
     @test Oid(index_tree) == Oid(tree)
 end
 
-# test build tree from index
-@with_tmp_repo_access begin
+with_tmp_repo_access("test build tree from index") do test_repo, path
     head_id = lookup_ref(test_repo,
                 "refs/remotes/origin/packed") |> resolve |> target
     tree = GitTree(test_repo[head_id])
@@ -236,7 +228,7 @@ end
 # --------------------
 
 # test add all lifecycle
-@sandboxed_test "testrepo.git" begin 
+sandboxed_test("testrepo.git") do test_repo, path
     test_repo = repo_init(joinpath(test_repo_path, "add-all"))
     cd(repo_workdir(test_repo)) do
         open("file.foo", "w") do fh
@@ -277,7 +269,7 @@ end
 end
 
 # test update all
-@sandboxed_test "testrepo.git" begin 
+sandboxed_test("testrepo.git") do test_repo, path
     test_repo = repo_init(joinpath(test_repo_path, "add-all"))
     cd(repo_workdir(test_repo)) do
         open("file.foo", "w") do fh
@@ -321,7 +313,7 @@ end
 end
 
 # test remove all
-@sandboxed_test "testrepo.git" begin 
+sandboxed_test("testrepo.git") do test_repo, path
     test_repo = repo_init(joinpath(test_repo_path, "add-all"))
     cd(repo_workdir(test_repo)) do
         open("file.foo", "w") do fh
@@ -352,4 +344,3 @@ end
         @test index["file.zzz"] == nothing
     end
 end
-
