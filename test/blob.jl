@@ -11,7 +11,7 @@ with_repo_access("test lookup fails with wrong git obj") do test_repo, path
 end
 
 with_repo_access() do test_repo, path
-    context("test read blob data") 
+    context("test read blob data")  do
         id = Oid("fa49b077972391ad58037050f2a75f74e3671e92")
         b = lookup(test_repo, id)
         @test sizeof(b) == 9 
