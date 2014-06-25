@@ -1,5 +1,4 @@
-# test lookup fails with incorrect git object
-with_repo_access() do test_repo, path
+with_repo_access("test lookup fails with wrong git obj") do test_repo, path
       # commit
     @test_throws LibGitError{:Invalid,:NotFound} lookup_blob(test_repo, 
                                                     Oid("8496071c1b46c854b31185ea97743be6a8774479"))
@@ -12,7 +11,7 @@ with_repo_access() do test_repo, path
 end
 
 with_repo_access() do test_repo, path
-    begin :test_read_blob_data
+    context("test read blob data") 
         id = Oid("fa49b077972391ad58037050f2a75f74e3671e92")
         b = lookup(test_repo, id)
         @test sizeof(b) == 9 
@@ -22,13 +21,13 @@ with_repo_access() do test_repo, path
         @test text(b) == "new file\n"
     end
 
-    begin :test_blob_sloc
+    context("test blob sloc") do 
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         @test sloc(b) == 328
     end
 
-    begin :test_blob_content_with_size
+    context("test blob content with size") do 
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         c =  rawcontent(b, 10)
@@ -36,48 +35,48 @@ with_repo_access() do test_repo, path
         @test sizeof(c) == 10
     end
 
-    begin :test_blob_content_with_size_gt_file_size
+    context("test blob content with size gt file size") do
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         c =  rawcontent(b, 1000000)
         @test sizeof(b) == sizeof(c)
     end
 
-    begin :test_blob_content_with_zero_size
+    context("test blob content with zero size") do
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         c =  rawcontent(b, 0)
         @test isempty(c)
     end
 
-    begin :test_blob_content_with_negative_size
+    context("test blob content with negative size") do 
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         c =  rawcontent(b, -100)
         @test sizeof(b) == sizeof(c)
     end
 
-    begin :test_blob_text_with_max_lines
+    context("test blob text with max lines") do
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         blob = lookup(test_repo, id)
         @test text(blob, 1) == "# Rugged\n"
     end
 
-    begin :test_blob_text_with_lines_gt_file_lines
+    context("test blob text with lines gt file lines") do 
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         txt = text(b, 1000000)
         @test length(split(txt, "\n")) - 1 == 464
     end
 
-    begin :test_blob_text_with_zero_lines
+    context("test blob text with zero lines") do 
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         txt = text(b, 0)
         @test txt == "" 
     end
 
-    begin :test_blob_text_with_negative_lines
+    context("test blob text with negative lines") do 
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         txt = text(b, -100)
@@ -97,20 +96,17 @@ with_repo_access() do test_repo, path
     =#
 end
 
-# test write blob data
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test write blob data") do test_repo, path
     @test blob_from_buffer(test_repo, "a new blob content") == 
           Oid("1d83f106355e4309a293e42ad2a2c4b8bdbe77ae")
 end
 
-# test_write_blob_from_workdir
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test write blob from workdir") do test_repo, path
     @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == 
       blob_from_workdir(test_repo, "README")
 end
 
-# test_write_blob_from_disk
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test write blob from disk") do test_repo, path
     file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
     @test isfile(file_path)
     id = blob_from_disk(test_repo, file_path)
@@ -126,8 +122,7 @@ with_tmp_repo_access() do test_repo, path
     close(fh)
 end
 
-# test_blob_is_binary
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test blob is binary") do test_repo, path
     binary_file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
     binary_blob = lookup(test_repo, blob_from_disk(test_repo, binary_file_path))
     @test isbinary(binary_blob) == true
@@ -175,8 +170,7 @@ sandboxed_test("diff") do test_repo, path
 end
 =#
 
-# test_diff_nil
-sandboxed_test("diff") do test_repo, path 
+sandboxed_test("diff", "test diff nothing") do test_repo, path 
     t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     b  = lookup(test_repo, Oid(t1["readme.txt"]))
     p  = diff(test_repo, b, nothing)
@@ -195,8 +189,7 @@ sandboxed_test("diff") do test_repo, path
     end
 end
 
-# test_diff_with_paths
-sandboxed_test("diff") do test_repo, path
+sandboxed_test("diff", "test diff with paths") do test_repo, path
     t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     t2 = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
 
@@ -208,8 +201,7 @@ sandboxed_test("diff") do test_repo, path
     @test "new_readme.txt" == delta(p).new_file.path
 end
 
-# test write blob from io with hintpath
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test write blob from io with hintpath") do test_repo, path
     file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
     open(file_path, "r") do io
         id = blob_from_stream(test_repo, io, "archive.tar.gz2")
@@ -224,8 +216,7 @@ with_tmp_repo_access() do test_repo, path
     end
 end
 
-# test write blob from io without hintpath
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test write blob from io without hintpath") do test_repo, path
     file_path = joinpath(TESTDIR, joinpath("fixtures", "archive.tar.gz"))
     open(file_path, "r") do io
         id = blob_from_stream(test_repo, io)
