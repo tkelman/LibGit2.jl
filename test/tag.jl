@@ -1,4 +1,4 @@
-@with_repo_access begin
+with_repo_access() do test_repo, path
     # blob
     @test_throws LibGitError{:Invalid,:NotFound} lookup_tag(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
     # commit
@@ -6,7 +6,7 @@
     # tree
     @test_throws LibGitError{:Invalid,:NotFound} lookup_tag(test_repo, Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
 
-    begin # test reading a tag
+    context("test reading a tag") do
         id = Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
         obj = lookup(test_repo, id)
         @test id == Oid(obj)
@@ -22,15 +22,14 @@
         @test email(c) == "schacon@gmail.com"
     end
 
-    begin # test reading the oid of a tag
+    context("test reading the oid of a tag") do
         id = Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
         obj = lookup(test_repo, id)
         @test Oid(target(obj)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     end
 end
 
-# test writing a tag
-@with_tmp_repo_access begin
+with_tmp_repo_access("test writing a tag") do test_repo, path
    sig = Signature("Julia", "julia@julia.com")
    tid = tag!(test_repo, 
               name="tag",
@@ -46,8 +45,7 @@ end
    @test email(tagger(t)) == "julia@julia.com"
 end
 
-# test writing a tag without a signature
-@with_tmp_repo_access begin
+with_tmp_repo_access("test writing a tag without a signature") do test_repo, path
     testname = "Julia"
     testemail = "julia@julia.com"
     config(test_repo)["user.name"] = testname
@@ -62,8 +60,7 @@ end
     @test email(tagger(t)) == testemail
 end
 
-# test invalid message type
-@with_tmp_repo_access begin
+with_tmp_repo_access("test invalid message type") do test_repo, path
     sig = Signature("Julia", "julia@julia.com")
     @test_throws TypeError tag!(
                               test_repo, 
@@ -73,8 +70,7 @@ end
                               tagger=sig)
 end
 
-# test writing light tags
-@with_tmp_repo_access begin
+with_tmp_repo_access("test writing light tags") do test_repo, path
     tag!(test_repo, name="tag", target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     t = lookup_ref(test_repo, "refs/tags/tag")
     @test target(t) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
