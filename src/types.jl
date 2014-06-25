@@ -144,7 +144,6 @@ free!(r::GitRepo) = begin
 end
 
 Base.convert(::Type{Ptr{Void}}, r::GitRepo) = r.ptr
-Base.pointer(r::GitRepo) = r.ptr
 
 # -------------
 # Git Objects
@@ -178,8 +177,7 @@ type GitBlob <: GitObject
     end
 end
 
-Base.pointer(o::GitBlob) = o.ptr
-Base.convert(::Type{Ptr{Void}}, o::GitBlob) = pointer(o)
+Base.convert(::Type{Ptr{Void}}, r::GitBlob) = b.ptr
 
 type GitCommit <: GitObject
     ptr::Ptr{Void}
@@ -192,8 +190,7 @@ type GitCommit <: GitObject
     end
 end
 
-Base.convert(::Type{Ptr{Void}}, o::GitCommit) = o.ptr
-Base.pointer(o::GitCommit) = o.ptr
+Base.convert(::Type{Ptr{Void}}, c::GitCommit) = c.ptr
 
 type GitTag <: GitObject
     ptr::Ptr{Void}
@@ -268,7 +265,7 @@ free!(b::GitBranch) = begin
     end
 end
 
-Base.pointer(b::GitBranch) = b.ptr
+Base.convert(::Type{Ptr{Void}}, b::GitBranch) = b.ptr
 
 # ---------------
 # Git Remote
@@ -291,4 +288,4 @@ free!(r::GitRemote) = begin
     end
 end
 
-Base.pointer(r::GitRemote) = r.ptr
+Base.convert(::Type{Ptr{Void}}, r::GitRemote) = r.ptr
