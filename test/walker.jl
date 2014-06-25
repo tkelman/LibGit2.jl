@@ -1,5 +1,5 @@
-@with_repo_access begin
-    begin # test walk revlist 
+with_repo_access() do test_repo, path
+    context("test walk revlist") do test_repo, path
         walker = GitRevWalker(test_repo)
         push!(walker, Oid("9fd738e8f7967c078dceed8190330fc8648ee56a"))
         data = collect(walker)
@@ -8,7 +8,7 @@
         @test str == "4a202.5b5b0.84960.9fd73"
     end
 
-    begin # test_walk_partial_revlist
+    context("test walk partial revlist") do 
         walker = GitRevWalker(test_repo)
         id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
         push!(walker, id)
@@ -17,14 +17,14 @@
         @test length(walk) == 1
     end
 
-    begin # test_hide_part_of_list
+    context("test hide part of list") do
         walker = GitRevWalker(test_repo)
         push!(walker, Oid("9fd738e8f7967c078dceed8190330fc8648ee56a"))
         hide!(walker, Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
         @test length(collect(walker)) == 2
     end
 
-    begin # test_resetting_walker
+    context("test resetting walker") do
         walker = GitRevWalker(test_repo)
         id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
         push!(walker, id)
@@ -36,7 +36,7 @@
         @test length(walk) == 0
     end
 
-   begin # test_walk_is_iterable
+   context("test walker is iterable") do
         walker = GitRevWalker(test_repo)
         push!(walker, Oid("9fd738e8f7967c078dceed8190330fc8648ee56a"))
         vs = sort(collect(walker))
@@ -72,26 +72,26 @@ function is_toposorted(list)
     all(tfunc, list)
 end
 
-@with_repo_access begin
-    begin # test walk revlist 
+with_repo_access() do test_repo, path
+    context("test walk revlist") do
         walker = GitRevWalker(test_repo)
         t = revlist_with_sorting(walker, :date)
         @test t ==  "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
     end
 
-    begin #test_sort_by_topo
+    context("test sort by topo") do
         walker = GitRevWalker(test_repo)
         sort_list = do_sort(walker, :topo)
         @test is_toposorted(sort_list)
     end
 
-    begin #test_sort_by_date_reversed
+    context("test sort by date reversed") do
         walker = GitRevWalker(test_repo)
         t = revlist_with_sorting(walker, :date, rev=true)
         @test t == "84960.5b5b0.4a202.9fd73.c4780.a4a7d"
     end
 
-    begin #test_sort_by_topo_reverse
+    context("test sort by topo reverse") do 
         walker = GitRevWalker(test_repo)
         sort_list = do_sort(walker, :topo, rev=true)
         reverse!(sort_list)
