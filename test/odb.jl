@@ -8,29 +8,25 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-test_path = joinpath(pwd(), "testrepo")
-try
+context("odb test") do 
+    test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
-    cid, tid = seed_test_repo(repo)
+    try
+        cid, tid = seed_test_repo(repo)
 
-    str = "hello, world!"
-    odb = repo_odb(repo)
-    stream = open_wstream(GitBlob, odb, length(str))
-    @test iswriteable(stream)
-    @test isreadable(stream) == false
-    n = write(stream, str)
-    @test n == length(str)
-    close(stream)
+        str = "hello, world!"
+        odb = repo_odb(repo)
+        stream = open_wstream(GitBlob, odb, length(str))
+        @test iswriteable(stream)
+        @test isreadable(stream) == false
+        n = write(stream, str)
+        @test n == length(str)
+        close(stream)
 
-    eid = Oid("30f51a3fba5274d53522d0f19748456974647b4f")
-    @test eid == Oid(stream)
-
-catch err
-    rethrow(err)
-finally
-    cleanup_dir(test_path)
+        eid = Oid("30f51a3fba5274d53522d0f19748456974647b4f")
+        @test eid == Oid(stream)
+    finally
+        close(repo)
+        cleanup_dir(test_path)
+    end
 end
-
-# -----------------------------------------
-# Tests adapted from Ruby's Rugged Library
-# -----------------------------------------
