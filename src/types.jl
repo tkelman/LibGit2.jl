@@ -245,7 +245,8 @@ end
 
 Base.convert(::Type{Ptr{Void}}, r::GitReference) = r.ptr
 
-type GitBranch #<: GitReference{Sym}
+# TODO: git branch should be a subtype of GitReference
+type GitBranch
     ptr::Ptr{Void}
     
     function GitBranch(ptr::Ptr{Void})
