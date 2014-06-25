@@ -39,6 +39,22 @@ macro remote_transport_test(body)
     end
 end
 
+function remote_transport_test(f::Function) 
+    local tmp_dir = joinpath(tempname(), "dir")
+    mkpath(tmp_dir)
+    test_repo = repo_init(tmp_dir, bare=false)
+    test_repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
+    try
+        test_remote = remote_add!(test_repo, "origin", test_repo_dir)
+        f(test_repo, test_remote)
+    finally
+        close(test_repo)
+        run($(`rm -r -f $tmp_dir`))
+    end
+end 
+remote_transport_test(f::Function, s::String) = remote_transport_test(f)
+
+
 macro with_test_index(body)
     quote
         let test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index")
