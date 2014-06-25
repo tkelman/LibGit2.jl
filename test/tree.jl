@@ -72,7 +72,7 @@ with_repo_access() do test_repo, path
         end
     end
 
-    context("test iteratee subtree blobs") do
+    context("test iterate subtree blobs") do
         for b in each_blob(test_tree)
             @test isa(b, GitTreeEntry{GitBlob})
         end
