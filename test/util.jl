@@ -5,7 +5,7 @@ const TESTDIR = joinpath(PKGDIR, "test")
 const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 
 context(f::Function) = f()
-context(f::Function, s::String) = context(f)
+context(f::Function, s::String) = (println(s); context(f))
 
 macro repo_clone_test(body)
     local tmp_dir = tempname()
@@ -52,7 +52,7 @@ function remote_transport_test(f::Function)
         run($(`rm -r -f $tmp_dir`))
     end
 end 
-remote_transport_test(f::Function, s::String) = remote_transport_test(f)
+remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
 
 
 macro with_test_index(body)
@@ -72,7 +72,7 @@ function with_test_index(f::Function)
     finally
     end
 end 
-with_test_index(f::Function, s::String) = with_test_index(f)
+with_test_index(f::Function, s::String) = (println(s); with_test_index(f))
 
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
@@ -182,7 +182,7 @@ function sandboxed_test(f::Function, reponame::String)
         teardown(sbt)
     end
 end
-sandboxed_test(f::Function, reponame::String, s::String) = sandboxed_test(f, reponame)
+sandboxed_test(f::Function, reponame::String, s::String) = (println(s); sandboxed_test(f, reponame))
 
 macro sandboxed_checkout_test(body)
     quote
@@ -218,7 +218,7 @@ function sandboxed_checkout_test(f::Function)
         teardown(bare)
     end
 end
-sandboxed_checkout_test(f::Function, s::String) = sandboxed_checkout_test(f)
+sandboxed_checkout_test(f::Function, s::String) = (println(s); sandboxed_checkout_test(f))
 
 type RepoAccess
     path::String
@@ -248,7 +248,7 @@ function with_repo_access(f::Function)
         close(ra.repo)
     end
 end
-with_repo_access(f::Function, s::String) = with_repo_access(f)
+with_repo_access(f::Function, s::String) = (println(s); with_repo_access(f))
 
 type TmpRepoAccess
     path::String
@@ -302,4 +302,4 @@ function with_tmp_repo_access(f::Function)
         teardown(ra)
     end
 end
-with_tmp_repo_access(f::Function, s::String) = with_tmp_repo_access(f)
+with_tmp_repo_access(f::Function, s::String) = (println(s); with_tmp_repo_access(f))
