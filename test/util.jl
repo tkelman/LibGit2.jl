@@ -4,6 +4,9 @@ const PKGDIR = Pkg.dir("LibGit2")
 const TESTDIR = joinpath(PKGDIR, "test")
 const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 
+context(f::Function) = f()
+context(f::Function, s::String) = context(f)
+
 macro repo_clone_test(body)
     local tmp_dir = tempname()
     quote
@@ -53,6 +56,7 @@ function with_test_index(f::Function)
     finally
     end
 end 
+with_test_index(f::Function, s::String) = with_test_index(f)
 
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
@@ -210,6 +214,7 @@ function with_repo_access(f::Function)
         close(ra.repo)
     end
 end
+with_repo_access(f::Function, s::String) = with_repo_access(f)
 
 type TmpRepoAccess
     path::String
@@ -263,3 +268,4 @@ function with_tmp_repo_access(f::Function)
         teardown(ra)
     end
 end
+with_tmp_repo_access(f::Function, s::String) = with_tmp_repo_access(f)
