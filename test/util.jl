@@ -166,6 +166,7 @@ function sandboxed_test(f::Function, reponame::String)
         teardown(sbt)
     end
 end
+sandboxed_test(f::Function, reponame::String, s::String) = sandboxed_test(f, reponame)
 
 macro sandboxed_checkout_test(body)
     quote
@@ -185,6 +186,23 @@ macro sandboxed_checkout_test(body)
         end
     end
 end
+
+function sandboxed_checkout_test(f::Function)
+    sbt = setup(SandBoxedTest, "testrepo")
+    test_clone = clone(sbt.repo, "testrepo", "cloned_testrepo")
+    bare = setup(SandBoxedTest, "testrepo.git")
+    test_bare = repo_init(repo_path(bare.repo), bare=true)
+    try
+        f(test_repo, test_clone, test_bare)
+    finally
+        close(test_repo)
+        close(test_clone)
+        close(test_bare)
+        teardown(sbt)
+        teardown(bare)
+    end
+end
+sandboxed_checkout_test(f::Function, s::String) = sandboxed_checkout_test(f)
 
 type RepoAccess
     path::String

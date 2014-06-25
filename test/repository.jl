@@ -22,52 +22,57 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-
-# test creating bare repository
-tmp_repo(test_repo_path) do
-    repo_init(test_repo_path; bare=true)
-    let repo = Repository(test_repo_path)
-        @test isa(repo, Repository)
-        @test repo_isbare(repo)
-        @test repo_isempty(repo)
+context("test creating bare repository") do 
+    tmp_repo(test_repo_path) do
+        repo_init(test_repo_path; bare=true)
+        repo = Repository(test_repo_path)
+        try 
+            @test isa(repo, Repository)
+            @test repo_isbare(repo)
+            @test repo_isempty(repo)
+        finally
+            close(repo)
+        end 
     end
-end
+end 
 
-# test creating repository
-tmp_repo(test_repo_path) do
-    repo_init(test_repo_path)
-    let repo = Repository(test_repo_path)
-        @test isa(repo, Repository)
-        @test !(repo_isbare(repo))
-        @test repo_isempty(repo)
-        @test repo_workdir(repo) == abspath(test_repo_path)
-        @test repo_path(repo) == joinpath(test_repo_path, ".git")
-        @test isa(repo_index(repo), GitIndex)
-        # empty repo has no head
-        @test head(repo) == nothing
-        # empty repo has no tags
-        @test tags(repo) == nothing
-        # empty repo has no commits
-        @test commits(repo) == nothing
-        # empty repo has no references
-        @test references(repo) == nothing
-        
-        @test isa(config(repo), GitConfig)
-        @test isa(GitTreeBuilder(repo), GitTreeBuilder)
+context("test creating repository") do 
+    tmp_repo(test_repo_path) do
+        repo_init(test_repo_path)
+        repo = Repository(test_repo_path)
+        try
+            @test isa(repo, Repository)
+            @test !(repo_isbare(repo))
+            @test repo_isempty(repo)
+            @test repo_workdir(repo) == abspath(test_repo_path)
+            @test repo_path(repo) == joinpath(test_repo_path, ".git")
+            @test isa(repo_index(repo), GitIndex)
+            # empty repo has no head
+            @test head(repo) == nothing
+            # empty repo has no tags
+            @test tags(repo) == nothing
+            # empty repo has no commits
+            @test commits(repo) == nothing
+            # empty repo has no references
+            @test references(repo) == nothing
+            
+            @test isa(config(repo), GitConfig)
+            @test isa(GitTreeBuilder(repo), GitTreeBuilder)
+        finally
+            close(repo)
+        end
     end
 end
 
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
-# test fails to open repos that don't exist
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test fails to open repos that dont' exist") do test_repo, path
     @test_throws LibGitError{:OS,:NotFound} Repository("fakepath/123")
     @test_throws LibGitError{:OS,:NotFound} Repository("test")
 end
    
-# can check if objects exist 
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "can check if object exist") do test_repo, path 
     @test Oid("8496071c1b46c854b31185ea97743be6a8774479") in test_repo
     @test exists(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") in test_repo
@@ -78,33 +83,28 @@ end
     @test !(exists(test_repo, Oid("8496071c1c46c854b31185ea97743be6a8774479")))
 end
 
-# can read a raw object
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "can read a raw object") do test_repo, path
     rawobj = read(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test match(r"tree 181037049a54a1eb5fab404658a3a250b44335d7", data(rawobj)) != nothing
     @test sizeof(rawobj) == 172
     @test isa(rawobj, OdbObject{GitCommit})
 end
 
-# can read object headers
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "can read object headers") do test_repo, path
     h = read_header(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test h[:type] == GitCommit
     @test h[:nbytes] == 172
 end
 
-# test check reads fail on missing objects
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test check reads rail on missing objs") do test_repo, path 
     @test_throws LibGitError{:Odb,:NotFound} read(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
-# test check read headers fail on missing objects
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test check read headers fail on missing objects") do test_repo, path
     @test_throws LibGitError{:Odb,:NotFound} read_header(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
-# test walking with block
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test walking with block") do test_repo, path
     oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
     list = {}
     walk(test_repo, oid) do c
@@ -113,140 +113,118 @@ end
     @test join(map(c -> hex(c)[1:5], list), ".") == "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
 end
 
-# test walking without block
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test walking without block") do test_repo, path
     oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
     commits = walk(test_repo, oid)
     @test isa(commits, Task)
     @test istaskdone(commits) == false
 end
 
-# test lookup object
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test lookup object") do test_repo, path
     obj = test_repo[Oid("8496071c1b46c854b31185ea97743be6a8774479")]
     @test isa(obj, GitCommit)
 end
 
-# test find reference
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test find reference") do test_repo, path
     ref = lookup_ref(test_repo, "refs/heads/master")
     @test isa(ref, GitReference)
     @test name(ref) == "refs/heads/master"
 end
 
-# match all refs
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "match all refs") do test_repo, path
     refs = collect(iter_refs(test_repo, "refs/heads/*"))
     @test length(refs) == 12
 end
 
-# return all ref names
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "return all ref names") do test_repo, path
     rnames = ref_names(test_repo)
     @test length(rnames) == 21
 end
 
-# return all tags
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "return all tags") do test_repo, path 
     ts = tags(test_repo)
     @test length(ts) == 7
 end
 
-# return all matching tags
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "return all matching tags") do test_repo, path
     @test length(tags(test_repo, "e90810b")) == 1
     @test length(tags(test_repo, "*tag*")) == 4
 end
 
-# return a list of all remotes
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "return a list of all remotes") do test_repo, path
     rs = remotes(test_repo)
     @test length(rs) == 5
 end
 
-# test_lookup_head
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test lookup head") do test_repo, path
     h = head(test_repo)
     @test isa(h, GitReference)
     @test name(h) == "refs/heads/master"
     @test target(h) == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
-    #@test isa
 end
 
-# test_set_head_ref
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test set head ref") do test_repo, path
     set_head!(test_repo, "refs/heads/packed")
     @test name(head(test_repo)) == "refs/heads/packed"
 end
 
-# test_set_head_invalid
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test set head invalid") do test_repo, path
     @test_throws LibGitError{:Ref,:InvalidSpec} set_head!(test_repo, "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
 end
 
-# test_access_a_file
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test access a file") do test_repo, path
     id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
     blob = blob_at(test_repo, id, "new.txt")
     @test "my new file\n" == bytestring(blob)
 end
 
-# test_access_a_missing_file
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test access a missing file") do test_repo, path
     id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
     blob = blob_at(test_repo, id, "file-not-found.txt")
     @test blob == nothing
 end
 
-# test_enumerate_all_objects
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test enumerate all objects") do test_repo, path
     @test count(x -> true, test_repo) == 1687
 end
-# test_loading_alternates
-@sandboxed_test "testrepo.git" begin
+
+sandboxed_test("testrepo.git", "test load alternates") do test_repo, path
     alt_path = joinpath(pwd(), "fixtures/alternate/objects")
     repo = Repository(repo_path(test_repo); alternates=[alt_path])
     try 
       @test count(x->true, repo) == 1690
       @test read(repo, Oid("146ae76773c91e3b1d00cf7a338ec55ae58297e2")) != nothing
-    catch
-        rethrow(err)
     finally 
       close(repo)
     end
 end
 
-# test_alternates_with_invalid_path_type
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test alternates with invalid path type") do test_repo, path
     @test_throws ArgumentError Repository(repo_path(test_repo), alternates=["error"])
 end
 
-# test_find_merge_base_between_oids
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test find merge base between ids") do test_repo, path
     commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
     commit2 = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
     base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
     @test base == merge_base(test_repo, commit1, commit2)
 end
 
-# test_find_merge_base_between_commits
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test find merge base between commits") do test_repo, path
     commit1 = test_repo[Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")]
     commit2 = test_repo[Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")]
     base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
     @test base == merge_base(test_repo, commit1, commit2)
 end
 
-# test_find_merge_base_between_ref_and_oid
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test find mere base between ref and id") do test_repo, path
     commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
     commit2 = "refs/heads/master"
     base    = Oid("c47800c7266a2be04c571c04d5a6614691ea99bd")
     @test base == merge_base(test_repo, commit1, commit2)
 end
 
-# test_find_merge_base_between_many
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test find merge base between many") do test_repo, path
     commit1 = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
     commit2 = "refs/heads/packed"
     commit3 = test_repo[Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")]
@@ -255,8 +233,7 @@ end
     @test base == merge_base(test_repo, commit1, commit2, commit3)
 end
 
-# test_ahead_behind_with_oids
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test ahead behind with ids") do test_repo, path
     ahead, behind = ahead_behind(test_repo,
       Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"),
       Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
@@ -265,8 +242,7 @@ end
     @test behind == 1
 end
 
-# test_ahead_behind_with_commits
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test ahead behind with commits") do test_repo, path
     ahead, behind = ahead_behind(test_repo, 
       test_repo[Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")],
       test_repo[Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")]
@@ -278,7 +254,7 @@ end
 #---------------------------
 # Merge Commits Repo Test
 #---------------------------
-@sandboxed_test "merge-resolve" begin
+sandboxed_test("merge-resolve") do test_repo, path
     our_commit   = lookup_branch(test_repo, "master") |> tip
     their_commit = lookup_branch(test_repo, "branch") |> tip
 
@@ -310,7 +286,7 @@ end
 #---------------------------
 # Shallow Repo Test
 #---------------------------
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "shallow repo test") do test_repo, path
     shallow_sbt = setup(SandBoxedTest, "shallow.git")
     shallow = shallow_sbt.repo
     @test is_shallow(test_repo) == false
@@ -318,40 +294,37 @@ end
     teardown(shallow_sbt)
 end
 
-#---------------------------
-# Repo Write Test
-#---------------------------
-@with_tmp_repo_access begin
-  TEST_CONTENT = "my test data\n"
+with_tmp_repo_access("repo write tests") do test_repo, path
+    TEST_CONTENT = "my test data\n"
 
-  begin # test_can_hash_data
-    id = hash_data(GitBlob, TEST_CONTENT)
-    @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
-  end
+    context("test_can_hash_data") do 
+        id = hash_data(GitBlob, TEST_CONTENT)
+        @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
+    end
 
-  begin # test_write_to_odb
-    id = write!(GitBlob, test_repo, TEST_CONTENT)
-    @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
-    @test Oid("76b1b55ab653581d6f2c7230d34098e837197674") in test_repo
-  end
+    context("test write to odb") do 
+        id = write!(GitBlob, test_repo, TEST_CONTENT)
+        @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
+        @test Oid("76b1b55ab653581d6f2c7230d34098e837197674") in test_repo
+    end
 
-  begin # test_no_merge_base_between_unrelated_branches
-    info = rev_parse(test_repo, "HEAD")
-    @test isa(info, GitCommit)
-    sig = Signature("test", "test@test.com")
-    #baseless = commit(test_repo, "null", sig, sig, "", 
-    #@test merge_base(test_repo, "HEAD", baseless) == nothing
-  end
+    context("test no merge base between unrelated branches") do
+        info = rev_parse(test_repo, "HEAD")
+        @test isa(info, GitCommit)
+        sig = Signature("test", "test@test.com")
+        #baseless = commit(test_repo, "null", sig, sig, "", 
+        #@test merge_base(test_repo, "HEAD", baseless) == nothing
+    end
 
-  begin # test_default_signature
-    testname = "Test User"
-    testemail = "test@example.com"
-    config(test_repo)["user.name"] = testname
-    config(test_repo)["user.email"] = testemail
-    @assert isa(default_signature(test_repo), Signature)
-    @test testname == (default_signature(test_repo) |> name)
-    @test testemail == (default_signature(test_repo) |> email)
-  end
+    context("test default signature") do
+        testname = "Test User"
+        testemail = "test@example.com"
+        config(test_repo)["user.name"] = testname
+        config(test_repo)["user.email"] = testemail
+        @assert isa(default_signature(test_repo), Signature)
+        @test testname == (default_signature(test_repo) |> name)
+        @test testemail == (default_signature(test_repo) |> email)
+    end
 end
 
 #---------------------------
@@ -359,32 +332,26 @@ end
 #---------------------------
 teardown_dir(p::String) = run(`rm -r -f $p`)
 
-macro discover_test(body)
-    quote
-        tmpdir = mktempdir()
-        mkdir(joinpath(tmpdir, "foo"))
-        try
-            $body
-        catch err
-            rethrow(err)
-        finally
-            teardown_dir(tmpdir)
-        end
+function discover_test(f::Function)
+    tmpdir = mktempdir()
+    mkdir(joinpath(tmpdir, "foo"))
+    try
+        f(tmpdir) 
+    finally
+        teardown_dir(tmpdir)
     end
 end
+discover_test(f::Function, s::String) = discover_test(f)
 
-# test discover false
-@discover_test begin
+discover_test("test discover false") do tmpdir
     @test_throws LibGitError{:Repo,:NotFound} repo_discover(tmpdir)
 end
 
-# test discover nested false
-@discover_test begin
+discover_test("test discover nested false") do tmpdir
     @test_throws LibGitError{:Repo,:NotFound} repo_discover(joinpath(tmpdir, "foo"))
 end
 
-# test discover true
-@discover_test begin
+discover_test("test discover true") do tmpdir
     repo = repo_init(tmpdir; bare=true)
     root = repo_discover(tmpdir)
     try 
@@ -396,8 +363,7 @@ end
     end
 end
 
-# test discover nested true
-@discover_test begin
+discover_test("test discover nested true") do tmpdir
     repo = repo_init(tmpdir; bare=true)
     root = repo_discover(joinpath(tmpdir, "foo"))
     try 
@@ -409,24 +375,20 @@ end
     end
 end
 
-
 #---------------------------
 # Repo Init Test
 #---------------------------
-macro repo_init_test(body)
-    quote
-        tmpdir = mktempdir()
-        try
-            $body
-        catch err
-            rethrow(err)
-        finally
-            teardown_dir(tmpdir)
-        end
+function repo_init_test(f::Function)
+    tmpdir = mktempdir()
+    try
+        f(tmpdir)
+    finally
+        teardown_dir(tmpdir)
     end
 end
-# test init bare false
-@repo_init_test begin
+repo_init_test(f::Function, s::String) = repo_init_test(f)
+
+repo_init_test("test init bare false") do tmpdir 
     repo = repo_init(tmpdir; bare=false)
     try
         @test is_bare(repo) == false
@@ -435,8 +397,7 @@ end
     end
 end
 
-# test init bare true
-@repo_init_test begin
+repo_init_test("test init bare true") do tmpdir
     repo = repo_init(tmpdir; bare=true)
     try 
         @test is_bare(repo) == true
@@ -445,8 +406,7 @@ end
     end
 end
 
-# test init non bare default
-@repo_init_test begin 
+repo_init_test("test init non bare default") do tmpdir
     repo = repo_init(tmpdir)
     try
         @test is_bare(repo) == false
@@ -532,11 +492,11 @@ end
 #---------------------------
 # Repo Namespace Test
 #---------------------------
-@sandboxed_test "testrepo.git" begin 
+sandboxed_test("testrepo.git" ) do test_repo, path
     @test namespace(test_repo) == nothing
 end
 
-@sandboxed_test "testrepo.git" begin 
+sandboxed_test("testrepo.git" ) do test_repo, path
     set_namespace!(test_repo, "foo")
     @test namespace(test_repo) == "foo"
 
@@ -550,7 +510,7 @@ end
     @test namespace(test_repo) == nothing
 end
 
-@sandboxed_test "testrepo.git" begin 
+sandboxed_test("testrepo.git") do test_repo, path
     set_namespace!(test_repo, "foo")
     @test isempty(ref_names(test_repo)) 
 end
@@ -558,7 +518,7 @@ end
 #---------------------------
 # Repo Push Test
 #---------------------------
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git") do test_repo
     remote_repo = test_repo
     source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
     test_repo = clone(sbt, "testrepo.git", "testrepo")
@@ -579,8 +539,7 @@ end
                 == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
 end
 
-# test_push_to_non_bare_raise_error
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test push to non bare raise err") do test_repo, path
     remote_repo = test_repo
     source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
     test_repo = clone(sbt, "testrepo.git", "testrepo")
@@ -592,8 +551,7 @@ end
     @test_throws ErrorException push!(test_repo, "origin", ["refs/heads/master"])
 end
 
-# test_push_to_remote_instance
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test push to remote instance") do test_repo, path
     remote_repo = test_repo
     source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
     test_repo = clone(sbt, "testrepo.git", "testrepo")
@@ -604,8 +562,7 @@ end
     @test isempty(result)
 end
 
-# test_push_non_forward_raise_error
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test push non ff raise error") do test_repo, path
     remote_repo = test_repo
     source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
     test_repo = clone(sbt, "testrepo.git", "testrepo")
@@ -620,8 +577,7 @@ end
                 == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
 end
 
-# test_push_non_forward_raise_error 
-@sandboxed_test "testrepo.git" begin
+sandboxed_test("testrepo.git", "test push non ff raise error") do test_repo, path
     remote_repo = test_repo
     source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
     test_repo = clone(sbt, "testrepo.git", "testrepo")
@@ -642,8 +598,7 @@ end
 # Repo Checkout Test
 #---------------------------
 
-# test_checkout_tree_with_revspec_string
-@sandboxed_checkout_test begin 
+sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, test_clone, test_bare
     checkout_tree!(test_repo, "refs/heads/dir", {:strategy => :force})
     set_head!(test_repo, "refs/heads/dir")
 
@@ -668,8 +623,7 @@ end
     @test isdir(joinpath(repo_workdir(test_repo), "a")) == false
 end
 
-# test_checkout_tree_raises_errors_in_progress_cb
-@sandboxed_checkout_test begin 
+sandboxed_checkout_test("test checkout raises errors in callback") do test_repo, test_clone, test_bare
     try
         checkout_tree!(test_repo, "refs/heads/dir",
                 {:strategy => :force,
@@ -679,7 +633,7 @@ end
     end
 end
 
-@sandboxed_checkout_test begin 
+sandboxed_checkout_test() do test_repo, test_clone, test_bare
     try
         checkout_tree!(test_repo, "refs/heads/dir",
                 {:strategy => :force,
@@ -689,8 +643,7 @@ end
     end
 end
 
-#test_checkout_tree_subdirectory
-@sandboxed_checkout_test begin 
+sandboxed_checkout_test("test checkout tree subdir") do test_repo, test_clone, test_bare
     @test isfile(joinpath(repo_workdir(test_repo), "ab")) == false
     checkout_tree!(test_repo, "refs/heads/subtrees", 
                    {:strategy => :safe, :paths => "ab/de/"})
@@ -700,8 +653,7 @@ end
     @test isfile(joinpath(repo_workdir(test_repo)), "ab/de/fgh/1.txt")
 end
 
-#test_checkout_tree_subtree_directory
-@sandboxed_checkout_test begin 
+sandboxed_checkout_test("test checkout tree subtree dir") do test_repo, test_clone, test_bare
     @test isfile(joinpath(repo_workdir(test_repo), "de")) == false
     checkout_tree!(test_repo, "refs/heads/subtrees:ab",
                    {:strategy => :safe, :paths => "de/"})
@@ -711,13 +663,11 @@ end
     @test isfile(joinpath(repo_workdir(test_repo)), "de/fgh/1.txt")
 end
 
-#test_checkout_tree_raises_with_bare_repo
-@sandboxed_checkout_test begin 
+sandboxed_checkout_test("test checkout tree raises with bare repo") do test_repo, test_clone, test_bare
     @test_throws LibGitError{:Repo,:BareRepo} checkout_tree!(test_bare, "HEAD", {:strategy => :safe_create})
 end
 
-#test checkout tree works with bare repo and target directory
-@sandboxed_checkout_test begin
+sandboxed_checkout_test("test checkout tree works with bare repo and target dir") do test_repo, test_clone, test_bare
     d = tempdir()
     try
         checkout_tree!(test_bare, "HEAD", 
@@ -730,13 +680,12 @@ end
     end
 end
 
-@sandboxed_checkout_test begin
+sandboxed_checkout_test() do test_repo, test_clone, test_bare
     checkout!(test_repo, "dir", {:strategy => :force})
     @test head(test_repo) |> name == "refs/heads/dir"
 end
 
-# test_checkout_with_HEAD
-@sandboxed_checkout_test begin
+sandboxed_checkout_test("test checkout with head") do test_repo, test_clone, test_bare
     checkout!(test_repo, "dir", {:strategy => :force})
     rm(joinpath(repo_workdir(test_repo), "README"))
 
@@ -745,18 +694,15 @@ end
     @test name(head(test_repo)) == "refs/heads/dir"
 end
 
-# test_checkout_with_commit_detaches_HEAD
-@sandboxed_checkout_test begin
+sandboxed_checkout_test("test checkout with commit detaches HEAD") do test_repo, test_clone, test_bare
     checkout!(test_repo, rev_parse_oid(test_repo, "refs/heads/dir"), 
               {:strategy => :force})
     @test ishead_detached(test_repo)
     @test rev_parse_oid(test_repo, "refs/heads/dir") == target(head(test_repo))
 end
 
-# test_checkout_with_remote_branch_detaches_HEAD
-@sandboxed_checkout_test begin
+sandboxed_checkout_test("test checkout with remote branch detaches HEAD") do test_repo, test_clone, test_bare
     checkout!(test_clone, "origin/dir", {:strategy => :force})
     @test ishead_detached(test_clone)
     @test rev_parse_oid(test_clone, "refs/remotes/origin/dir") == target(head(test_clone))
 end
-
