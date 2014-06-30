@@ -13,6 +13,32 @@ export repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        ishead_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
        repo_clone
 
+#=
+Repository(path::String; alternates::Vector{String}=String[]) = begin
+    repo_ptr = Ptr{Void}[0]
+    err = ccall((:git_repository_open, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Uint8}), repo_ptr, path)
+    if err != api.GIT_OK
+        if repo_ptr[1] != C_NULL
+            ccall((:git_repository_free, :libgit2), Void,
+                  (Ptr{Void},), repo_ptr[1])
+        end
+        throw(LibGitError(err))
+    end
+    repo = Repository(repo_ptr[1])
+    if !isempty(alternates)
+        odb = Odb(repo)
+        for path in alternates
+            if !isdir(path)
+                throw(ArgumentError("alternate $path is not a valid directory"))
+            end
+            @check ccall((:git_odb_add_disk_alternate, :libgit2), Cint,
+                         (Ptr{Void}, Ptr{Uint8}), odb, path)
+        end
+    end
+    return repo
+end
+=#
 Repository(path::String; alternates=nothing) = begin
     bpath = bytestring(path)
     repo_ptr = Array(Ptr{Void}, 1)

@@ -10,7 +10,9 @@ with_repo_access("test lookup fails with wrong git obj") do test_repo, path
                                                     Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
 end
 
+#=
 with_repo_access() do test_repo, path
+    
     context("test read blob data")  do
         id = Oid("fa49b077972391ad58037050f2a75f74e3671e92")
         b = lookup(test_repo, id)
@@ -20,7 +22,7 @@ with_repo_access() do test_repo, path
         @test Oid(b) == id
         @test text(b) == "new file\n"
     end
-
+    
     context("test blob sloc") do 
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
@@ -95,6 +97,7 @@ with_repo_access() do test_repo, path
     end
     =#
 end
+=#
 
 with_tmp_repo_access("test write blob data") do test_repo, path
     @test blob_from_buffer(test_repo, "a new blob content") == 

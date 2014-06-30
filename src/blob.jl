@@ -1,9 +1,7 @@
 export rawcontent, sloc, text, isbinary, lookup_blob, 
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream  
 
-Base.sizeof(b::GitBlob) = begin
-    return ccall((:git_blob_rawsize, :libgit2), Coff_t, (Ptr{Void},), b)
-end
+Base.sizeof(b::GitBlob) = int(ccall((:git_blob_rawsize, :libgit2), Coff_t, (Ptr{Void},), b))
 
 # TODO: it would be better to implement julia's file api's to work with blobs
 
@@ -76,19 +74,19 @@ isbinary(b::GitBlob) = bool(ccall((:git_blob_is_binary, :libgit2), Cint, (Ptr{Vo
 
 function blob_from_buffer(r::GitRepo, bufptr::Ptr{Uint8}, len::Int)
     id = Oid()
-    @check ccall((:git_blob_create_frombuffer, api.libgit2), Cint,
+    @check ccall((:git_blob_create_frombuffer, :libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Csize_t),
                  &id, r, bufptr, len)
     return id
 end
 
-blob_from_buffer(r::GitRepo, buf::Vector{Uint8}) = blob_from_buffer(r::GitRepo, pointer(buf), length(buf))
+blob_from_buffer(r::GitRepo, buf::Vector{Uint8}) = blob_from_buffer(r::GitRepo, convert(Ptr{Uint8}, buf), length(buf))
 blob_from_buffer(r::GitRepo, buf::ByteString)    = blob_from_buffer(r::GitRepo, buf.data)
 blob_from_buffer(r::GitRepo, buf::IOBuffer)      = blob_from_buffer(r::GitRepo, buf.data)
 
 function blob_from_workdir(r::GitRepo, path::String)
     id = Oid()
-    @check ccall((:git_blob_create_fromworkdir, api.libgit2), Cint,
+    @check ccall((:git_blob_create_fromworkdir, :libgit2), Cint,
                   (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
                   &id, r, bytestring(path))
     return id
@@ -96,8 +94,8 @@ end
 
 function blob_from_disk(r::GitRepo, path::String)
     id = Oid()
-    @check ccall((:git_blob_create_fromdisk, api.libgit2), Cint,
-                  (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), &id, r, bytestring(path))
+    @check ccall((:git_blob_create_fromdisk, :libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}), &id, r, path)
     return id
 end
 
@@ -123,9 +121,9 @@ const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
 function blob_from_stream(r::GitRepo, io::IO, hintpath::ByteString="")
     id = Oid()
     payload = {io, nothing}
-    err = ccall((:git_blob_create_fromchunks, api.libgit2), Cint,
-                (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Any),
-                &id, r, !isempty(hintpath) ? bytestring(hintpath) : C_NULL, 
+    err = ccall((:git_blob_create_fromchunks, :libgit2), Cint,
+                (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Any),
+                &id, r, !isempty(hintpath) ? hintpath : C_NULL, 
                 c_cb_blob_get_chunk, &payload)
     if isa(payload[2], Exception)
         throw(payload[2])

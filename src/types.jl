@@ -144,6 +144,8 @@ free!(r::GitRepo) = begin
 end
 
 Base.convert(::Type{Ptr{Void}}, r::GitRepo) = r.ptr
+#TODO: REMOVE
+Base.pointer(r::GitRepo) = r.ptr
 
 # -------------
 # Git Objects
@@ -177,7 +179,7 @@ type GitBlob <: GitObject
     end
 end
 
-Base.convert(::Type{Ptr{Void}}, r::GitBlob) = b.ptr
+Base.convert(::Type{Ptr{Void}}, b::GitBlob) = b.ptr
 
 type GitCommit <: GitObject
     ptr::Ptr{Void}
