@@ -24,7 +24,7 @@ GitRepo(path::String; alternates::Vector{String}=String[]) = begin
         end
         throw(LibGitError(err))
     end
-    repo = Repository(repo_ptr[1])
+    repo = GitRepo(repo_ptr[1])
     if !isempty(alternates)
         odb = Odb(repo)
         for path in alternates
@@ -312,7 +312,7 @@ function remotes(r::GitRepo)
     return out
 end
 
-function remote_names(r::Repository)
+function remote_names(r::GitRepo)
     rs = StrArrayStruct()
     @check ccall((:git_remote_list, api.libgit2), Cint,
                   (Ptr{StrArrayStruct}, Ptr{Void}), &rs, r)
@@ -323,7 +323,7 @@ function remote_names(r::Repository)
     return ns
 end
 
-function remote_add!(r::Repository, name::String, url::String)
+function remote_add!(r::GitRepo, name::String, url::String)
     @assert r.ptr != C_NULL
     check_valid_url(url)
     remote_ptr = Array(Ptr{Void}, 1)
@@ -344,7 +344,7 @@ const c_cb_push_status = cfunction(cb_push_status, Cint,
 
 #TODO: git push update tips takes a signature and message
 #TODO: better error messages
-Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
+Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
     push_ptr = Ptr{Void}[0]
     err = ccall((:git_push_new, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), push_ptr, remote)
@@ -394,14 +394,14 @@ Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
     return result
 end
 
-Base.push!{T<:String}(r::Repository, remote::String, refs::Vector{T}) = begin
+Base.push!{T<:String}(r::GitRepo, remote::String, refs::Vector{T}) = begin
     remote_ptr = Ptr{Void}[0]
     @check ccall((:git_remote_load, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote)
     return push!(r, GitRemote(remote_ptr[1]), refs)
 end
 
-function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
+function lookup(::Type{GitRemote}, r::GitRepo, remote_name::String)
     remote_ptr =  Ptr{Void}[0]
     err = ccall((:git_remote_load, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote_name)
@@ -413,33 +413,24 @@ function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
     return GitRemote(remote_ptr[1])
 end
 
-lookup_remote(r::Repository, remote_name::String) = lookup(GitRemote, r, remote_name)
-lookup_tag(r::Repository, id::Oid) = lookup(GitTag, r, id)
+lookup_remote(r::GitRepo, remote_name::String) = lookup(GitRemote, r, remote_name)
+lookup_tag(r::GitRepo, id::Oid) = lookup(GitTag, r, id)
 
-function tags(r::Repository, glob=nothing)
-    @assert r.ptr != C_NULL
-    local cglob::ByteString
-    if glob != nothing
-        cglob = bytestring(glob)
-    else
-        cglob = bytestring("") 
-    end
-    gittags = api.GitStrArray()
-    @check ccall((:git_tag_list_match, api.libgit2), Cint,
-                 (Ptr{api.GitStrArray}, Ptr{Cchar}, Ptr{Void}),
-                 &gittags, cglob, r.ptr)
+function tags(r::GitRepo, glob::String="")
+    gittags = StrArrayStruct()
+    @check ccall((:git_tag_list_match, :libgit2), Cint,
+                 (Ptr{StrArrayStruct}, Ptr{Uint8}, Ptr{Void}), &gittags, glob, r)
     if gittags.count == 0
         return nothing
     end
-    out = Array(ASCIIString, gittags.count)
+    out = Array(UTF8String, gittags.count)
     for i in 1:gittags.count
-        cptr = unsafe_load(gittags.strings, i)
-        out[i] = bytestring(cptr)
+        out[i] = utf8(bytestring(unsafe_load(gittags.strings, i)))
     end
     return out
 end
 
-function tag!(r::Repository;
+function tag!(r::GitRepo;
               name::String="",
               message::String="",
               target::Union(Nothing,Oid)=nothing,
@@ -539,7 +530,7 @@ function remove_note!(obj::GitObject;
     return true
 end
 
-function note_default_ref(r::Repository)
+function note_default_ref(r::GitRepo)
     refname_ptr = Array(Ptr{Cchar}, 1)
     @check api.git_note_default_ref(refname_ptr, r.ptr)
     return bytestring(refname_ptr[1])
@@ -584,7 +575,7 @@ end
 
 const c_cb_iter_notes = cfunction(cb_iter_notes, Cint, (Ptr{Uint8}, Ptr{Uint8}, Ptr{Void}))
 
-function iter_notes(r::Repository, notes_ref=nothing)
+function iter_notes(r::GitRepo, notes_ref=nothing)
     @assert r.ptr != C_NULL
     if ref == nothing
         bnotes_ref = C_NULL
@@ -594,13 +585,13 @@ function iter_notes(r::Repository, notes_ref=nothing)
     return @task api.git_note_foreach(r.ptr, notes_ref, c_cb_iter_notes, r.ptr)
 end
 
-function ahead_behind(r::Repository,
+function ahead_behind(r::GitRepo,
                       lcommit::GitCommit,
                       ucommit::GitCommit)
     ahead_behind(r, Oid(lcommit), Oid(ucommit))
 end
 
-function ahead_behind(r::Repository, lid::Oid, uid::Oid)
+function ahead_behind(r::GitRepo, lid::Oid, uid::Oid)
     @assert r.ptr != C_NULL
     ahead = Csize_t[0]
     behind = Csize_t[0]
@@ -609,7 +600,7 @@ function ahead_behind(r::Repository, lid::Oid, uid::Oid)
     return (int(ahead[1]), int(behind[1]))
 end
 
-function blob_at(r::Repository, rev::Oid, p::String)
+function blob_at(r::GitRepo, rev::Oid, p::String)
     tree = git_tree(lookup_commit(r, rev))
     local blob_entry::GitTreeEntry
     try
@@ -624,7 +615,7 @@ end
 
 
 #TODO: consolidate with odb
-function write!{T<:GitObject}(::Type{T}, r::Repository, buf::ByteString)
+function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)
     @assert r.ptr != C_NULL
     odb = repo_odb(r)
     gty = git_otype(T)
@@ -642,7 +633,7 @@ function write!{T<:GitObject}(::Type{T}, r::Repository, buf::ByteString)
     return out
 end
 
-function references(r::Repository)
+function references(r::GitRepo)
     return nothing
 end
 
@@ -654,10 +645,10 @@ function repo_discover(p::String="", acrossfs::Bool=true)
     @check ccall((:git_repository_discover, api.libgit2), Cint,
                  (Ptr{api.GitBuffer}, Ptr{Cchar}, Cint, Ptr{Cchar}),
                   &buf, bp, acrossfs? 1 : 0, C_NULL)
-    return Repository(bytestring(buf.ptr))
+    return GitRepo(bytestring(buf.ptr))
 end
 
-function rev_parse(r::Repository, rev::String)
+function rev_parse(r::GitRepo, rev::String)
     @assert r.ptr != C_NULL
     brev = bytestring(rev)
     obj_ptr = Array(Ptr{Void}, 1)
@@ -666,11 +657,11 @@ function rev_parse(r::Repository, rev::String)
     return obj
 end
 
-function rev_parse(r::Repository, rev::Oid)
+function rev_parse(r::GitRepo, rev::Oid)
     return rev_parse(r, string(rev))
 end
 
-function merge_base(r::Repository, args...)
+function merge_base(r::GitRepo, args...)
     @assert r.ptr != C_NULL
     if length(args) < 2
         throw(ArgumentError("merge_base needs 2+ commits"))
@@ -688,32 +679,32 @@ function merge_base(r::Repository, args...)
     return id
 end
     
-function rev_parse_oid(r::Repository, rev::String)
+function rev_parse_oid(r::GitRepo, rev::String)
     Oid(rev_parse(r, rev))
 end
 
 #TODO: this could be more efficient
-function rev_parse_oid(r::Repository, rev::Oid)
+function rev_parse_oid(r::GitRepo, rev::Oid)
     return Oid(rev_parse(r, string(rev)))
 end
 
-function config(r::Repository)
+function config(r::GitRepo)
     @assert r.ptr != C_NULL
     config_ptr = Array(Ptr{Void}, 1)
     @check api.git_repository_config(config_ptr, r.ptr)
     return GitConfig(config_ptr[1])
 end
 
-Odb(r::Repository) = repo_odb(r)
-
-function repo_odb(r::Repository)
+Odb(r::GitRepo) = repo_odb(r)
+#TODO: remove
+function repo_odb(r::GitRepo)
     @assert r.ptr != C_NULL
     odb_ptr = Array(Ptr{Void}, 1)
     @check api.git_repository_odb(odb_ptr, r.ptr)
     return Odb(odb_ptr[1])
 end
 
-function repo_index(r::Repository)
+function repo_index(r::GitRepo)
     @assert r.ptr != C_NULL
     idx_ptr = Array(Ptr{Void}, 1)
     @check api.git_repository_index(idx_ptr, r.ptr)
@@ -752,7 +743,7 @@ lookup_tree(r::GitRepo, id) = lookup(GitTree, r, id)
 lookup_blob(r::GitRepo, id) = lookup(GitBlob, r, id)
 lookup_commit(r::GitRepo, id) = lookup(GitCommit, r, id)
 
-function lookup_ref(r::Repository, refname::String)
+function lookup_ref(r::GitRepo, refname::String)
     @assert r.ptr != C_NULL
     bname = bytestring(refname)
     ref_ptr = Array(Ptr{Void}, 1)
@@ -765,7 +756,7 @@ function lookup_ref(r::Repository, refname::String)
     return GitReference(ref_ptr[1])
 end
 
-function create_ref(r::Repository, refname::String, id::Oid; 
+function create_ref(r::GitRepo, refname::String, id::Oid; 
                     force::Bool=false, sig=nothing, msg=nothing)
     @assert r.ptr != C_NULL
     bname = bytestring(refname)
@@ -787,12 +778,12 @@ function create_ref(r::Repository, refname::String, id::Oid;
     return GitReference(ref_ptr[1])
 end
 
-function create_ref(r::Repository, refname::String, target::String; 
+function create_ref(r::GitRepo, refname::String, target::String; 
                     force::Bool=false, sig=nothing, logmsg=nothing)
     create_sym_ref(r, refname, target; force=force, sig=sig, logmsg=logmsg)
 end
 
-function create_sym_ref(r::Repository, refname::String, target::String; 
+function create_sym_ref(r::GitRepo, refname::String, target::String; 
                         force::Bool=false, sig=sig, logmsg=logmsg)
     @assert r.ptr != C_NULL
     bname   = bytestring(refname)
@@ -816,7 +807,7 @@ function create_sym_ref(r::Repository, refname::String, target::String;
 end
 
 
-function repo_revparse_single(r::Repository, spec::String)
+function repo_revparse_single(r::GitRepo, spec::String)
     @assert r.ptr != C_NULL
     bspec = bytestring(spec)
     obj_ptr = Array(Ptr{Void}, 1)
@@ -824,7 +815,7 @@ function repo_revparse_single(r::Repository, spec::String)
     return gitobj_from_ptr(obj_ptr[1])
 end
 
-function commit(r::Repository,
+function commit(r::GitRepo,
                 refname::String,
                 author::Signature,
                 committer::Signature,
@@ -856,11 +847,11 @@ function commit(r::Repository,
     return cid
 end
 
-function repo_set_workdir(r::Repository, dir::String, update::Bool)
+function repo_set_workdir(r::GitRepo, dir::String, update::Bool)
 end
 
 # filter can be :all, :local, :remote
-function branch_names(r::Repository, filter=:all)
+function branch_names(r::GitRepo, filter=:all)
     @assert r.ptr != C_NULL
     local git_filter::Cint 
     if filter == :all
@@ -895,7 +886,7 @@ function branch_names(r::Repository, filter=:all)
     return names
 end
 
-function lookup(::Type{GitBranch}, r::Repository,
+function lookup(::Type{GitBranch}, r::GitRepo,
                 branch_name::String, branch_type=:local)
     @assert r.ptr != C_NULL
     local git_branch_type::Cint
@@ -918,14 +909,14 @@ function lookup(::Type{GitBranch}, r::Repository,
     end
 end
 
-lookup_branch(r::Repository, branch_name::String, branch_type=:local) = 
+lookup_branch(r::GitRepo, branch_name::String, branch_type=:local) = 
         lookup(GitBranch, r, branch_name, branch_type)
 
 #lookup_branch(r::Repository, branch_id::Oid, branch_type=:local) = 
 #        lookup(GitBranch, r, string(branch_id), branch_type)
 
 
-function create_branch(r::Repository, n::String, target::Oid;
+function create_branch(r::GitRepo, n::String, target::Oid;
                        force::Bool=false, sig=nothing, logmsg=nothing)
     @assert r.ptr != C_NULL
     #TODO: give intelligent error msg when target
@@ -949,13 +940,13 @@ function create_branch(r::Repository, n::String, target::Oid;
     return GitBranch(branch_ptr[1]) 
 end
 
-function create_branch(r::Repository, n::String, target::String="HEAD"; 
+function create_branch(r::GitRepo, n::String, target::String="HEAD"; 
                        force::Bool=false, sig=nothing, logmsg=nothing)
     id = rev_parse_oid(r, target)
     return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
 end
 
-function create_branch(r::Repository, n::String, target::GitCommit;
+function create_branch(r::GitRepo, n::String, target::GitCommit;
                        force::Bool=false, sig=nothing, logmsg=nothing)
     id = Oid(target)
     return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
@@ -963,9 +954,9 @@ end
 
 type BranchIterator 
     ptr::Ptr{Void}
-    repo::Repository
+    repo::GitRepo
 
-    function BranchIterator(ptr::Ptr{Void}, r::Repository)
+    function BranchIterator(ptr::Ptr{Void}, r::GitRepo)
         @assert ptr != C_NULL
         bi = new(ptr, r)
         finalizer(bi, free!)
@@ -980,7 +971,7 @@ free!(b::BranchIterator) = begin
     end
 end
 
-function iter_branches(r::Repository, filter=:all)
+function iter_branches(r::GitRepo, filter=:all)
     @assert r.ptr != C_NULL
     local git_filter::Cint
     if filter == :all
@@ -1064,7 +1055,7 @@ function parse_merge_options(opts::Dict)
 end
 
 #TODO: tree's should reference owning repository
-Base.merge!(r::Repository, t1::GitTree, t2::GitTree, opts=nothing) = begin
+Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, opts=nothing) = begin
     @assert r.ptr != C_NULL t1.ptr != C_NULL && t2.ptr != C_NULL 
     gopts = parse_merge_options(opts)
     idx_ptr = Array(Ptr{Void}, 1)
@@ -1074,7 +1065,7 @@ Base.merge!(r::Repository, t1::GitTree, t2::GitTree, opts=nothing) = begin
     return GitIndex(idx_ptr[1])
 end
 
-Base.merge!(r::Repository, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothing) = begin
+Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothing) = begin
     @assert r.ptr != C_NULL t1.ptr != C_NULL && t2.ptr != C_NULL && ancestor.ptr != C_NULL
     gopts = parse_merge_options(opts)
     idx_ptr = Array(Ptr{Void}, 1)
@@ -1085,7 +1076,7 @@ Base.merge!(r::Repository, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=not
 end
 
 #------- Merge Commits -----
-function merge_commits(r::Repository, 
+function merge_commits(r::GitRepo, 
                        ours::Union(GitCommit, Oid), 
                        theirs::Union(GitCommit, Oid), 
                        opts=nothing)
@@ -1295,12 +1286,12 @@ end
 
 typealias Treeish Union(GitCommit, GitTag, GitTree)
 
-function checkout_tree!(r::Repository, tree::String, opts=nothing)
+function checkout_tree!(r::GitRepo, tree::String, opts=nothing)
     t = rev_parse(r, tree)
     return checkout_tree!(r, t, opts)
 end
 
-function checkout_tree!(r::Repository, tree::Treeish, opts=nothing)
+function checkout_tree!(r::GitRepo, tree::Treeish, opts=nothing)
     gopts = parse_checkout_options(opts)
     err = ccall((:git_checkout_tree, api.libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Ptr{api.GitCheckoutOpts}),
@@ -1312,7 +1303,7 @@ function checkout_tree!(r::Repository, tree::Treeish, opts=nothing)
     return r 
 end
 
-function checkout_head!(r::Repository, opts=nothing)
+function checkout_head!(r::GitRepo, opts=nothing)
     @assert r.ptr != C_NULL
     gopts = parse_checkout_options(opts)
     err = ccall((:git_checkout_head, api.libgit2), Cint,
@@ -1325,7 +1316,7 @@ function checkout_head!(r::Repository, opts=nothing)
     return r
 end
 
-function checkout!(r::Repository, target, opts={})
+function checkout!(r::GitRepo, target, opts={})
     if !haskey(opts, :strategy)
         opts[:strategy] = :safe
     end
@@ -1535,7 +1526,7 @@ function repo_clone(url::String, path::String, opts=nothing)
             throw(LibGitError(err))
         end
     end
-    return Repository(repo_ptr[1])
+    return GitRepo(repo_ptr[1])
 end
 
 
@@ -1543,9 +1534,9 @@ end
 #TODO: handle error's when iterating (see branch)
 type ReferenceIterator
     ptr::Ptr{Void}
-    repo::Repository
+    repo::GitRepo
 
-    function ReferenceIterator(ptr::Ptr{Void}, r::Repository)
+    function ReferenceIterator(ptr::Ptr{Void}, r::GitRepo)
         @assert ptr != C_NULL
         ri = new(ptr, r)
         finalizer(ri, free!)
@@ -1560,7 +1551,7 @@ free!(r::ReferenceIterator) = begin
     end
 end
 
-function ref_names(r::Repository, glob=nothing)
+function ref_names(r::GitRepo, glob=nothing)
     rnames = String[]
     for r in iter_refs(r, glob)
         push!(rnames, name(r))
@@ -1568,7 +1559,7 @@ function ref_names(r::Repository, glob=nothing)
     return rnames
 end
 
-function iter_refs(r::Repository, glob=nothing)
+function iter_refs(r::GitRepo, glob=nothing)
     @assert r.ptr != C_NULL
     iter_ptr = Array(Ptr{Void}, 1)
     if glob == nothing

@@ -1,4 +1,4 @@
-export Repository, GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
+export GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
        GitTree, GitReference, GitBranch, GitRemote, Sym
 
 typealias GitOffT Int64
@@ -129,8 +129,6 @@ type GitRepo
         return r
     end
 end
-
-typealias Repository GitRepo
 
 free!(r::GitRepo) = begin
     if r.ptr != C_NULL

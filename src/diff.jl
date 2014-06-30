@@ -235,9 +235,9 @@ end
 # diffable GitTree, GitCommit, GitIndex, or Nothing
 typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
 
-Base.diff(repo::Repository, left::Nothing, right::Nothing, opts=nothing) = nothing
+Base.diff(repo::GitRepo, left::Nothing, right::Nothing, opts=nothing) = nothing
 
-Base.diff(repo::Repository,
+Base.diff(repo::GitRepo,
           left::Union(Nothing, String),
           right::Union(Nothing, String), 
           opts=nothing) = begin
@@ -253,7 +253,7 @@ Base.diff(repo::Repository,
     return nothing
 end
 
-Base.diff(repo::Repository,
+Base.diff(repo::GitRepo,
           left::GitCommit,
           right::GitCommit,
           opts=nothing) = begin
@@ -263,7 +263,7 @@ Base.diff(repo::Repository,
                 opts)
 end
 
-Base.diff(repo::Repository,
+Base.diff(repo::GitRepo,
           left::GitCommit,
           right::Nothing,
           opts=nothing) = begin
@@ -273,7 +273,7 @@ Base.diff(repo::Repository,
                 opts)
 end
 
-Base.diff(repo::Repository,
+Base.diff(repo::GitRepo,
           left::Nothing,
           right::GitCommit,
           opts=nothing) = begin
@@ -283,7 +283,7 @@ Base.diff(repo::Repository,
                 opts)
 end
 
-Base.diff(repo::Repository, c::GitCommit, opts=nothing) = begin
+Base.diff(repo::GitRepo, c::GitCommit, opts=nothing) = begin
     ps = parents(c)
     if length(ps) > 0
         p = first(ps)
@@ -293,16 +293,16 @@ Base.diff(repo::Repository, c::GitCommit, opts=nothing) = begin
     end
 end
 
-Base.diff(repo::Repository, left::GitTree, right::String, opts=nothing) = begin
+Base.diff(repo::GitRepo, left::GitTree, right::String, opts=nothing) = begin
     other = rev_parse(repo, right)
     return diff(repo, left, other, opts)
 end
 
-Base.diff(repo::Repository, left::GitTree, right::GitCommit, opts=nothing) = begin
+Base.diff(repo::GitRepo, left::GitTree, right::GitCommit, opts=nothing) = begin
     return diff(repo, left, GitTree(right), opts)
 end
 
-Base.diff(repo::Repository,
+Base.diff(repo::GitRepo,
           left::Union(Nothing, GitTree),
           right::Union(Nothing, GitTree),
           opts=nothing) = begin
@@ -322,16 +322,16 @@ Base.diff(repo::Repository,
     return GitDiff(diff_ptr[1])
 end
 
-Base.diff(repo::Repository, left::String, right::GitIndex, opts=nothing) = begin
+Base.diff(repo::GitRepo, left::String, right::GitIndex, opts=nothing) = begin
     other = rev_parse(repo, left)
     return diff(repo, other, right, opts)
 end
 
-Base.diff(repo::Repository, left::GitCommit, right::GitIndex, opts=nothing) = begin
+Base.diff(repo::GitRepo, left::GitCommit, right::GitIndex, opts=nothing) = begin
     return diff(repo, GitTree(left), right, opts)
 end
 
-Base.diff(repo::Repository, left::GitTree, right::GitIndex, opts=nothing) = begin
+Base.diff(repo::GitRepo, left::GitTree, right::GitIndex, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_tree_to_index, :libgit2), Cint,
@@ -345,11 +345,11 @@ Base.diff(repo::Repository, left::GitTree, right::GitIndex, opts=nothing) = begi
 end
 
 
-Base.diff(repo::Repository, idx::GitIndex, opts=nothing) = begin
+Base.diff(repo::GitRepo, idx::GitIndex, opts=nothing) = begin
     return diff(repo, idx, nothing, opts)
 end
 
-Base.diff(repo::Repository, idx::GitIndex, other::Nothing, opts=nothing) = begin
+Base.diff(repo::GitRepo, idx::GitIndex, other::Nothing, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_index_to_workdir, :libgit2), Cint,
@@ -361,11 +361,11 @@ Base.diff(repo::Repository, idx::GitIndex, other::Nothing, opts=nothing) = begin
     return GitDiff(diff_ptr[1])
 end
 
-Base.diff(repo::Repository, idx::GitIndex, other::GitCommit, opts=nothing) = begin
+Base.diff(repo::GitRepo, idx::GitIndex, other::GitCommit, opts=nothing) = begin
     return diff(repo, idx, GitTree(other), opts)
 end
 
-Base.diff(repo::Repository, idx::GitIndex, other::GitTree, opts=nothing) = begin
+Base.diff(repo::GitRepo, idx::GitIndex, other::GitTree, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_tree_to_index, api.libgit2), Cint,
@@ -383,16 +383,16 @@ Base.merge!(d1::GitDiff, d2::GitDiff) = begin
     return d1
 end
 
-function diff_workdir(repo::Repository, left::String, opts=nothing)
+function diff_workdir(repo::GitRepo, left::String, opts=nothing)
     l = rev_parse(repo, left)
     diff_workdir(repo, l, opts)
 end
 
-function diff_workdir(repo::Repository, left::GitCommit, opts=nothing)
+function diff_workdir(repo::GitRepo, left::GitCommit, opts=nothing)
     diff_workdir(repo, GitTree(left), opts)
 end
 
-function diff_workdir(repo::Repository, left::GitTree, opts=nothing)
+function diff_workdir(repo::GitRepo, left::GitTree, opts=nothing)
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_tree_to_workdir, :libgit2), Cint,

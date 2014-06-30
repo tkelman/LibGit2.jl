@@ -15,7 +15,7 @@ type GitRevWalker
     end
 end
 
-GitRevWalker(r::Repository) = begin
+GitRevWalker(r::GitRepo) = begin
     wptr = Ptr{Void}[0]
     @check ccall((:git_revwalk_new, api.libgit2), Cint,
                   (Ptr{Ptr{Void}}, Ptr{Void}), wptr, r) 
@@ -95,7 +95,7 @@ function reset!(w::GitRevWalker)
     return w 
 end
 
-function walk(r::Repository, from::Oid, sorting=SortDate)
+function walk(r::GitRepo, from::Oid, sorting=SortDate)
     walker = GitRevWalker(r)
     sortby!(walker, api.SORT_TIME)
     push!(walker, from)
@@ -107,7 +107,7 @@ end
 # walk(repo, oid) do commit
       # do something with commit
 # end
-function walk(f::Function, r::Repository, from::Oid, sorting=SortDate)
+function walk(f::Function, r::GitRepo, from::Oid, sorting=SortDate)
     walker = GitRevWalker(r)
     sortby!(walker, api.SORT_TIME)
     push!(walker, from) 

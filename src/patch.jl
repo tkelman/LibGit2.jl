@@ -20,7 +20,7 @@ end
 
 Base.convert(::Type{Ptr{Void}}, p::GitPatch) = p.ptr
 
-Base.diff(repo::Repository, blob::GitBlob, other::Nothing, opts=nothing) = begin
+Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
     old_path_ptr = zero(Ptr{Uint8})
     new_path_ptr = zero(Ptr{Uint8})
     if opts != nothing
@@ -39,7 +39,7 @@ Base.diff(repo::Repository, blob::GitBlob, other::Nothing, opts=nothing) = begin
     return GitPatch(patch_ptr[1])
 end
 
-Base.diff(repo::Repository, blob::GitBlob, other::GitBlob, opts=nothing) = begin
+Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts=nothing) = begin
     old_path_ptr = zero(Ptr{Uint8})
     new_path_ptr = zero(Ptr{Uint8})
     if opts != nothing
@@ -58,7 +58,7 @@ Base.diff(repo::Repository, blob::GitBlob, other::GitBlob, opts=nothing) = begin
     return GitPatch(patch_ptr[1])
 end
 
-Base.diff(repo::Repository, blob::GitBlob, other::String, opts= nothing) = begin
+Base.diff(repo::GitRepo, blob::GitBlob, other::String, opts= nothing) = begin
     old_path_ptr = zero(Ptr{Uint8})
     new_path_ptr = zero(Ptr{Uint8})
     if opts != nothing

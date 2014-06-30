@@ -28,7 +28,7 @@ else
     dir = mktempdir()
     try 
         repo = repo_clone(ENV["GITTEST_REMOTE_GIT_URL"], dir)
-        @test isa(repo, Repository)
+        @test isa(repo, GitRepo)
     finally 
         run(`rm -r -f $dir`)
     end
@@ -41,7 +41,7 @@ else
     try
         repo = repo_clone(ENV["GITTEST_REMOTE_SSH_URL"], dir,
                           {:credentials => ssh_key_credential()})
-        @test isa(repo, Repository)
+        @test isa(repo, GitRepo)
     finally
         run(`rm -r -f $dir`)
     end
@@ -54,7 +54,7 @@ else
     try
         repo = repo_clone(ENV["GITTEST_REMOTE_SSH_URL"], dir,
                           {:credentials => (url, username, allowed_types) -> ssh_key_credential()})
-        @test isa(repo, Repository)
+        @test isa(repo, GitRepo)
     finally
         run(`rm -r -f $dir`)
     end

@@ -25,9 +25,9 @@ end
 context("test creating bare repository") do 
     tmp_repo(test_repo_path) do
         repo_init(test_repo_path; bare=true)
-        repo = Repository(test_repo_path)
+        repo = GitRepo(test_repo_path)
         try 
-            @test isa(repo, Repository)
+            @test isa(repo, GitRepo)
             @test repo_isbare(repo)
             @test repo_isempty(repo)
         finally
@@ -39,9 +39,9 @@ end
 context("test creating repository") do 
     tmp_repo(test_repo_path) do
         repo_init(test_repo_path)
-        repo = Repository(test_repo_path)
+        repo = GitRepo(test_repo_path)
         try
-            @test isa(repo, Repository)
+            @test isa(repo, GitRepo)
             @test !(repo_isbare(repo))
             @test repo_isempty(repo)
             @test repo_workdir(repo) == abspath(test_repo_path)
@@ -68,8 +68,8 @@ end
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
 sandboxed_test("testrepo.git", "test fails to open repos that dont' exist") do test_repo, path
-    @test_throws LibGitError{:OS,:NotFound} Repository("fakepath/123")
-    @test_throws LibGitError{:OS,:NotFound} Repository("test")
+    @test_throws LibGitError{:OS,:NotFound} GitRepo("fakepath/123")
+    @test_throws LibGitError{:OS,:NotFound} GitRepo("test")
 end
    
 sandboxed_test("testrepo.git", "can check if object exist") do test_repo, path 
@@ -190,7 +190,7 @@ end
 
 sandboxed_test("testrepo.git", "test load alternates") do test_repo, path
     alt_path = joinpath(pwd(), "fixtures/alternate/objects")
-    repo = Repository(repo_path(test_repo); alternates=[alt_path])
+    repo = GitRepo(repo_path(test_repo); alternates=[alt_path])
     try 
       @test count(x->true, repo) == 1690
       @test read(repo, Oid("146ae76773c91e3b1d00cf7a338ec55ae58297e2")) != nothing
@@ -200,7 +200,7 @@ sandboxed_test("testrepo.git", "test load alternates") do test_repo, path
 end
 
 sandboxed_test("testrepo.git", "test alternates with invalid path type") do test_repo, path
-    @test_throws ArgumentError Repository(repo_path(test_repo), alternates=["error"])
+    @test_throws ArgumentError GitRepo(repo_path(test_repo), alternates=["error"])
 end
 
 sandboxed_test("testrepo.git", "test find merge base between ids") do test_repo, path

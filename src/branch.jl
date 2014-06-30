@@ -25,7 +25,7 @@ tip(b::GitBranch) = lookup(owner(b), target(resolve(b)))
 function owner(b::GitBranch)
     repo_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), b)
     #! do not free repository handle
-    return Repository(repo_ptr, false)
+    return GitRepo(repo_ptr, false)
 end
 
 function resolve(b::GitBranch)

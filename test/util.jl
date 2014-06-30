@@ -101,7 +101,7 @@ end
 
 type SandBoxedTest
     path::String
-    repo::Repository
+    repo::GitRepo
     torndown::Bool
 end
 
@@ -110,7 +110,7 @@ function clone(sbt::SandBoxedTest, repo_path, new_path)
         cd(sbt.path)
         run(`git clone --quiet  -- $repo_path $new_path`)
         cd(orig_dir)
-        return Repository(joinpath(sbt.path, new_path))
+        return GitRepo(joinpath(sbt.path, new_path))
 end
 
 function setup(::Type{SandBoxedTest}, repo_name::String)
@@ -139,7 +139,7 @@ function setup(::Type{SandBoxedTest}, repo_name::String)
         run(`mv $filename $newfilename`)
     end
     cd(origdir)
-    repo = Repository(sandbox_repo_path)
+    repo = GitRepo(sandbox_repo_path)
     sbt = SandBoxedTest(repo_dir, repo, false)
     finalizer(sbt, teardown)
     return sbt
@@ -222,12 +222,12 @@ sandboxed_checkout_test(f::Function, s::String) = (println(s); sandboxed_checkou
 
 type RepoAccess
     path::String
-    repo::Repository
+    repo::GitRepo
 end
 
 setup(::Type{RepoAccess}) = begin
     dir = joinpath(TESTDIR, "fixtures/testrepo.git")
-    return RepoAccess(dir, Repository(dir))
+    return RepoAccess(dir, GitRepo(dir))
 end
 
 macro with_repo_access(body)
@@ -252,7 +252,7 @@ with_repo_access(f::Function, s::String) = (println(s); with_repo_access(f))
 
 type TmpRepoAccess
     path::String
-    repo::Repository
+    repo::GitRepo
     torndown::Bool
 end
 
@@ -260,7 +260,7 @@ setup(::Type{TmpRepoAccess}) = begin
     tmpdir = mktempdir()
     repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
     run(`git clone --quiet  -- $repo_dir $tmpdir`)
-    ra = TmpRepoAccess(tmpdir, Repository(tmpdir), false)
+    ra = TmpRepoAccess(tmpdir, GitRepo(tmpdir), false)
     finalizer(ra, teardown)
     return ra
 end
