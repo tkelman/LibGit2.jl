@@ -121,13 +121,10 @@ end
 
 Base.getindex(r::Repository, o) = lookup(r, o)
 
-function read_header(r::Repository, id::Oid)
-    odb = repo_odb(r)
-    return read_header(odb, id)
-end
+read_header(r::Repository, id::Oid) = read_header(Odb(r), id)
+
 
 exists(r::Repository, id::Oid) = id in r 
-
 exists(r::Repository, ref::String) = begin
     @assert r.ptr != C_NULL
     ref_ptr = Array(Ptr{Void}, 1)
@@ -141,7 +138,6 @@ exists(r::Repository, ref::String) = begin
     return true
 end
 
-        
 @deprecate repo_isbare is_bare
 repo_isbare(r::Repository) = is_bare(r)
 
