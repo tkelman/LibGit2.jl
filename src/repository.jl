@@ -402,9 +402,9 @@ Base.push!{T<:String}(r::Repository, remote::String, refs::Vector{T}) = begin
 end
 
 function lookup(::Type{GitRemote}, r::Repository, remote_name::String)
-    @assert r.ptr != C_NULL
-    remote_ptr =  Array(Ptr{Void}, 1)
-    err = api.git_remote_load(remote_ptr, r.ptr, bytestring(remote_name))
+    remote_ptr =  Ptr{Void}[0]
+    err = ccall((:git_remote_load, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote_name)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
