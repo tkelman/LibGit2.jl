@@ -73,18 +73,11 @@ git_signature_ptr(sig::Signature) = begin
     return sig_ptr[1]
 end
 
-function name(s::Signature)
-    return s.name
-end
+name(s::Signature)  = s.name
 
-function email(s::Signature)
-    return s.email
-end
+email(s::Signature) = s.email
 
-function Base.time(s::Signature)
-    return s.time
-end
+#TODO: remove dependency on Base
+Base.time(s::Signature)  = s.time
 
-function time_offset(s::Signature)
-    return s.time_offset
-end
+time_offset(s::Signature) = s.time_offset
