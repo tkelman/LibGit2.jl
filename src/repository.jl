@@ -345,59 +345,59 @@ const c_cb_push_status = cfunction(cb_push_status, Cint,
 #TODO: git push update tips takes a signature and message
 #TODO: better error messages
 Base.push!{T<:String}(r::Repository, remote::GitRemote, refs::Vector{T}) = begin
-    @assert r.ptr != C_NULL && remote.ptr != C_NULL
-    err = zero(Cint) 
     push_ptr = Ptr{Void}[0]
-    err = api.git_push_new(push_ptr, remote.ptr)
+    err = ccall((:git_push_new, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}), push_ptr, remote)
+    p = push_ptr[1]
     if err != api.GIT_OK
-        if push_ptr != C_NULL
-            api.git_push_free(push_ptr[1])
+        if p != C_NULL
+            ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         end
         throw(LibGitError(err))
     end
+    @assert p != C_NULL
     for ref in refs
-        err = api.git_push_add_refspec(push_ptr[1], bytestring(ref))
+        err = ccall((:git_push_add_refspec, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), p, ref)
     end
     if err != api.GIT_OK
-        api.git_push_free(push_ptr[1])
+        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
-    err = api.git_push_finish(push_ptr[1])
+    err = ccall((:git_push_finish, :libgit2), Cint, (Ptr{Void},), p)
     if err != api.GIT_OK
-        api.git_push_free(push_ptr[1])
+        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         if err == api.ENONFASTFORWARD
             error("non-fast-forward upate rejected")
+        #TODO: error constant
         elseif err == -8
             error("could not push to repo (check for non-bare repo)")
         end
     end
-    err = api.git_push_unpack_ok(push_ptr[1])
+    err = ccall((:git_push_unpack_ok, :libgit2), Cint, (Ptr{Void},), p)
     if err == api.GIT_OK
-        api.git_push_free(push_ptr[1])
+        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         error("remote side did not unpack successfully")
     end
     result = (UTF8String=>UTF8String)[]
-    err = ccall((:git_push_status_foreach, api.libgit2), Cint,
-                (Ptr{Void}, Ptr{Void}, Any),
-                push_ptr[1], c_cb_push_status, &result)
+    err = ccall((:git_push_status_foreach, :libgit2), Cint,
+                (Ptr{Void}, Ptr{Void}, Any), p, c_cb_push_status, &result)
     if err != api.GIT_OK
-        api.git_push_free(push_ptr[1])
+        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
-    err = ccall((:git_push_update_tips, api.libgit2), Cint,
-                (Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
-                push_ptr[1], C_NULL, C_NULL)
+    err = ccall((:git_push_update_tips, :libgit2), Cint,
+                (Ptr{Void}, Ptr{api.GitSignature}, Ptr{Uint8}), p, C_NULL, C_NULL)
     if err != api.GIT_OK
-        api.git_push_free(push_ptr[1])
+        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
     return result
 end
 
 Base.push!{T<:String}(r::Repository, remote::String, refs::Vector{T}) = begin
-    @assert r.ptr != C_NULL
-    remote_ptr = Array(Ptr{Void}, 1)
-    @check api.git_remote_load(remote_ptr, r.ptr, bytestring(remote))
+    remote_ptr = Ptr{Void}[0]
+    @check ccall((:git_remote_load, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote)
     return push!(r, GitRemote(remote_ptr[1]), refs)
 end
 
