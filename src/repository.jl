@@ -38,35 +38,6 @@ GitRepo(path::String; alternates::Vector{String}=String[]) = begin
     return repo
 end
 
-#=
-Repository(path::String; alternates=nothing) = begin
-    bpath = bytestring(path)
-    repo_ptr = Array(Ptr{Void}, 1)
-    err_code = api.git_repository_open(repo_ptr, bpath)
-    if err_code < 0
-        if repo_ptr[1] != C_NULL
-            api.git_repository_free(repo_ptr[1])
-        end
-        throw(LibGitError(err_code))
-    end
-    repo = Repository(repo_ptr[1])
-    if alternates != nothing && length(alternates) > 0
-        odb = repo_odb(repo)
-        for path in alternates
-            if !isdir(path)
-                throw(ArgumentError("alternate $path is not a valid dir"))
-            end
-            bpath = bytestring(path)
-            err = api.git_odb_add_disk_alternate(odb.ptr, bpath)
-            if err != api.GIT_OK
-                throw(LibGitError(err))
-            end
-        end
-    end
-    return repo
-end
-=#
-
 Base.close(r::GitRepo) = begin
     if r.ptr != C_NULL
         ccall((:git_repository__cleanup, :libgit2), Void, (Ptr{Void},), r.ptr)
@@ -232,9 +203,11 @@ end
 
 function set_namespace!(r::GitRepo, ns)
     if ns == nothing || isempty(ns)
-        @check ccall((:git_repository_set_namespace, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, C_NULL)
+        @check ccall((:git_repository_set_namespace, :libgit2), Cint,
+                     (Ptr{Void}, Ptr{Uint8}), r, C_NULL)
     else
-        @check ccall((:git_repository_set_namespace, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, ns)
+        @check ccall((:git_repository_set_namespace, :libgit2), Cint,
+                     (Ptr{Void}, Ptr{Uint8}), r, ns)
     end
     return r
 end
@@ -437,19 +410,20 @@ function tag!(r::GitRepo;
               tagger::Union(Nothing,Signature)=nothing,
               force::Bool=false)
    tid = Oid()
+   #TODO: this is not correct
    target != nothing && (obj = lookup(r, target))
    if !isempty(message)
        gsig = tagger != nothing ? git_signature(tagger) :
                                   git_signature(default_signature(r))
 
-       @check ccall((:git_tag_create, api.libgit2), Cint,
+       @check ccall((:git_tag_create, :libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
                      Ptr{Void}, Ptr{api.GitSignature}, Ptr{Uint8}, Cint),
-                     &tid, r.ptr, name, obj, &gsig, message, force)
+                     &tid, r.ptr, name, obj, &gsig, message, force? 1:0)
    else
-       @check ccall((:git_tag_create_lightweight, api.libgit2), Cint,
+       @check ccall((:git_tag_create_lightweight, :libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Cint),
-                    &tid, r, name, obj, force? 1 : 0)
+                    &tid, r, name, obj, force? 1:0)
    end
    return tid
 end
@@ -460,36 +434,38 @@ function create_note!(
                author::Union(Nothing, Signature)=nothing,
                ref::Union(Nothing, String)=nothing,
                force::Bool=false)
-    @assert obj.ptr != nothing
-    #repo = Repository(api.git_object_owner(obj.ptr))
-    repo_ptr = api.git_object_owner(obj.ptr)
+    repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
     target_id = Oid(obj)
-    bref = ref != nothing ? bytestring(ref) : C_NULL
+    bref = ref != nothing ? bytestring(ref) : convert(Ptr{Uint8}, C_NULL)
+    local committer_ptr::Ptr{api.GitSignature}
     if committer != nothing
         committer_ptr = git_signature_ptr(committer)
     else
         # gcommitter = git_signature(default_signature(repo))
-        sig_ptr = Array(Ptr{api.GitSignature}, 1)
-        api.git_signature_default(sig_ptr, repo_ptr)
+        sig_ptr = Ptr{api.GitSignature}[0]
+        @check ccall((:git_signature_default, :libgit2), Cint,
+                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
         committer_ptr = sig_ptr[1]
  
     end
+    local author_ptr::Ptr{api.GitSignature}
     if author != nothing
         author_ptr = git_signature_ptr(author)
     else
+        #TODO: we can avoid having to lookup the default signature twice
         # gauthor = git_signature(default_signature(repo))
-        sig_ptr = Array(Ptr{api.GitSignature}, 1)
-        api.git_signature_default(sig_ptr, repo_ptr)
+        sig_ptr = Ptr{api.GitSignature}[0]
+        @check ccall((:git_signature_default, :libgit2), Cint,
+                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end
-    note_id  = Oid()
-    @check ccall((:git_note_create, api.libgit2), Cint,
+    note_id = Oid()
+    @check ccall((:git_note_create, :libgit2), Cint,
                  (Ptr{Uint8}, Ptr{Void}, Ptr{api.GitSignature},
                   Ptr{api.GitSignature}, Ptr{Cchar}, Ptr{Uint8},
                   Ptr{Cchar}, Cint),
-                 note_id.oid, repo_ptr, committer_ptr, author_ptr,
-                 bref, target_id.oid, bytestring(msg),
-                 force? 1 : 0)
+                 &note_id, repo_ptr, committer_ptr, author_ptr,
+                 bref, &tid, bytestring(msg), force? 1:0)
     return note_id
 end
 
@@ -497,31 +473,33 @@ function remove_note!(obj::GitObject;
                       committer::Union(Nothing,Signature)=nothing,
                       author::Union(Nothing,Signature)=nothing,
                       ref::Union(Nothing,String)=nothing)
-    @assert obj.ptr != C_NULL
     target_id = Oid(obj)
-    #repo = Repository(api.git_object_owner(obj.ptr))
-    repo_ptr = api.git_object_owner(obj.ptr)
+    repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
     notes_ref = ref != nothing ? bytestring(ref) : bytestring("refs/notes/commits")
+    local committer_ptr::Ptr{api.GitSignature}
     if committer != nothing
         committer_ptr = git_signature_ptr(committer)
     else
-        sig_ptr = Array(Ptr{api.GitSignature}, 1)
-        api.git_signature_default(sig_ptr, repo_ptr)
+        sig_ptr = Ptr{api.GitSignature}[0]
+        @check ccall((:git_signature_default, :libgit2), Cint,
+                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
         committer_ptr = sig_ptr[1]
         #gcommitter = git_signature(default_signature(repo))
     end
+    local author_ptr::Ptr{api.GitSignature}
     if author != nothing
         author_ptr = git_signature_ptr(author)
     else
         #gauthor = git_signature(default_signature(repo))
-        sig_ptr = Array(Ptr{api.GitSignature}, 1)
-        api.git_signature_default(sig_ptr, repo_ptr)
+        sig_ptr = Ptr{api.GitSignature}[0]
+        @check ccall((:git_signature_default, :libgit2), Cint,
+                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end 
-    err = ccall((:git_note_remove, api.libgit2), Cint,
+    err = ccall((:git_note_remove, :libgit2), Cint,
                 (Ptr{Void}, Ptr{Cchar}, 
-                 Ptr{api.GitSignature}, Ptr{api.GitSignature}, Ptr{Uint8}),
-                 repo_ptr, notes_ref, author_ptr, committer_ptr, target_id.oid)
+                 Ptr{api.GitSignature}, Ptr{api.GitSignature}, Ptr{Oid}),
+                 repo_ptr, notes_ref, author_ptr, committer_ptr, &target_id)
     if err == api.ENOTFOUND
         return false
     elseif err != api.GIT_OK
@@ -531,64 +509,39 @@ function remove_note!(obj::GitObject;
 end
 
 function note_default_ref(r::GitRepo)
-    refname_ptr = Array(Ptr{Cchar}, 1)
-    @check api.git_note_default_ref(refname_ptr, r.ptr)
+    refname_ptr = Ptr{Void}[0]
+    @check ccall((:git_note_default_ref, :libgit2), Cint, 
+                 (Ptr{Ptr{Void}}, Ptr{Void}), refname_ptr, r)
     return bytestring(refname_ptr[1])
 end
 
-# todo the following should be moved to not    
-function notes(obj::GitObject, ref=nothing)
-    lookup_note(obj, ref)
-end
-
-function lookup_note(obj::GitObject, ref=nothing)
-    if ref == nothing
-        bref = C_NULL
-    else 
-        bref = bytestring(ref)
-    end
-    note_ptr = Array(Ptr{Void}, 1)
-    repo_ptr = api.git_object_owner(obj.ptr)
-    err = api.git_note_read(note_ptr, repo_ptr, bref, Oid(obj).oid)
-    if err == api.ENOTFOUND
-        return nothing
-    elseif err != api.GIT_OK
-        throw(LibGitError(err))
-    end
-    n = GitNote(note_ptr[1])
-    api.git_note_free(note_ptr[1])
-    return n
-end
-
-function cb_iter_notes(blob_id::Ptr{Uint8}, ann_obj_id::Ptr{Uint8}, repo_ptr::Ptr{Void})
-    ann_obj_ptr = Array(Ptr{Void}, 1)
-    blob_ptr = Array(Ptr{Void}, 1)
-    err = api.git_object_lookup(ann_obj_ptr, repo_ptr, ann_obj_id, api.OBJ_BLOB)
-    err |= api.git_object_lookup(blob_ptr, repo_ptr, blob_id, api.OBJ_BLOB)
+function cb_iter_notes(blob_id::Ptr{Oid}, ann_obj_id::Ptr{Oid}, repo_ptr::Ptr{Void})
+    ann_obj_ptr = Ptr{Void}[0]
+    blob_ptr    = Ptr{Void}[0]
+    err = ccall((:git_object_lookup, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
+                ann_obj_ptr, repo_ptr, ann_obj_id, api.OBJ_BLOB)
+    err |= ccall((:git_object_lookup, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
+                 blob_ptr, repo_ptr, blob_id, api.OBJ_BLOB)
     if err == api.GIT_OK
-        res = (gitobj_from_ptr(ann_obj_id[1]), 
-               gitobj_from_ptr(blob_ptr[1]))
+        res = (gitobj_from_ptr(ann_obj_id[1]), gitobj_from_ptr(blob_ptr[1]))
         produce(res)
     end
     return err
 end
 
-const c_cb_iter_notes = cfunction(cb_iter_notes, Cint, (Ptr{Uint8}, Ptr{Uint8}, Ptr{Void}))
+const c_cb_iter_notes = cfunction(cb_iter_notes, Cint, (Ptr{Oid}, Ptr{Oid}, Ptr{Void}))
 
-function iter_notes(r::GitRepo, notes_ref=nothing)
-    @assert r.ptr != C_NULL
-    if ref == nothing
-        bnotes_ref = C_NULL
-    else
-        bnotes_ref = bytestring(notes_ref)
-    end
-    return @task api.git_note_foreach(r.ptr, notes_ref, c_cb_iter_notes, r.ptr)
+function iter_notes(r::GitRepo, notes_ref::Union(Nothing, String)=nothing)
+    bnotes_ref = ref != nothing ? bytestring(notes_ref) : C_NULL
+    return @task ccall((:git_note_foreach, :libgit2), Cint, 
+                       (Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Void}),
+                       r, notes_ref, c_cb_iter_notes, r)
 end
 
-function ahead_behind(r::GitRepo,
-                      lcommit::GitCommit,
-                      ucommit::GitCommit)
-    ahead_behind(r, Oid(lcommit), Oid(ucommit))
+function ahead_behind(r::GitRepo, lcommit::GitCommit, ucommit::GitCommit)
+    return ahead_behind(r, Oid(lcommit), Oid(ucommit))
 end
 
 function ahead_behind(r::GitRepo, lid::Oid, uid::Oid)
@@ -612,7 +565,6 @@ function blob_at(r::GitRepo, rev::Oid, p::String)
     blob = lookup_blob(r, Oid(blob_entry))
     return blob
 end
-
 
 #TODO: consolidate with odb
 function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)

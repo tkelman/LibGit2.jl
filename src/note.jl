@@ -25,3 +25,24 @@ end
 
 Oid(n::GitNote) = n.id
 message(n::GitNote) = n.msg
+
+notes(obj::GitObject, ref::Union(Nothing, String)=nothing) = lookup_note(obj, ref)
+
+function lookup_note(obj::GitObject, ref::Union(Nothing, String)=nothing)
+    bref = ref != nothing ? bytestring(ref) : C_NULL
+    note_ptr = Ptr{Void}[0]
+    repo_ptr = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
+    err = ccall((:git_note_read, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}),
+                note_ptr, repo_ptr, bref, Oid(obj))
+    if err == api.ENOTFOUND
+        return nothing
+    elseif err != api.GIT_OK
+        throw(LibGitError(err))
+    end
+    n = GitNote(note_ptr[1])
+    #api.git_note_free(note_ptr[1])
+    return n
+end
+
+
