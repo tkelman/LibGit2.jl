@@ -312,25 +312,13 @@ function remotes(r::GitRepo)
     return out
 end
 
-#TODO: this should be moved to remote
-GitRemote(r::Repository, url::String) = begin
-    @assert r.ptr != C_NULL
-    check_valid_url(url)
-    remote_ptr = Array(Ptr{Void}, 1)
-    @check api.git_remote_create_anonymous(remote_ptr, r.ptr, bytestring(url), C_NULL)
-    return GitRemote(remote_ptr[1])
-end
-
-#TODO: this is redundant with above function
 function remote_names(r::Repository)
-    @assert r.ptr != C_NULL
-    rs = api.GitStrArray()
+    rs = StrArrayStruct()
     @check ccall((:git_remote_list, api.libgit2), Cint,
-                  (Ptr{api.GitStrArray}, Ptr{Void}),
-                  &rs, r.ptr)
-    ns = Array(String, rs.count)
+                  (Ptr{StrArrayStruct}, Ptr{Void}), &rs, r)
+    ns = Array(UTF8String, rs.count)
     for i in 1:rs.count
-        ns[i] = bytestring(unsafe_load(rs.strings, i))
+        ns[i] = utf8(bytestring(unsafe_load(rs.strings, i)))
     end
     return ns
 end
@@ -343,7 +331,7 @@ function remote_add!(r::Repository, name::String, url::String)
     return GitRemote(remote_ptr[1])
 end
 
-function cb_push_status(ref_ptr::Ptr{Cchar}, msg_ptr::Ptr{Cchar}, payload::Ptr{Void})
+function cb_push_status(ref_ptr::Ptr{Uint8}, msg_ptr::Ptr{Uint8}, payload::Ptr{Void})
     if msg_ptr != C_NULL 
         result = unsafe_pointer_to_objref(payload)::Dict{UTF8String,UTF8String}
         result[utf8(bytestring(ref_ptr))] = utf8(bytestring(msg_ptr))
@@ -352,7 +340,7 @@ function cb_push_status(ref_ptr::Ptr{Cchar}, msg_ptr::Ptr{Cchar}, payload::Ptr{V
 end
 
 const c_cb_push_status = cfunction(cb_push_status, Cint,
-                                   (Ptr{Cchar}, Ptr{Cchar}, Ptr{Void}))
+                                   (Ptr{Uint8}, Ptr{Uint8}, Ptr{Void}))
 
 #TODO: git push update tips takes a signature and message
 #TODO: better error messages

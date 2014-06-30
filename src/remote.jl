@@ -3,6 +3,14 @@ export name, isconnected, disconnect, url, set_url!,
        add_fetch!, add_push!, clear_refspecs!, save!, rename!,
        update_tips!
 
+GitRemote(r::GitRepo, url::String) = begin
+    check_valid_url(url)
+    remote_ptr = Ptr{Void}[0]
+    @check ccall((:git_remote_create_anonymous, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}), remote_ptr, r, url, C_NULL)
+    return GitRemote(remote_ptr[1])
+end
+
 function name(r::GitRemote)
     @assert r.ptr != C_NULL
     name_ptr = api.git_remote_name(r.ptr)
