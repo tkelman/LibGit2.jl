@@ -52,7 +52,7 @@ end
 # -----------------------------------------
 with_repo_access() do test_repo, path
    
-   @test repo_path(test_repo) == path
+   @test LibGit2.path(test_repo) == path
    
    context("lookup any object type") do 
        blob = test_repo[Oid("fa49b077972391ad58037050f2a75f74e3671e92")]

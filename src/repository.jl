@@ -123,13 +123,12 @@ Base.getindex(r::Repository, o) = lookup(r, o)
 
 read_header(r::Repository, id::Oid) = read_header(Odb(r), id)
 
-
 exists(r::Repository, id::Oid) = id in r 
 exists(r::Repository, ref::String) = begin
-    @assert r.ptr != C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
-    err = api.git_reference_lookup(ref_ptr, r.ptr, bytestring(ref))
-    api.git_reference_free(ref_ptr[1])
+    ref_ptr = Ptr{Void}[0]
+    err = ccall((:git_reference_lookup, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, ref)
+    ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), ref_ptr[1])
     if err == api.ENOTFOUND
         return false
     elseif err != api.GIT_OK
@@ -138,46 +137,30 @@ exists(r::Repository, ref::String) = begin
     return true
 end
 
-@deprecate repo_isbare is_bare
-repo_isbare(r::Repository) = is_bare(r)
-
 function is_bare(r::Repository)
-    @assert r.ptr != C_NULL
-    res = api.git_repository_is_bare(r.ptr)
-    return res > zero(Cint) ? true : false
+    return bool(ccall((:git_repository_is_bare, :libgit2), Cint, (Ptr{Void},), r))
 end
 
-@deprecate repo_isbare is_bare
-repo_isempty(r) = is_empty(r)
-
+#TODO: this is a function in base isempty
 function is_empty(r::Repository)
-    @assert r.ptr != C_NULL
-    res = api.git_repository_is_empty(r.ptr) 
-    return res > zero(Cint) ? true : false
+    return bool(ccall((:git_repository_is_empty, :libgit2), Cint, (Ptr{Void},), r))
 end
 
 function is_shallow(r::Repository)
-    @assert r.ptr != C_NULL
-    res = api.git_repository_is_shallow(r.ptr)
-    return res > zero(Cint) ? true : false
+    return bool(ccall((:git_repository_is_shallow, :libgit2), Cint, (Ptr{Void},), r))
 end
 
 function repo_workdir(r::Repository)
-    @assert r.ptr != C_NULL
-    res = api.git_repository_workdir(r.ptr)
-    if res == C_NULL
+    dir = ccall((:git_repository_workdir, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    if dir == C_NULL
         return nothing
     end
     # remove trailing slash
-    return bytestring(res)[1:end-1]
+    return bytestring(dir)[1:end-1]
 end
 
-@deprecate repo_path path
-repo_path(r::Repository) = path(r)
-
 function path(r::Repository)
-    @assert r.ptr != C_NULL
-    cpath = api.git_repository_path(r.ptr)
+    cpath = ccall((:git_repository_path, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     if cpath == C_NULL
         return nothing
     end
