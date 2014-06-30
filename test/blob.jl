@@ -10,7 +10,7 @@ with_repo_access("test lookup fails with wrong git obj") do test_repo, path
                                                     Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"))
 end
 
-#=
+
 with_repo_access() do test_repo, path
     
     context("test read blob data")  do
@@ -97,7 +97,7 @@ with_repo_access() do test_repo, path
     end
     =#
 end
-=#
+
 
 with_tmp_repo_access("test write blob data") do test_repo, path
     @test blob_from_buffer(test_repo, "a new blob content") == 
