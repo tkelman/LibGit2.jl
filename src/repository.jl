@@ -13,7 +13,6 @@ export repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        ishead_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
        repo_clone
 
-#=
 Repository(path::String; alternates::Vector{String}=String[]) = begin
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_open, :libgit2), Cint,
@@ -38,7 +37,8 @@ Repository(path::String; alternates::Vector{String}=String[]) = begin
     end
     return repo
 end
-=#
+
+#=
 Repository(path::String; alternates=nothing) = begin
     bpath = bytestring(path)
     repo_ptr = Array(Ptr{Void}, 1)
@@ -65,17 +65,15 @@ Repository(path::String; alternates=nothing) = begin
     end
     return repo
 end
+=#
 
 Base.close(r::Repository) = begin
     if r.ptr != C_NULL
-        api.git_repository__cleanup(r.ptr)
+        ccall((:git_repository__cleanup, :libgit2), Void, (Ptr{Void},), r.ptr)
     end
 end
 
-Base.in(id::Oid, r::Repository) = begin
-    odb = repo_odb(r)
-    return exists(odb, id)::Bool
-end
+Base.in(id::Oid, r::Repository) = exists(Odb(r), id)::Bool
 
 function cb_iter_oids(idptr::Ptr{Uint8}, o::Ptr{Void})
     try
@@ -90,37 +88,35 @@ const c_cb_iter_oids = cfunction(cb_iter_oids, Cint, (Ptr{Uint8}, Ptr{Void}))
 
 #TODO: better error handling
 Base.start(r::Repository) = begin
-    odb = repo_odb(r)
-    t = @task api.git_odb_foreach(odb.ptr, c_cb_iter_oids, C_NULL)
-    (consume(t), t)
+    odb = Odb(r)
+    t = @task ccall((:git_odb_foreach, :libgit2), Cint,
+                    (Ptr{Void}, Ptr{Void}, Ptr{Cint}), odb, c_cb_iter_oids, C_NULL)
+    return (consume(t), t)
 end
 
-Base.done(r::Repository, state) = begin
-    istaskdone(state[2])
-end
+Base.done(r::Repository, state) = istaskdone(state[2])
 
 Base.next(r::Repository, state) = begin
     v = consume(state[2])
-    (state[1], (v, state[2]))
+    return (state[1], (v, state[2]))
 end
 
 Base.read(r::Repository, id::Oid) = begin
-    odb = repo_odb(r)
-    obj_ptr = Array(Ptr{Void}, 1)
-    @check api.git_odb_read(obj_ptr, odb.ptr, id.oid)
+    odb = Odb(r)
+    obj_ptr = Ptr{Void}[0]
+    @check ccall((:git_odb_read, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}), obj_ptr, odb, &id)
     return OdbObject(obj_ptr[1])
 end
 
 Base.delete!(r::Repository, ref::GitReference) = begin
-    @assert r.ptr != C_NULL && ref.ptr != C_NULL
-    @check api.git_reference_delete(ref.ptr)
+    @check ccall((:git_reference_delete, :libgit2), Cint, (Ptr{Void}, Ptr{Void}), r, ref)
     return r
 end
 
 Base.delete!(r::Repository, t::GitTag) = begin
-    @assert r.ptr != C_NULL && t.ptr != C_NULL
-    @check api.git_tag_delete(r.ptr, name(t))
-    return nothing
+    @check ccall((:git_tag_delete, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, name(t))
+    return r
 end
 
 Base.getindex(r::Repository, o) = lookup(r, o)
@@ -728,6 +724,8 @@ function config(r::Repository)
     @check api.git_repository_config(config_ptr, r.ptr)
     return GitConfig(config_ptr[1])
 end
+
+Odb(r::Repository) = repo_odb(r)
 
 function repo_odb(r::Repository)
     @assert r.ptr != C_NULL
