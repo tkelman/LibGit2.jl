@@ -17,14 +17,14 @@ end
 
 GitRevWalker(r::GitRepo) = begin
     wptr = Ptr{Void}[0]
-    @check ccall((:git_revwalk_new, api.libgit2), Cint,
+    @check ccall((:git_revwalk_new, :libgit2), Cint,
                   (Ptr{Ptr{Void}}, Ptr{Void}), wptr, r) 
     return GitRevWalker(r, wptr[1])
 end
 
 free!(w::GitRevWalker) = begin
     if w.ptr != C_NULL
-        ccall((:git_revwalk_free, api.libgit2), Void, (Ptr{Void},), w.ptr)
+        ccall((:git_revwalk_free, :libgit2), Void, (Ptr{Void},), w.ptr)
         w.ptr = C_NULL
     end
 end
@@ -33,7 +33,7 @@ Base.convert(::Type{Ptr{Void}}, w::GitRevWalker) = w.ptr
 
 Base.start(w::GitRevWalker) = begin
     cid = Oid()
-    err = ccall((:git_revwalk_next, api.libgit2), Cint,
+    err = ccall((:git_revwalk_next, :libgit2), Cint,
                 (Ptr{Oid}, Ptr{Void}), &cid, w)
     if err == api.ITEROVER
         return (nothing, true)
@@ -47,7 +47,7 @@ Base.done(w::GitRevWalker, state) = state[2]::Bool
 
 Base.next(w::GitRevWalker, state) = begin
     cid = Oid()
-    err = ccall((:git_revwalk_next, api.libgit2), Cint,
+    err = ccall((:git_revwalk_next, :libgit2), Cint,
                 (Ptr{Oid}, Ptr{Void}), &cid, w)
     if err == api.ITEROVER
         return (state[1], (nothing, true))
@@ -58,7 +58,7 @@ Base.next(w::GitRevWalker, state) = begin
 end
 
 Base.push!(w::GitRevWalker, cid::Oid) = begin
-    @check ccall((:git_revwalk_push, api.libgit2), Cint,
+    @check ccall((:git_revwalk_push, :libgit2), Cint,
                  (Ptr{Void}, Ptr{Oid}), w, &cid)
     return w 
 end
@@ -79,19 +79,19 @@ Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false) = begin
 end
 
 Base.sortby!(w::GitRevWalker, sort_mode::Cint) = begin
-    ccall((:git_revwalk_sorting, api.libgit2), Void,
+    ccall((:git_revwalk_sorting, :libgit2), Void,
            (Ptr{Void}, Cint), w, sort_mode)
     return w 
 end
 
-function hide!(w::GitRevWalker, cid::Oid)
-    @check ccall((:git_revwalk_hide, api.libgit2), Cint,
-                 (Ptr{Void}, Ptr{Oid}), w, &cid)
+function hide!(w::GitRevWalker, id::Oid)
+    @check ccall((:git_revwalk_hide, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{Oid}), w, &id)
     return w 
 end
 
 function reset!(w::GitRevWalker)
-    ccall((:git_revwalk_reset, api.libgit2), Void, (Ptr{Void},), w)
+    ccall((:git_revwalk_reset, :libgit2), Void, (Ptr{Void},), w)
     return w 
 end
 
