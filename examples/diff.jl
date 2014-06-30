@@ -232,9 +232,9 @@ function color_printer(d)
 end
 
 function main()
-  o,diff_format = parse_commandline()
+  o, diff_format = parse_commandline()
   if haskey(o,:path)
-    repo = repo_open(o[:path])
+    repo = Repository(o[:path])
   else
     repo = repo_discover()
   end

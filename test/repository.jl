@@ -697,12 +697,12 @@ end
 sandboxed_checkout_test("test checkout with commit detaches HEAD") do test_repo, test_clone, test_bare
     checkout!(test_repo, rev_parse_oid(test_repo, "refs/heads/dir"), 
               {:strategy => :force})
-    @test ishead_detached(test_repo)
+    @test is_head_detached(test_repo)
     @test rev_parse_oid(test_repo, "refs/heads/dir") == target(head(test_repo))
 end
 
 sandboxed_checkout_test("test checkout with remote branch detaches HEAD") do test_repo, test_clone, test_bare
     checkout!(test_clone, "origin/dir", {:strategy => :force})
-    @test ishead_detached(test_clone)
+    @test is_head_detached(test_clone)
     @test rev_parse_oid(test_clone, "refs/remotes/origin/dir") == target(head(test_clone))
 end
