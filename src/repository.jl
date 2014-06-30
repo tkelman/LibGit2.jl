@@ -142,7 +142,8 @@ end
 function hash_data{T<:GitObject}(::Type{T}, content::String)
     id = Oid()
     @check ccall((:git_odb_hash, :libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Uint8}, Csize_t, Cint), &id, content, length(content), git_otype(T))
+                 (Ptr{Oid}, Ptr{Uint8}, Csize_t, Cint),
+                 &id, content, length(content), git_otype(T))
     return id
 end
 
@@ -545,19 +546,18 @@ function ahead_behind(r::GitRepo, lcommit::GitCommit, ucommit::GitCommit)
 end
 
 function ahead_behind(r::GitRepo, lid::Oid, uid::Oid)
-    @assert r.ptr != C_NULL
-    ahead = Csize_t[0]
-    behind = Csize_t[0]
-    @check api.git_graph_ahead_behind(
-                ahead, behind, r.ptr, lid.oid, uid.oid)
+    ahead, behind  = Csize_t[0], Csize_t[0]
+    @check ccall((:git_graph_ahead_behind, :libgit2), Cint,
+                 (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}, Ptr{Oid}, Ptr{Oid}),
+                 ahead, behind, r, &lid, &uid)
     return (int(ahead[1]), int(behind[1]))
 end
 
 function blob_at(r::GitRepo, rev::Oid, p::String)
-    tree = git_tree(lookup_commit(r, rev))
+    tree = GitTree(lookup_commit(r, rev))
     local blob_entry::GitTreeEntry
     try
-        blob_entry = entry_bypath(tree, p)
+        blob_entry = GitTreeEntry(tree, p)
         @assert isa(blob_entry, GitTreeEntry{GitBlob})
     catch
         return nothing
@@ -568,53 +568,51 @@ end
 
 #TODO: consolidate with odb
 function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)
-    @assert r.ptr != C_NULL
-    odb = repo_odb(r)
+    odb = Odb(r)
     gty = git_otype(T)
-    stream_ptr = Array(Ptr{Void}, 1) 
-    @check api.git_odb_open_wstream(stream_ptr, odb.ptr, length(buf), gty)
-    err = api.git_odb_stream_write(stream_ptr[1], buf, length(buf))
+    stream_ptr = Ptr{Void}[0]
+    @check ccall((:git_odb_open_wstream, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t, Cint),
+                 stream_ptr, odb, length(buf), gty)
+    err = ccall((:git_odb_stream_write, :libgit2), Cint,
+                (Ptr{Void}, Ptr{Uint8}, Csize_t), stream_ptr[1], buf, length(buf))
     out = Oid()
-    if !(bool(err))
-        err = api.git_odb_stream_finalize_write(out.oid, stream_ptr[1])
+    if err == api.GIT_OK
+        err = ccall((:git_odb_stream_finalize_write, :libgit2), Cint,
+                    (Ptr{Oid}, Ptr{Void}), &out, stream_ptr[1])
     end
-    api.git_odb_stream_free(stream_ptr[1])
+    ccall((:git_odb_stream_free, :libgit2), Void, (Ptr{Void},), stream_ptr[1])
     if err != api.GIT_OK
         throw(LibGitError(err))
     end
     return out
 end
 
+#TODO: implement
 function references(r::GitRepo)
     return nothing
 end
 
 function repo_discover(p::String="", acrossfs::Bool=true)
     if isempty(p); p = pwd(); end
-    brepo = Array(Cchar, api.GIT_PATH_MAX)
+    brepo = Array(Uint8, api.GIT_PATH_MAX)
     bp = bytestring(p)
     buf = api.GitBuffer()
-    @check ccall((:git_repository_discover, api.libgit2), Cint,
-                 (Ptr{api.GitBuffer}, Ptr{Cchar}, Cint, Ptr{Cchar}),
+    @check ccall((:git_repository_discover, :libgit2), Cint,
+                 (Ptr{api.GitBuffer}, Ptr{Uint8}, Cint, Ptr{Uint8}),
                   &buf, bp, acrossfs? 1 : 0, C_NULL)
     return GitRepo(bytestring(buf.ptr))
 end
 
 function rev_parse(r::GitRepo, rev::String)
-    @assert r.ptr != C_NULL
-    brev = bytestring(rev)
-    obj_ptr = Array(Ptr{Void}, 1)
-    @check api.git_revparse_single(obj_ptr, r.ptr, brev)
-    obj = gitobj_from_ptr(obj_ptr[1]) 
-    return obj
+    odj_ptr = Ptr{Void}[0]
+    @check ccall((:git_revparse_single, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, brev)
+    return gitobj_from_ptr(obj_ptr[1])
 end
-
-function rev_parse(r::GitRepo, rev::Oid)
-    return rev_parse(r, string(rev))
-end
+rev_parse(r::GitRepo, rev::Oid) = rev_parse(r, string(rev))
 
 function merge_base(r::GitRepo, args...)
-    @assert r.ptr != C_NULL
     if length(args) < 2
         throw(ArgumentError("merge_base needs 2+ commits"))
     end
@@ -622,7 +620,8 @@ function merge_base(r::GitRepo, args...)
     @assert length(arg_oids) == length(args) * api.OID_RAWSZ
     len = convert(Csize_t, length(args))
     id = Oid()
-    err = api.git_merge_base_many(id.oid, r.ptr, len, arg_oids)
+    err = ccall((:git_merge_base_many, :libgit2), Cint, 
+                (Ptr{Oid}, Ptr{Void}, Csize_t, Ptr{Uint8}), &id, r, len, arg_oids)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
@@ -630,62 +629,57 @@ function merge_base(r::GitRepo, args...)
     end
     return id
 end
-    
-function rev_parse_oid(r::GitRepo, rev::String)
-    Oid(rev_parse(r, rev))
-end
-
 #TODO: this could be more efficient
-function rev_parse_oid(r::GitRepo, rev::Oid)
-    return Oid(rev_parse(r, string(rev)))
-end
+rev_parse_oid(r::GitRepo, rev::Oid) = Oid(rev_parse(r, string(rev)))
+rev_parse_oid(r::GitRepo, rev::String) = Oid(rev_parse(r, rev))
 
 function config(r::GitRepo)
-    @assert r.ptr != C_NULL
-    config_ptr = Array(Ptr{Void}, 1)
-    @check api.git_repository_config(config_ptr, r.ptr)
+    cfg_ptr = Ptr{Void}[0]
+    @check ccall((:git_repository_config, :libgit2), Cint, 
+                 (Ptr{Ptr{Void}}, Ptr{Void}), cfg_ptr, r)
     return GitConfig(config_ptr[1])
 end
 
-Odb(r::GitRepo) = repo_odb(r)
-#TODO: remove
-function repo_odb(r::GitRepo)
-    @assert r.ptr != C_NULL
-    odb_ptr = Array(Ptr{Void}, 1)
-    @check api.git_repository_odb(odb_ptr, r.ptr)
+Odb(r::GitRepo) = begin
+    odb_ptr = Ptr{Void}[0]
+    @check ccall((:git_repository_odb, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}), odb_ptr, r)
     return Odb(odb_ptr[1])
 end
 
+#TODO: remove
+repo_odb(r::GitRepo) = Odb(r)
+
+#TODO: remove
 function repo_index(r::GitRepo)
-    @assert r.ptr != C_NULL
-    idx_ptr = Array(Ptr{Void}, 1)
-    @check api.git_repository_index(idx_ptr, r.ptr)
+    idx_ptr = Ptr{Void}[0]
+    @check ccall((:git_repository_index, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}), idx_ptr, r)
     return GitIndex(idx_ptr[1])
 end
 
 function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::Oid)
-    objptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_object_lookup, api.libgit2), Cint,
+    obj_ptr = Ptr{Void}[0]
+    @check ccall((:git_object_lookup, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                 pointer(objptr), pointer(r), &id, git_otype(T))
+                 objptr, r, &id, git_otype(T))
     return T(objptr[1])
 end
 
 function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::String)
     oid = Oid()
-    bid = bytestring(id)
     len = length(bid)
-    objptr = Array(Ptr{Void}, 1)
+    obj_ptr = Ptr{Void}[0]
     @check ccall((:git_oid_fromstrn, api.libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Cchar}, Csize_t), &oid, bid, len) 
+                 (Ptr{Oid}, Ptr{Uint8}, Csize_t), &oid, id, len) 
     if len < OID_HEXSZ
-        @check ccall((:git_object_lookup_prefix, api.libgit2), Cint,
+        @check ccall((:git_object_lookup_prefix, :libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
-                     pointer(objptr), pointer(r), &oid, len, git_otype(T))
+                     obj_ptr, r, &oid, len, git_otype(T))
     else
-        @check ccall((:git_object_lookup, api.libgit2), Cint,
+        @check ccall((:git_object_lookup, :libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                     pointer(objptr), pointer(r), &oid, git_otype(T)) 
+                     obj_ptr, r, &oid, git_otype(T)) 
     end
     return T(objptr[1]) 
 end
@@ -696,10 +690,9 @@ lookup_blob(r::GitRepo, id) = lookup(GitBlob, r, id)
 lookup_commit(r::GitRepo, id) = lookup(GitCommit, r, id)
 
 function lookup_ref(r::GitRepo, refname::String)
-    @assert r.ptr != C_NULL
-    bname = bytestring(refname)
-    ref_ptr = Array(Ptr{Void}, 1)
-    err = api.git_reference_lookup(ref_ptr, r.ptr, bname)
+    ref_ptr = Ptr{Void}[0]
+    err = ccall((:git_reference_lookup, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, refname)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
@@ -710,22 +703,21 @@ end
 
 function create_ref(r::GitRepo, refname::String, id::Oid; 
                     force::Bool=false, sig=nothing, msg=nothing)
-    @assert r.ptr != C_NULL
     bname = bytestring(refname)
     bmsg  = msg != nothing ? bytestring(msg) : C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
+    ref_ptr = Ptr{Void}[0]
     if sig != nothing
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
-        @check ccall((:git_reference_create, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
-                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, bname, id.oid, force? 1:0, &gsig, bmsg)
+        @check ccall((:git_reference_create, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
+                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
+                      ref_ptr, r, bname, &id, force? 1:0, &gsig, bmsg)
     else
-        @check ccall((:git_reference_create, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
-                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, bname, id.oid, force? 1:0, C_NULL, bmsg)
+        @check ccall((:git_reference_create, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
+                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
+                      ref_ptr, r, bname, &id, force? 1:0, C_NULL, bmsg)
     end
     return GitReference(ref_ptr[1])
 end
@@ -737,36 +729,35 @@ end
 
 function create_sym_ref(r::GitRepo, refname::String, target::String; 
                         force::Bool=false, sig=sig, logmsg=logmsg)
-    @assert r.ptr != C_NULL
     bname   = bytestring(refname)
     btarget = bytestring(target)
     bmsg    = logmsg != nothing ? bytestring(logmsg) : C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
+    ref_ptr = Ptr{Void}[0]
     if sig != nothing
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
-        @check ccall((:git_reference_symbolic_create, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
-                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, bname, btarget, force? 1:0, &gsig, bmsg)
+        @check ccall((:git_reference_symbolic_create, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
+                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
+                      ref_ptr, r, bname, btarget, force? 1:0, &gsig, bmsg)
     else
-        @check ccall((:git_reference_symbolic_create, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Cchar},
-                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, bname, btarget, force? 1:0, C_NULL, bmsg)
+        @check ccall((:git_reference_symbolic_create, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
+                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
+                      ref_ptr, r, bname, btarget, force? 1:0, C_NULL, bmsg)
     end
     return GitReference(ref_ptr[1])
 end
 
-
 function repo_revparse_single(r::GitRepo, spec::String)
-    @assert r.ptr != C_NULL
-    bspec = bytestring(spec)
-    obj_ptr = Array(Ptr{Void}, 1)
-    @check api.git_revparse_single(obj_ptr, r.ptr, bspec)
+    obj_ptr = Ptr{Void}[0]
+    @check ccall((:git_revparse_single, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, spec)
     return gitobj_from_ptr(obj_ptr[1])
 end
-
+#############
+#MARK 
+#############
 function commit(r::GitRepo,
                 refname::String,
                 author::Signature,
