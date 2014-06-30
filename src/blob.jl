@@ -97,14 +97,13 @@ end
 function blob_from_disk(r::GitRepo, path::String)
     id = Oid()
     @check ccall((:git_blob_create_fromdisk, api.libgit2), Cint,
-                  (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
-                  &id, r, bytestring(path))
+                  (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), &id, r, bytestring(path))
     return id
 end
 
 function cb_blob_get_chunk(contentptr::Ptr{Uint8}, maxlen::Csize_t, payloadptr::Ptr{Void})
     payload = unsafe_pointer_to_objref(payloadptr)::Array{Any,1}
-    io::IO = payload[1]
+    io = payload[1]::IO
     local buff::Vector{Uint8}
     try
         buff = readbytes(io, maxlen)
