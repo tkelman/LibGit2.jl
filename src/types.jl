@@ -116,6 +116,13 @@ DiffOptionsStruct() = DiffOptionsStruct(api.DIFF_OPTIONS_VERSION,
                                         zero(Coff_t),
                                         zero(Ptr{Void}),
                                         zero(Ptr{Void}))
+immutable RemoteHeadStruct
+    islocal::Cint
+    id::Oid
+    lid::Oid
+    name::Ptr{Uint8}
+end
+
 # --------------
 # Git Repository
 # --------------

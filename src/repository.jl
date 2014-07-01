@@ -926,9 +926,7 @@ Base.start(b::BranchIterator) = begin
     return GitBranch(branch_ptr[1])
 end
 
-Base.done(b::BranchIterator, state) = begin
-    state == nothing
-end
+Base.done(b::BranchIterator, state) = state == nothing
 
 Base.next(b::BranchIterator, state) = begin
     branch_ptr  = Ptr{Void}[0]
@@ -1496,9 +1494,7 @@ Base.start(r::ReferenceIterator) = begin
     return GitReference(ref_ptr[1])
 end
 
-Base.done(r::ReferenceIterator, state) = begin
-    state == nothing
-end
+Base.done(r::ReferenceIterator, state) = state == nothing
 
 Base.next(r::ReferenceIterator, state) = begin
     ref_ptr = Ptr{Void}[0]
