@@ -4,8 +4,7 @@ export ReflogEntry,
        git_reftype, isvalid_ref, reflog, has_reflog, peel, log!
 
 function GitReference(ptr::Ptr{Void})
-    @assert ptr != C_NULL
-    ty = api.git_reference_type(ptr)
+    ty = ccall((:git_reference_type, :libgit2), Cint, (Ptr{Void},), ptr)
     RType = ty == 1 ? Oid : Sym 
     ref = GitReference{RType}(ptr)
     finalizer(ref, free!)
