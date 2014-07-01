@@ -11,89 +11,64 @@ function GitReference(ptr::Ptr{Void})
     return ref
 end
 
-function isvalid_ref(ref::String)
-    return api.git_reference_is_valid_name(bytestring(ref))
-end
+isvalid_ref(ref::String) = bool(ccall((:git_reference_is_valid_name, :libgit2), Cint, (Ptr{Uint8},), ref))
 
-function set_symbolic_target(r::GitReference, target::String;
-                             msg=nothing, sig=nothing)
-    @assert r.ptr != C_NULL
-    btarget = bytestring(target)
-    bmsg = msg != nothing ? bytestring(msg) : C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
+function set_symbolic_target(r::GitReference, target::String; sig=nothing, logmsg=nothing)
+    ref_ptr = Ptr{Void}[0]
     if sig == nothing
-        @check ccall((:git_reference_set_symbolic_target, api.libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, 
-                       Ptr{Void}, Ptr{Cchar}),
-                       ref_ptr, r.ptr, btarget, 
-                       C_NULL, bmsg)
+        @check ccall((:git_reference_set_symbolic_target, :libgit2), Cint,
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}),
+                       ref_ptr, r, target, C_NULL, msg != nothing ? msg : C_NULL)
     else
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
-        @check ccall((:git_reference_set_symbolic_target, api.libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, 
-                       Ptr{api.GitSignature}, Ptr{Cchar}),
-                       ref_ptr, r.ptr, btarget, 
-                       &gsig, bmsg)
+        @check ccall((:git_reference_set_symbolic_target, :libgit2), Cint,
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{api.GitSignature}, Ptr{Uint8}),
+                       ref_ptr, r, target, &gsig, msg != nothing ? msg : C_NULL)
     end
     return GitReference(ref_ptr[1])
 end
 
-function set_target(r::GitReference, id::Oid;
-                    sig=nothing, logmsg=nothing)
-    @assert r.ptr != C_NULL
-    bmsg = logmsg != nothing ? bytestring(logmsg) : C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
+function set_target(r::GitReference, id::Oid; sig=nothing, logmsg=nothing)
+    ref_ptr = Ptr{Void}[0]
     if sig == nothing
-        @check ccall((:git_reference_set_target, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
-                      Ptr{Void}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, id.oid,
-                      C_NULL, bmsg)
+        @check ccall((:git_reference_set_target, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Ptr{Void}, Ptr{Uint8}),
+                      ref_ptr, r, &id, C_NULL, logmsg != nothing ? logmsg : C_NULL)
     else
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
-        @check ccall((:git_reference_set_target, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
-                      Ptr{api.GitSignature}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, id.oid,
-                      &gsig, bmsg)
+        @check ccall((:git_reference_set_target, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Ptr{api.GitSignature}, Ptr{Uint8}),
+                     ref_ptr, r, &id, &gsig, logmsg != nothing ? msg : C_NULL)
     end
     return GitReference(ref_ptr[1])
 end
 
 function resolve(r::GitReference)
-    @assert r.ptr != C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
-    @check api.git_reference_resolve(ref_ptr, r.ptr)
+    ref_ptr = Ptr{Void}[0]
+    @check ccall((:git_reference_resolve, :libgit2), Cint, (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
     return GitReference(ref_ptr[1])
 end
 
-function rename(r::GitReference, name::String;
-                force::Bool=false, sig=nothing, logmsg=nothing)
-    @assert r.ptr != C_NULL
-    bname = bytestring(name)
-    bmsg  = logmsg != nothing ? bytestring(logmsg) : C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
+function rename(r::GitReference, name::String; force::Bool=false, sig=nothing, logmsg=nothing)
+    ref_ptr = Ptr{Void}[0]
     if sig != nothing
         @assert(isa(sig, Signature))
         gsig = git_signature(sig)
-        @check ccall((:git_reference_rename, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
-                      Ptr{api.GitSignature}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, bname, force? 1:0, &gsig, bmsg)
+        @check ccall((:git_reference_rename, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
+                      ref_ptr, r, name, force? 1:0, &gsig, logmsg != nothing ? logmsg : C_NULL)
     else
-        @check ccall((:git_reference_rename, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Cint,
-                      Ptr{api.GitSignature}, Ptr{Cchar}),
-                      ref_ptr, r.ptr, bname, force? 1:0, C_NULL, bmsg)
+        @check ccall((:git_reference_rename, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
+                      ref_ptr, r, name, force? 1:0, C_NULL, logmsg != nothing ? logmsg : C_NULL)
     end
     return GitReference(ref_ptr[1])
 end
 
 function target(r::GitReference)
-    @assert r.ptr != C_NULL
-    oid_ptr = api.git_reference_target(r.ptr)
+    oid_ptr = ccall((:git_reference_target, :libgit2), Ptr{Oid}, (Ptr{Void},), r)
     if oid_ptr == C_NULL 
         return nothing
     end
@@ -101,39 +76,37 @@ function target(r::GitReference)
 end
 
 function symbolic_target(r::GitReference)
-    @assert r.ptr != C_NULL
-    sym_ptr = api.git_reference_symbolic_target(r.ptr)
+    sym_ptr = ccall((:git_reference_symbolic_target, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     if sym_ptr == C_NULL
-        return ""
+        return utf8("")
     end
-    return bytestring(sym_ptr)
+    return utf8(bytestring(sym_ptr))
 end
 
-function name(r::GitReference)
-    @assert r.ptr != C_NULL
-    return bytestring(api.git_reference_name(r.ptr))
-end
+name(r::GitReference) = utf8(bytestring(ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)))
 
 function peel{T}(r::GitReference{T})
-    @assert r.ptr != C_NULL
-    obj_ptr = Array(Ptr{Void}, 1)
-    err = api.git_reference_peel(obj_ptr, r.ptr, api.OBJ_ANY)
+    obj_ptr = Ptr{Void}[0]
+    err = ccall((:git_reference_peel, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Cint), obj_ptr, r, api.OBJ_ANY)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
         throw(LibGitError(err))
     end
-    if T <: Oid && !bool(api.git_oid_cmp(obj_ptr[1], api.git_reference_target(r.ptr)))
-        api.git_object_free(obj_ptr[1])
-        return nothing
-    else
-        id = Oid(api.git_object_id(obj_ptr[1]))
-        api.git_object_free(obj_ptr[1])
-        return id
+    if isa(T, Oid)
+        target_id = ccall((:git_reference_target, :libgit2), Ptr{Oid}, (Ptr{Void},), r)
+        if !bool(ccall((:git_oid_cmp, :libgit2), Cint, (Ptr{Void}, Ptr{Oid}), obj_ptr[1], target_id)) 
+            ccall((:git_object_free, :libgit2), Void, (Ptr{Void},), obj_ptr[1])
+            reutrn nothing
+        end
     end
+    id = Oid(ccall((:git_object_id, :libgit2), Ptr{Oid}, (Ptr{Void},), obj_ptr[1]))
+    ccall((:git_object_free, :libgit2), Void, (Ptr{Void},), obj_ptr[1])
+    return id
 end
 
-
+#TODO: rename to GitReflog / GitReflogEntry
 type Reflog
     ptr::Ptr{Void}
 
@@ -152,76 +125,71 @@ free!(r::Reflog) = begin
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, r::Reflog) = r.ptr 
+
 type ReflogEntry
     id_old::Oid
     id_new::Oid
     committer::Signature
-    message::String
+    message::UTF8String
 end
 
 function new_reflog_entry(entry_ptr::Ptr{Void})
-    @assert entry_ptr != C_NULL
-    id_old  = Oid(api.git_reflog_entry_id_old(entry_ptr))
-    id_new  = Oid(api.git_reflog_entry_id_new(entry_ptr))
-    sig_ptr = api.git_reflog_entry_committer(entry_ptr)
+    id_old  = Oid(ccall((:git_reflog_entry_id_old, :libgit2), Ptr{Oid}, (Ptr{Void},), entry_ptr))
+    id_new  = Oid(ccall((:git_reflog_entry_id_new, :libgit2), Ptr{Oid}, (Ptr{Void},), entry_ptr))
+    sig_ptr = ccall((:git_reflog_entry_committer, :libgit2), Ptr{SignatureStruct}, (Ptr{Void},), entry_ptr)
+    msg_ptr = ccall((:git_reflog_entry_message, :libgit2), Ptr{Uint8}, (Ptr{Void},), entry_ptr)
     msg_ptr = api.git_reflog_entry_message(entry_ptr)
-    gsig = unsafe_load(sig_ptr)
-    sig = Signature(gsig)
+    msg = msg_ptr == C_NULL ? utf8("") : utf8(bytestring(msg_ptr))
+    sig_struct = unsafe_load(sig_ptr)::SignatureStruct
+    sig = Signature(sig_struct)
     # don't free gsig as its data is cleaned up
     # when git_reflog is free'd
-    return ReflogEntry(id_old,
-                       id_new,
-                       sig,  
-                       msg_ptr == C_NULL ? "" : bytestring(msg_ptr))
+    return ReflogEntry(id_old, id_new, sig, msg)
 end
 
 function reflog(r::GitReference)
-    @assert r.ptr != C_NULL
-    reflog_ptr = Array(Ptr{Void}, 1)
-    @check api.git_reflog_read(reflog_ptr, api.git_reference_owner(r.ptr), name(r))
-    refcount = api.git_reflog_entrycount(reflog_ptr[1])
-    entries = {}
+    reflog_ptr = Ptr{Void}[0]
+    owner_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), r)
+    @check ccall((:git_reflog_read, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), reflog_ptr, owner_ptr, name(r))
+    refcount = ccall((:git_reflog_entrycount, :libgit2), Csize_t, (Ptr{Void},), reflog_ptr[1]) 
+    entries = ReflogEntry[]
     for i in 0:refcount-1
-        entry_ptr = api.git_reflog_entry_byindex(reflog_ptr[1], refcount - i - 1)
+        entry_ptr = ccall((:git_reflog_entry_byindex, :libgit2), Ptr{Void},
+                          (Ptr{Void}, Csize_t), reflog_ptr[1], refcount - i - 1)
         @assert entry_ptr != C_NULL
         push!(entries, new_reflog_entry(entry_ptr))
     end
-    api.git_reflog_free(reflog_ptr[1])
+    ccall((:git_reflog_free, :libgit2), Void, (Ptr{Void},), reflog_ptr[1])
     return entries
 end
 
-function has_reflog(r::GitReference)
-    @assert r.ptr != C_NULL
-    return bool(api.git_reference_has_log(r.ptr))
-end
+has_reflog(r::GitReference) = bool(ccall((:git_reference_has_log, :libgit2), Cint, (Ptr{Void},), r.ptr))
 
-function log!(r::GitReference, msg=nothing, committer=nothing)
-    @assert r.ptr != C_NULL
-    if msg == nothing
-        msg = ""
-    end
-    bmsg = bytestring(msg)
-    reflog_ptr = Array(Ptr{Void}, 1) 
-    @check api.git_reflog_read(reflog_ptr,
-                               api.git_reference_owner(r.ptr),
-                               api.git_reference_name(r.ptr))
-    
-    repo_ptr = api.git_reference_owner(r.ptr)
+function log!(r::GitReference, msg::String="", committer=nothing)
+    reflog_ptr = Ptr{Void}[0]
+    repo_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), r)
+    name_ptr = ccall((:git_refernce_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    @check ccall((:git_reflog_read, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), reflog_ptr, repo_ptr, name_ptr) 
     #TODO: memory leak with signature?
-    local gsig::api.GitSignature
+    local sig_struct::SignatureStruct
     if committer == nothing
-        sig_ptr = Array(Ptr{api.GitSignature}, 1)
-        @check api.git_signature_default(sig_ptr, repo_ptr)
-        gsig = unsafe_load(sig_ptr[1])
+        sig_ptr = Ptr{SignatureStruct}[0]
+        @check ccall((:git_signature_default, :libgit2), Cint,
+                     (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr) 
+        sig_struct = unsafe_load(sig_ptr[1])::SignatureStruct
     else
-        gsig = git_signature(committer)
+        @assert isa(committer, Signature)
+        sig_struct = git_signature(committer)
     end
-    err = ccall((:git_reflog_append, api.libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{api.GitSignature}, Ptr{Cchar}),
-                 reflog_ptr[1], api.git_reference_target(r.ptr), &gsig, bmsg)
-    
+    target_ptr = ccall((:git_reference_target, :libgit2), Ptr{Void}, (Ptr{Void},), r)
+    err = ccall((:git_reflog_append, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 reflog_ptr[1], target_ptr, &gsig, msg)
     if err == api.GIT_OK
-        err = api.git_reflog_write(reflog_ptr[1])
+        err = ccall((:git_reflog_write, :libgit2), Cint, (Ptr{Void},), reflog_ptr[1])
     end
     api.git_reflog_free(reflog_ptr[1])
     if err != api.GIT_OK
