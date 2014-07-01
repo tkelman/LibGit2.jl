@@ -886,12 +886,12 @@ function create_branch(r::GitRepo, n::String, target::GitCommit;
 end
 
 type BranchIterator 
-    ptr::Ptr{Void}
     repo::GitRepo
+    ptr::Ptr{Void}
 
-    function BranchIterator(ptr::Ptr{Void}, r::GitRepo)
+    function BranchIterator(r::GitRepo, ptr::Ptr{Void}) 
         @assert ptr != C_NULL
-        bi = new(ptr, r)
+        bi = new(r, ptr)
         finalizer(bi, free!)
         return bi
     end
@@ -899,13 +899,12 @@ end
 
 free!(b::BranchIterator) = begin
     if b.ptr != C_NULL
-        api.git_branch_iterator_free(b.ptr)
+        ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), b.ptr)
         b.ptr = C_NULL
     end
 end
 
-function iter_branches(r::GitRepo, filter=:all)
-    @assert r.ptr != C_NULL
+function iter_branches(r::GitRepo, filter::Symbol=:all)
     local git_filter::Cint
     if filter == :all
         git_filter = api.BRANCH_LOCAL | api.BRANCH_REMOTE
@@ -916,20 +915,22 @@ function iter_branches(r::GitRepo, filter=:all)
     else
         throw(ArgumentError("filter can be :all, :local, or :remote"))
     end 
-    iter_ptr = Array(Ptr{Void}, 1)
-    @check api.git_branch_iterator_new(iter_ptr, r.ptr, git_filter)
-    return BranchIterator(iter_ptr[1], r)
+    iter_ptr = Ptr{Void}[0]
+    @check ccall((:git_branch_iterator_new, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
+    return BranchIterator(r, iter_ptr[1])
 end
 
+#TODO: branch type?
 Base.start(b::BranchIterator) = begin
-    @assert b != C_NULL
-    branch_ptr = Array(Ptr{Void}, 1)
-    btype_ptr  = Array(Cint, 1)
-    ret = api.git_branch_next(branch_ptr, btype_ptr, b.ptr)
-    if ret == api.ITEROVER
+    branch_ptr  = Ptr{Void}[0]
+    branch_type = Cint[0]
+    err = ccall((:git_branch_next, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
+    if err == api.ITEROVER
         return nothing
-    elseif ret != api.GIT_OK
-        throw(LibGitError(ret))
+    elseif err != api.GIT_OK
+        throw(LibGitError(err))
     end
     return GitBranch(branch_ptr[1])
 end
@@ -939,10 +940,10 @@ Base.done(b::BranchIterator, state) = begin
 end
 
 Base.next(b::BranchIterator, state) = begin
-    @assert b.ptr != C_NULL
-    branch_ptr = Array(Ptr{Void}, 1)
-    btype_ptr  = Array(Cint, 1)
-    ret = api.git_branch_next(branch_ptr, btype_ptr, b.ptr)
+    branch_ptr  = Ptr{Void}[0]
+    branch_type = Cint[0] 
+    err = ccall((:git_branch_next, :libgit), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
     if ret == api.ITEROVER
         return (state, nothing)
     elseif ret != api.GIT_OK
