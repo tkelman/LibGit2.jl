@@ -755,9 +755,7 @@ function repo_revparse_single(r::GitRepo, spec::String)
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, spec)
     return gitobj_from_ptr(obj_ptr[1])
 end
-#############
-#MARK 
-#############
+
 function commit(r::GitRepo,
                 refname::String,
                 author::Signature,
@@ -766,26 +764,19 @@ function commit(r::GitRepo,
                 tree::GitTree,
                 parents::GitCommit...)
     cid  = Oid()
-    bref = bytestring(refname)
-    bmsg = bytestring(msg)
     nparents   = length(parents)
-    parentptrs = Array(Ptr{Void}, nparents)
-    for i=1:nparents
-        commit = parents[i]
-        @assert commit.ptr != C_NULL
-        parentptrs[i] = commit.ptr
-    end
-    gauthor = git_signature(author)
+    parentptrs = Ptr{Void}[c.ptr for c in parents]
+    gauthor    = git_signature(author)
     gcommitter = git_signature(committer)
     #TODO: encoding?
-    @check ccall((:git_commit_create, api.libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Void}, Ptr{Cchar},
+    @check ccall((:git_commit_create, :libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
                   Ptr{api.GitSignature}, Ptr{api.GitSignature}, 
-                  Ptr{Cchar}, Ptr{Cchar}, Ptr{Void},
+                  Ptr{Uint8}, Ptr{Uint8}, Ptr{Void},
                   Csize_t, Ptr{Ptr{Void}}),
-                 &cid, r.ptr, bref,
+                 &cid, r, refname,
                  &gauthor, &gcommitter,
-                 C_NULL, bmsg, tree.ptr, 
+                 C_NULL, msg, tree, 
                  nparents, nparents > 0 ? parentptrs : C_NULL)
     return cid
 end
@@ -794,8 +785,7 @@ function repo_set_workdir(r::GitRepo, dir::String, update::Bool)
 end
 
 # filter can be :all, :local, :remote
-function branch_names(r::GitRepo, filter=:all)
-    @assert r.ptr != C_NULL
+function branch_names(r::GitRepo, filter::Symbol=:all)
     local git_filter::Cint 
     if filter == :all
         git_filter = api.BRANCH_LOCAL | api.BRANCH_REMOTE
@@ -806,32 +796,33 @@ function branch_names(r::GitRepo, filter=:all)
     else
         throw(ArgumentError("filter can be :all, :local, or :remote"))
     end
-    iter_ptr = Array(Ptr{Void}, 1)
-    @check api.git_branch_iterator_new(iter_ptr, r.ptr, git_filter)
-    branch_ptr = Array(Ptr{Void}, 1)
-    branch_type = Array(Cint, 1)
-    names = String[]
+    iter_ptr = Ptr{Void}[0]
+    @check ccall((:git_branch_iterator_new, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
+    branch_ptr  = Ptr{Void}[0]
+    branch_type = Cint[0] 
+    names = UTF8String[]
     while true
-        err = api.git_branch_next(branch_ptr, branch_type, iter_ptr[1])
+        err = ccall((:git_branch_next, :libgit2), Cint,
+                    (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, iter_ptr[1])
         if err == api.ITEROVER
             break
         end
         if err != api.GIT_OK
             if iter_ptr[1] != C_NULL
-                api.git_branch_iterator_free(iter_ptr[1])
+                ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), iter_ptr[1])
             end
             throw(LibGitError(err))
         end
-        name_ptr = api.git_reference_shorthand(branch_ptr[1])
-        push!(names, bytestring(name_ptr)) 
+        name_ptr = ccall((:git_reference_shorthand, :libgit2), Ptr{Uint8}, (Ptr{Void},), branch_ptr[1])
+        push!(names, utf8(bytestring(name_ptr)))
     end
-    api.git_branch_iterator_free(iter_ptr[1])
+    ccall((:git_branch_free, :libgit2), Void, (Ptr{Void},), iter_ptr[1])
     return names
 end
 
-function lookup(::Type{GitBranch}, r::GitRepo,
-                branch_name::String, branch_type=:local)
-    @assert r.ptr != C_NULL
+# branch type can be :local or :remote
+function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type::Symbol=:local)
     local git_branch_type::Cint
     if branch_type == :local
         git_branch_type = api.BRANCH_LOCAL
@@ -840,9 +831,9 @@ function lookup(::Type{GitBranch}, r::GitRepo,
     else
         throw(ArgumentError("branch_type can be :local or :remote"))
     end
-    branch_ptr = Array(Ptr{Void}, 1)
-    err = api.git_branch_lookup(branch_ptr, r.ptr,
-                                 bytestring(branch_name), git_branch_type)
+    branch_ptr = Ptr{Void}[0]
+    err = ccall((:git_branch_lookup, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint), branch_ptr, r, branch_name, git_branch_type)
     if err == api.GIT_OK
         return GitBranch(branch_ptr[1])
     elseif err == api.ENOTFOUND
@@ -855,29 +846,28 @@ end
 lookup_branch(r::GitRepo, branch_name::String, branch_type=:local) = 
         lookup(GitBranch, r, branch_name, branch_type)
 
-#lookup_branch(r::Repository, branch_id::Oid, branch_type=:local) = 
-#        lookup(GitBranch, r, string(branch_id), branch_type)
+lookup_branch(r::Repository, branch_id::Oid, branch_type=:local) = 
+        lookup(GitBranch, r, string(branch_id), branch_type)
 
 
 function create_branch(r::GitRepo, n::String, target::Oid;
                        force::Bool=false, sig=nothing, logmsg=nothing)
-    @assert r.ptr != C_NULL
     #TODO: give intelligent error msg when target
     # does not exist
     c = lookup_commit(r, target)
     bmsg = logmsg != nothing ? bytestring(logmsg) : C_NULL
-    branch_ptr = Array(Ptr{Void}, 1)
+    branch_ptr = Ptr{Void}[0]
     if sig != nothing
         @assert(isa(sig, Signature))
         gsig = git_signature(sig)
-        @check ccall((:git_branch_create, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void},
-                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+        @check ccall((:git_branch_create, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void},
+                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
                      branch_ptr, r.ptr, bytestring(n), c.ptr, force? 1:0, &gsig, bmsg)
     else
-        @check ccall((:git_branch_create, api.libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void},
-                      Cint, Ptr{api.GitSignature}, Ptr{Cchar}),
+        @check ccall((:git_branch_create, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void},
+                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
                      branch_ptr, r.ptr, bytestring(n), c.ptr, force? 1:0, C_NULL, bmsg)
     end
     return GitBranch(branch_ptr[1]) 
