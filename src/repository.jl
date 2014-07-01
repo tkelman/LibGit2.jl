@@ -147,15 +147,6 @@ function hash_data{T<:GitObject}(::Type{T}, content::String)
     return id
 end
 
-#=
-function hash_data{T<:GitObject}(::Type{T}, content::String)
-    out = Oid()
-    bcontent = bytestring(content)
-    @check api.git_odb_hash(out.oid, bcontent, length(bcontent), git_otype(T))
-    return out
-end
-=#
-
 #TODO: remove this
 function default_signature(r::GitRepo)
     sig_ptr = Array(Ptr{api.GitSignature}, 1)
@@ -990,19 +981,17 @@ end
 
 #TODO: tree's should reference owning repository
 Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, opts=nothing) = begin
-    @assert r.ptr != C_NULL t1.ptr != C_NULL && t2.ptr != C_NULL 
     gopts = parse_merge_options(opts)
-    idx_ptr = Array(Ptr{Void}, 1)
-    @check ccall((:git_merge_trees, api.libgit2), Cint,
+    idx_ptr = Ptr{Void}[0]
+    @check ccall((:git_merge_trees, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
-                 idx_ptr, r.ptr, C_NULL, t1.ptr, t2.ptr, &gopts)
+                 idx_ptr, r, C_NULL, t1, t2, &gopts)
     return GitIndex(idx_ptr[1])
 end
 
 Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothing) = begin
-    @assert r.ptr != C_NULL t1.ptr != C_NULL && t2.ptr != C_NULL && ancestor.ptr != C_NULL
     gopts = parse_merge_options(opts)
-    idx_ptr = Array(Ptr{Void}, 1)
+    idx_ptr = Ptr{Void}[0]
     @check ccall((:git_merge_trees, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
                  idx_ptr, r.ptr, ancestor.ptr, t1.ptr, t2.ptr, &gopts)
@@ -1010,28 +999,20 @@ Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothin
 end
 
 #------- Merge Commits -----
-function merge_commits(r::GitRepo, 
-                       ours::Union(GitCommit, Oid), 
-                       theirs::Union(GitCommit, Oid), 
-                       opts=nothing)
-    @assert r.ptr != C_NULL && ours.ptr != C_NULL && theirs.ptr != C_NULL
+function merge_commits(r::GitRepo, ours::Union(GitCommit, Oid), theirs::Union(GitCommit, Oid), opts=nothing)
     gopts = parse_merge_options(opts)
-    if isa(ours, Oid)
-        ours = lookup_commit(r, ours)
-    end
-    if isa(theirs, Oid)
-        theirs = lookup_commit(r, theirs)
-    end
-    index_ptr = Array(Ptr{Void}, 1)
+    isa(ours,   Oid) && (ours   = lookup_commit(r, ours))
+    isa(theirs, Oid) && (theirs = lookup_commit(r, theirs)) 
+    index_ptr = Ptr{Void}[0] 
     @check ccall((:git_merge_commits, api.libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void},
                   Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
-                  index_ptr, r.ptr, ours.ptr, theirs.ptr, &gopts)
+                 index_ptr, r, ours, theirs, &gopts)
     return GitIndex(index_ptr[1])
 end
 
 #------- Repo Checkout -------
-function cb_checkout_progress(path_ptr::Ptr{Cchar}, 
+function cb_checkout_progress(path_ptr::Ptr{Uint8}, 
                               completed_steps::Csize_t,
                               total_steps::Csize_t,
                               payload::Ptr{Void})
@@ -1042,10 +1023,10 @@ function cb_checkout_progress(path_ptr::Ptr{Cchar},
 end
 
 const c_cb_checkout_progress = cfunction(cb_checkout_progress, Void,
-                                         (Ptr{Cchar}, Csize_t, Csize_t, Ptr{Void}))
+                                         (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 function cb_checkout_notify(why::Cint, 
-                            path_ptr::Ptr{Cchar}, 
+                            path_ptr::Ptr{Uint8}, 
                             baseline::Ptr{api.GitDiffFile}, 
                             target::Ptr{api.GitDiffFile},
                             workdir::Ptr{api.GitDiffFile},
@@ -1079,7 +1060,7 @@ end
 
 const c_cb_checkout_notify = cfunction(cb_checkout_notify, Cint,
                                        (Cint,
-                                        Ptr{Cchar}, 
+                                        Ptr{Uint8}, 
                                         Ptr{api.GitDiffFile}, 
                                         Ptr{api.GitDiffFile}, 
                                         Ptr{api.GitDiffFile},
@@ -1227,9 +1208,9 @@ end
 
 function checkout_tree!(r::GitRepo, tree::Treeish, opts=nothing)
     gopts = parse_checkout_options(opts)
-    err = ccall((:git_checkout_tree, api.libgit2), Cint,
+    err = ccall((:git_checkout_tree, :libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Ptr{api.GitCheckoutOpts}),
-                r.ptr, tree.ptr, &gopts)
+                r, tree, &gopts)
     #TODO: memory leak with option strings
     if err != api.GIT_OK
         throw(LibGitError(err))
@@ -1238,11 +1219,9 @@ function checkout_tree!(r::GitRepo, tree::Treeish, opts=nothing)
 end
 
 function checkout_head!(r::GitRepo, opts=nothing)
-    @assert r.ptr != C_NULL
     gopts = parse_checkout_options(opts)
-    err = ccall((:git_checkout_head, api.libgit2), Cint,
-                (Ptr{Void}, Ptr{api.GitCheckoutOpts}),
-                r.ptr, &gopts)
+    err = ccall((:git_checkout_head, :libgit2), Cint,
+                (Ptr{Void}, Ptr{api.GitCheckoutOpts}),r, &gopts)
     #TODO: memory leak with option strings??, cleanup on exceptions, etc...
     if err != api.GIT_OK
         throw(GitError(err))
@@ -1448,10 +1427,10 @@ function repo_clone(url::String, path::String, opts=nothing)
     # for the lifetime of the function call.
     gpayload = Dict() 
     gopts    = parse_clone_options(opts, gpayload)
-    repo_ptr = Array(Ptr{Void}, 1)
-    err = ccall((:git_clone, api.libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{api.GitCloneOpts}),
-                 repo_ptr, bytestring(url), bytestring(path), &gopts)
+    repo_ptr = Ptr{Void}[0]
+    err = ccall((:git_clone, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{api.GitCloneOpts}),
+                 repo_ptr, url, path, &gopts)
     if err != api.GIT_OK
         payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
         if haskey(payload, :exception)
@@ -1467,12 +1446,12 @@ end
 #-------- Reference Iterator --------
 #TODO: handle error's when iterating (see branch)
 type ReferenceIterator
-    ptr::Ptr{Void}
     repo::GitRepo
+    ptr::Ptr{Void}
 
-    function ReferenceIterator(ptr::Ptr{Void}, r::GitRepo)
+    function ReferenceIterator(r::GitRepo, ptr::Ptr{Void})
         @assert ptr != C_NULL
-        ri = new(ptr, r)
+        ri = new(r, ptr)
         finalizer(ri, free!)
         return ri
     end
@@ -1480,35 +1459,37 @@ end
 
 free!(r::ReferenceIterator) = begin
     if r.ptr != C_NULL
-        api.git_reference_iterator_free(r.ptr)
+        ccall((:git_reference_iterator_free, :libgit2), Void, (Ptr{Void},), r.ptr)
         r.ptr = C_NULL
     end
 end
 
-function ref_names(r::GitRepo, glob=nothing)
-    rnames = String[]
+Base.convert(::Type{Ptr{Void}}, r::ReferenceIterator) = r.ptr
+
+function ref_names(r::GitRepo, glob::String="")
+    rnames = UTF8String[]
     for r in iter_refs(r, glob)
-        push!(rnames, name(r))
+        push!(rnames, utf8(name(r)))
     end
     return rnames
 end
 
-function iter_refs(r::GitRepo, glob=nothing)
-    @assert r.ptr != C_NULL
-    iter_ptr = Array(Ptr{Void}, 1)
-    if glob == nothing
-        @check api.git_reference_iterator_new(iter_ptr, r.ptr)
+function iter_refs(r::GitRepo, glob::String="")
+    iter_ptr = Ptr{Void}[0]
+    if isempty(glob)
+        @check ccall((:git_reference_iterator_new, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}), iter_ptr, r)
     else
-        bglob = bytestring(glob)
-        @check api.git_reference_iterator_glob_new(iter_ptr, r.ptr, bglob)
+        @check ccall((:git_reference_iterator_glob_new, :libgit2), Cint,
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), iter_ptr, r, glob)
     end
-    return ReferenceIterator(iter_ptr[1], r)
+    return ReferenceIterator(r, iter_ptr[1])
 end
 
 Base.start(r::ReferenceIterator) = begin
-    @assert r != C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
-    ret = api.git_reference_next(ref_ptr, r.ptr)
+    ref_ptr = Ptr{Void}[0]
+    err = ccall((:git_reference_next, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
     if ret == api.ITEROVER
         return nothing
     end
@@ -1520,9 +1501,9 @@ Base.done(r::ReferenceIterator, state) = begin
 end
 
 Base.next(r::ReferenceIterator, state) = begin
-    @assert r.ptr != C_NULL
-    ref_ptr = Array(Ptr{Void}, 1)
-    ret = api.git_reference_next(ref_ptr, r.ptr)
+    ref_ptr = Ptr{Void}[0]
+    err = ccall((:git_reference_next, :libgit2), Cint,
+                (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
     if ret == api.ITEROVER
         return (state, nothing)
     end
