@@ -20,7 +20,7 @@ testnames = ["oid",
              #"odb", 
              #"diff", 
              "note", 
-             #"merge", 
+             "merge", 
              #"remote"
              ]
 
