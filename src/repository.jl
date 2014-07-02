@@ -19,8 +19,7 @@ GitRepo(path::String; alternates::Vector{String}=String[]) = begin
                 (Ptr{Ptr{Void}}, Ptr{Uint8}), repo_ptr, path)
     if err != api.GIT_OK
         if repo_ptr[1] != C_NULL
-            ccall((:git_repository_free, :libgit2), Void,
-                  (Ptr{Void},), repo_ptr[1])
+            ccall((:git_repository_free, :libgit2), Void, (Ptr{Void},), repo_ptr[1])
         end
         throw(LibGitError(err))
     end
@@ -147,18 +146,12 @@ function hash_data{T<:GitObject}(::Type{T}, content::String)
     return id
 end
 
-#TODO: remove this
 function default_signature(r::GitRepo)
-    sig_ptr = Array(Ptr{api.GitSignature}, 1)
-    err = api.git_signature_default(sig_ptr, r.ptr)
-    if err == api.ENOTFOUND
-        return nothing
-    elseif err != api.GIT_OK
-        throw(LibGitError(err))
-    end
-    gsig = unsafe_load(sig_ptr[1])
-    sig = Signature(gsig)
-    api.free!(gsig)
+    sig_ptr = Ptr{SignatureStruct}[0]
+    @check ccall((:git_signature_default, :libgit2), Cint,
+                 (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, r)
+    sig = Signature(sig_ptr[1])
+    ccall((:git_signature_free, :libgit2), Void, (Ptr{SignatureStruct},), sig_ptr[1])
     return sig
 end
 
@@ -387,23 +380,21 @@ function tag!(r::GitRepo;
               target::Union(Nothing,Oid)=nothing,
               tagger::Union(Nothing,Signature)=nothing,
               force::Bool=false)
-   tid = Oid()
+   id_ptr = [Oid()]
    #TODO: this is not correct
    target != nothing && (obj = lookup(r, target))
    if !isempty(message)
-       gsig = tagger != nothing ? git_signature(tagger) :
-                                  git_signature(default_signature(r))
-
+       sig = tagger != nothing ? tagger : default_signature(r)
        @check ccall((:git_tag_create, :libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
-                     Ptr{Void}, Ptr{api.GitSignature}, Ptr{Uint8}, Cint),
-                     &tid, r.ptr, name, obj, &gsig, message, force? 1:0)
+                     Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}, Cint),
+                    id_ptr, r, name, obj, sig, message, force? 1:0)
    else
        @check ccall((:git_tag_create_lightweight, :libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Cint),
-                    &tid, r, name, obj, force? 1:0)
+                    id_ptr, r, name, obj, force? 1:0)
    end
-   return tid
+   return id_ptr[1]
 end
 
 function create_note!(
@@ -414,36 +405,32 @@ function create_note!(
                force::Bool=false)
     repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
     bref = ref != nothing ? bytestring(ref) : convert(Ptr{Uint8}, C_NULL)
-    local committer_ptr::Ptr{api.GitSignature}
+    #TODO: we can avoid having to lookup the default signature twice
+    local committer_ptr::Ptr{SignatureStruct}
     if committer != nothing
-        committer_ptr = git_signature_ptr(committer)
+        committer_ptr = convert(Ptr{SignatureStruct}, committer)
     else
-        # gcommitter = git_signature(default_signature(repo))
-        sig_ptr = Ptr{api.GitSignature}[0]
+        sig_ptr = Ptr{SignatureStruct}[0]
         @check ccall((:git_signature_default, :libgit2), Cint,
-                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
+                     (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         committer_ptr = sig_ptr[1]
  
     end
-    local author_ptr::Ptr{api.GitSignature}
+    local author_ptr::Ptr{SignatureStruct}
     if author != nothing
-        author_ptr = git_signature_ptr(author)
+        author_ptr = convert(Ptr{SignatureStruct}, author)
     else
-        #TODO: we can avoid having to lookup the default signature twice
-        # gauthor = git_signature(default_signature(repo))
-        sig_ptr = Ptr{api.GitSignature}[0]
+        sig_ptr = Ptr{SignatureStruct}[0]
         @check ccall((:git_signature_default, :libgit2), Cint,
-                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
+                     (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end
     tid = Oid(obj)
     nid = Oid()
     @check ccall((:git_note_create, :libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Void}, Ptr{api.GitSignature},
-                  Ptr{api.GitSignature}, Ptr{Cchar}, Ptr{Oid},
-                  Ptr{Cchar}, Cint),
-                 &nid, repo_ptr, committer_ptr, author_ptr,
-                 bref, &tid, bytestring(msg), force? 1:0)
+                 (Ptr{Oid}, Ptr{Void}, Ptr{SignatureStruct},
+                  Ptr{SignatureStruct}, Ptr{Uint8}, Ptr{Oid}, Ptr{Uint8}, Cint),
+                 &nid, repo_ptr, committer_ptr, author_ptr, bref, &tid, msg, force? 1:0)
     return nid
 end
 
@@ -453,30 +440,28 @@ function remove_note!(obj::GitObject;
                       ref::Union(Nothing,String)=nothing)
     repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
     notes_ref = ref != nothing ? bytestring(ref) : bytestring("refs/notes/commits")
-    local committer_ptr::Ptr{api.GitSignature}
+    local committer_ptr::Ptr{SignatureStruct}
     if committer != nothing
-        committer_ptr = git_signature_ptr(committer)
+        committer_ptr = convert(Ptr{SignatureStruct}, committer)
     else
-        sig_ptr = Ptr{api.GitSignature}[0]
+        sig_ptr = Ptr{SignatureStruct}[0]
         @check ccall((:git_signature_default, :libgit2), Cint,
-                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
+                     (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         committer_ptr = sig_ptr[1]
-        #gcommitter = git_signature(default_signature(repo))
     end
-    local author_ptr::Ptr{api.GitSignature}
+    local author_ptr::Ptr{SignatureStruct}
     if author != nothing
-        author_ptr = git_signature_ptr(author)
+        author_ptr = convert(Ptr{SignatureStruct}, committer)
     else
-        #gauthor = git_signature(default_signature(repo))
-        sig_ptr = Ptr{api.GitSignature}[0]
+        sig_ptr = Ptr{SignatureStruct}[0]
         @check ccall((:git_signature_default, :libgit2), Cint,
-                     (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
+                     (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end 
     tid = Oid(obj)
     err = ccall((:git_note_remove, :libgit2), Cint,
                 (Ptr{Void}, Ptr{Cchar}, 
-                 Ptr{api.GitSignature}, Ptr{api.GitSignature}, Ptr{Oid}),
+                 Ptr{SignatureStruct}, Ptr{SignatureStruct}, Ptr{Oid}),
                  repo_ptr, notes_ref, author_ptr, committer_ptr, &tid)
     if err == api.ENOTFOUND
         return false
@@ -739,22 +724,17 @@ function commit(r::GitRepo,
                 msg::String,
                 tree::GitTree,
                 parents::GitCommit...)
-    cid  = Oid()
-    nparents   = length(parents)
+    id_ptr = [Oid()]
+    nparents = length(parents)
     parentptrs = Ptr{Void}[c.ptr for c in parents]
-    gauthor    = git_signature(author)
-    gcommitter = git_signature(committer)
-    #TODO: encoding?
     @check ccall((:git_commit_create, :libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
-                  Ptr{api.GitSignature}, Ptr{api.GitSignature}, 
+                  Ptr{SignatureStruct}, Ptr{SignatureStruct}, 
                   Ptr{Uint8}, Ptr{Uint8}, Ptr{Void},
                   Csize_t, Ptr{Ptr{Void}}),
-                 &cid, r, refname,
-                 &gauthor, &gcommitter,
-                 C_NULL, msg, tree, 
+                 id_ptr, r, refname, author, committer, C_NULL, msg, tree, 
                  nparents, nparents > 0 ? parentptrs : C_NULL)
-    return cid
+    return id_ptr[1]
 end
 
 function repo_set_workdir(r::GitRepo, dir::String, update::Bool)

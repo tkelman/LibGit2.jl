@@ -20,20 +20,19 @@ function GitTree(c::GitCommit)
     return GitTree(tree_ptr[1])
 end
 
-git_tree_id(c::GitCommit) = Oid(ccall((:git_commit_tree_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), c))
+git_tree_id(c::GitCommit) = Oid(ccall((:git_commit_tree_id, :libgit2), Ptr{Uint8}, 
+                                      (Ptr{Void},), c))
 
 function author(c::GitCommit)
     ptr = ccall((:git_commit_author, :libgit2), Ptr{SignatureStruct}, (Ptr{Void},), c)
     @assert ptr != C_NULL
-    #! memory leak
-    return Signature(unsafe_load(ptr)::SignatureStruct)
+    return Signature(ptr)
 end
 
 function committer(c::GitCommit)
     ptr = ccall((:git_commit_committer, :libgit2), Ptr{SignatureStruct}, (Ptr{Void},), c)
     @assert ptr != C_NULL
-    #! memory leak
-    return Signature(unsafe_load(ptr)::SignatureStruct)
+    return Signature(ptr)
 end
 
 function parent(c::GitCommit, n::Integer)

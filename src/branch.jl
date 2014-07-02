@@ -48,18 +48,15 @@ canonical_name(b::GitBranch) = utf8(bytestring(ccall((:git_reference_name, :libg
 function move(b::GitBranch, newname::String;
               force::Bool=false, 
               sig::Union(Nothing, Signature)=nothing, 
-              logmsg::Union(Nothing, Signature)=nothing)
+              logmsg::Union(Nothing, String)=nothing)
     branch_ptr = Ptr{Void}[0]
     if sig != nothing
-        sig_ptr = convert(Ptr{SignatureStruct}, sig)
         @check ccall((:git_branch_move, :libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
-                       Ptr{SignatureStruct}, Ptr{Uint8}),
-                       branch_ptr, b, newname, force? 1:0, sig_ptr, logmsg != nothing ? logmsg : C_NULL)
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
+                       branch_ptr, b, newname, force? 1:0, sig, logmsg != nothing ? logmsg : C_NULL)
     else
         @check ccall((:git_branch_move, :libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
-                       Ptr{SignatureStruct}, Ptr{Uint8}),
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
                        branch_ptr, b, newname, force? 1:0, C_NULL, logmsg != nothing ? logmsg : C_NULL)
     end
     return GitBranch(branch_ptr[1])
