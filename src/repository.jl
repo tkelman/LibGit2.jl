@@ -413,7 +413,6 @@ function create_note!(
                ref::Union(Nothing, String)=nothing,
                force::Bool=false)
     repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
-    target_id = Oid(obj)
     bref = ref != nothing ? bytestring(ref) : convert(Ptr{Uint8}, C_NULL)
     local committer_ptr::Ptr{api.GitSignature}
     if committer != nothing
@@ -437,21 +436,21 @@ function create_note!(
                      (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end
-    note_id = Oid()
+    tid = Oid(obj)
+    nid = Oid()
     @check ccall((:git_note_create, :libgit2), Cint,
-                 (Ptr{Uint8}, Ptr{Void}, Ptr{api.GitSignature},
-                  Ptr{api.GitSignature}, Ptr{Cchar}, Ptr{Uint8},
+                 (Ptr{Oid}, Ptr{Void}, Ptr{api.GitSignature},
+                  Ptr{api.GitSignature}, Ptr{Cchar}, Ptr{Oid},
                   Ptr{Cchar}, Cint),
-                 &note_id, repo_ptr, committer_ptr, author_ptr,
+                 &nid, repo_ptr, committer_ptr, author_ptr,
                  bref, &tid, bytestring(msg), force? 1:0)
-    return note_id
+    return nid
 end
 
 function remove_note!(obj::GitObject;
                       committer::Union(Nothing,Signature)=nothing,
                       author::Union(Nothing,Signature)=nothing,
                       ref::Union(Nothing,String)=nothing)
-    target_id = Oid(obj)
     repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
     notes_ref = ref != nothing ? bytestring(ref) : bytestring("refs/notes/commits")
     local committer_ptr::Ptr{api.GitSignature}
@@ -474,10 +473,11 @@ function remove_note!(obj::GitObject;
                      (Ptr{Ptr{api.GitSignature}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end 
+    tid = Oid(obj)
     err = ccall((:git_note_remove, :libgit2), Cint,
                 (Ptr{Void}, Ptr{Cchar}, 
                  Ptr{api.GitSignature}, Ptr{api.GitSignature}, Ptr{Oid}),
-                 repo_ptr, notes_ref, author_ptr, committer_ptr, &target_id)
+                 repo_ptr, notes_ref, author_ptr, committer_ptr, &tid)
     if err == api.ENOTFOUND
         return false
     elseif err != api.GIT_OK
@@ -487,10 +487,10 @@ function remove_note!(obj::GitObject;
 end
 
 function note_default_ref(r::GitRepo)
-    refname_ptr = Ptr{Void}[0]
+    refname_ptr = Ptr{Uint8}[0]
     @check ccall((:git_note_default_ref, :libgit2), Cint, 
-                 (Ptr{Ptr{Void}}, Ptr{Void}), refname_ptr, r)
-    return bytestring(refname_ptr[1])
+                 (Ptr{Ptr{Uint8}}, Ptr{Void}), refname_ptr, r)
+    return utf8(bytestring(refname_ptr[1]))
 end
 
 function cb_iter_notes(blob_id::Ptr{Oid}, ann_obj_id::Ptr{Oid}, repo_ptr::Ptr{Void})
