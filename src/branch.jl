@@ -84,7 +84,7 @@ function remote_name(b::GitBranch)
     err = ccall((:git_branch_remote_name, :libgit2), Cint,
                 (Ptr{BufferStruct}, Ptr{Void}, Ptr{Uint8}), buf_ptr, repo_ptr, refname_ptr)
     if err == api.GIT_OK
-        str = utf8(bytestring(buf_ptr[1].ptr))
+        str = utf8(bytestring(buf_ptr[1]))
         ccall((:git_buf_free, :libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
         return str
     elseif err != api.GIT_OK

@@ -30,6 +30,8 @@ end
 
 BufferStruct() = BufferStruct(C_NULL, 0, 0)
 
+Base.bytestring(b::BufferStruct) = bytestring(b.ptr, b.size)
+
 immutable TransferProgressStruct
     total_objects::Cuint
     indexed_objects::Cuint
