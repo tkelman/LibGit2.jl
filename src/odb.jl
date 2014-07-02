@@ -54,6 +54,8 @@ free!(o::OdbObject) = begin
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, o::OdbObject) = o.ptr
+
 Base.sizeof(o::OdbObject) = int(ccall((:git_odb_object_size, :libgit2), Csize_t, (Ptr{Void},), o))
 Base.length(o::OdbObject) = div(sizeof(o), sizeof(Uint8))
 

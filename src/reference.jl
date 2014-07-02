@@ -98,7 +98,7 @@ function peel{T}(r::GitReference{T})
         target_id = ccall((:git_reference_target, :libgit2), Ptr{Oid}, (Ptr{Void},), r)
         if !bool(ccall((:git_oid_cmp, :libgit2), Cint, (Ptr{Void}, Ptr{Oid}), obj_ptr[1], target_id)) 
             ccall((:git_object_free, :libgit2), Void, (Ptr{Void},), obj_ptr[1])
-            reutrn nothing
+            return nothing
         end
     end
     id = Oid(ccall((:git_object_id, :libgit2), Ptr{Oid}, (Ptr{Void},), obj_ptr[1]))

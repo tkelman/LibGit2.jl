@@ -33,8 +33,7 @@ Base.convert(::Type{Ptr{Void}}, w::GitRevWalker) = w.ptr
 
 Base.start(w::GitRevWalker) = begin
     cid = Oid()
-    err = ccall((:git_revwalk_next, :libgit2), Cint,
-                (Ptr{Oid}, Ptr{Void}), &cid, w)
+    err = ccall((:git_revwalk_next, :libgit2), Cint, (Ptr{Oid}, Ptr{Void}), &cid, w)
     if err == api.ITEROVER
         return (nothing, true)
     elseif err != api.GIT_OK

@@ -44,10 +44,11 @@ function Signature(name::String, email::String)
 end
 
 function Signature(sig::SignatureStruct)
+    @show sig
     return Signature(bytestring(sig.name),
                      bytestring(sig.email),
-                     sig.time,
-                     sig.time_offset)
+                     sig.when,
+                     0)
 end
 
 #TODO: remove this

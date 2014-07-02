@@ -178,20 +178,6 @@ function repo_init(path::String; bare::Bool=false)
     end
     return GitRepo(repo_ptr[1])
 end
-#=
-function repo_init(path::String; bare::Bool=false)
-    bpath = bytestring(path)
-    repo_ptr = Array(Ptr{Void}, 1)
-    err_code = api.git_repository_init(repo_ptr, bpath, bare? 1 : 0)
-    if err_code < 0
-        if repo_ptr[1] != C_NULL
-            api.git_repository_free(repo_ptr[1])
-        end
-        throw(LibGitError(err_code))
-    end
-    return GitRepo(repo_ptr[1])
-end
-=#
 
 function set_namespace!(r::GitRepo, ns)
     if ns == nothing || isempty(ns)
@@ -248,7 +234,7 @@ function set_head!(r::GitRepo, ref::String; sig=nothing, logmsg=nothing)
     else
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
-        @check ccall((:git_repository_set_head, api.libgit2), Cint,
+        @check ccall((:git_repository_set_head, :libgit2), Cint,
                      (Ptr{Void}, Ptr{Uint8}, Ptr{api.GitSignature}, Ptr{Uint8}),
                      r, bref, &gsig, bmsg)
     end
@@ -262,7 +248,7 @@ end
 
 function remotes(r::GitRepo)
     rs = StrArrayStruct()
-    @check ccall((:git_remote_list, api.libgit2), Cint, (Ptr{StrArrayStruct}, Ptr{Void}), &rs, r)
+    @check ccall((:git_remote_list, :libgit2), Cint, (Ptr{StrArrayStruct}, Ptr{Void}), &rs, r)
     if rs.count == 0 
         return nothing 
     end
@@ -279,7 +265,7 @@ end
 
 function remote_names(r::GitRepo)
     rs = StrArrayStruct()
-    @check ccall((:git_remote_list, api.libgit2), Cint,
+    @check ccall((:git_remote_list, :libgit2), Cint,
                   (Ptr{StrArrayStruct}, Ptr{Void}), &rs, r)
     ns = Array(UTF8String, rs.count)
     for i in 1:rs.count
@@ -289,10 +275,10 @@ function remote_names(r::GitRepo)
 end
 
 function remote_add!(r::GitRepo, name::String, url::String)
-    @assert r.ptr != C_NULL
     check_valid_url(url)
-    remote_ptr = Array(Ptr{Void}, 1)
-    @check api.git_remote_create(remote_ptr, r.ptr, bytestring(name), bytestring(url))
+    remote_ptr = Ptr{Void}[0]
+    @check ccall((:git_remote_create, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}), remote_ptr, r, name, url)
     return GitRemote(remote_ptr[1])
 end
 
@@ -590,15 +576,14 @@ function repo_discover(p::String="", acrossfs::Bool=true)
     bp = bytestring(p)
     buf = api.GitBuffer()
     @check ccall((:git_repository_discover, :libgit2), Cint,
-                 (Ptr{api.GitBuffer}, Ptr{Uint8}, Cint, Ptr{Uint8}),
-                  &buf, bp, acrossfs? 1 : 0, C_NULL)
+                 (Ptr{api.GitBuffer}, Ptr{Uint8}, Cint, Ptr{Uint8}), &buf, bp, acrossfs? 1 : 0, C_NULL)
     return GitRepo(bytestring(buf.ptr))
 end
 
 function rev_parse(r::GitRepo, rev::String)
-    odj_ptr = Ptr{Void}[0]
+    obj_ptr = Ptr{Void}[0]
     @check ccall((:git_revparse_single, :libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, brev)
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, rev)
     return gitobj_from_ptr(obj_ptr[1])
 end
 rev_parse(r::GitRepo, rev::Oid) = rev_parse(r, string(rev))
@@ -628,7 +613,7 @@ function config(r::GitRepo)
     cfg_ptr = Ptr{Void}[0]
     @check ccall((:git_repository_config, :libgit2), Cint, 
                  (Ptr{Ptr{Void}}, Ptr{Void}), cfg_ptr, r)
-    return GitConfig(config_ptr[1])
+    return GitConfig(cfg_ptr[1])
 end
 
 Odb(r::GitRepo) = begin
@@ -653,26 +638,26 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::Oid)
     obj_ptr = Ptr{Void}[0]
     @check ccall((:git_object_lookup, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                 objptr, r, &id, git_otype(T))
-    return T(objptr[1])
+                 obj_ptr, r, &id, git_otype(T))
+    return T(obj_ptr[1])
 end
 
 function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::String)
-    oid = Oid()
+    id = Oid()
     len = length(bid)
     obj_ptr = Ptr{Void}[0]
-    @check ccall((:git_oid_fromstrn, api.libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Uint8}, Csize_t), &oid, id, len) 
+    @check ccall((:git_oid_fromstrn, :libgit2), Cint,
+                 (Ptr{Oid}, Ptr{Uint8}, Csize_t), &id, id, len) 
     if len < OID_HEXSZ
         @check ccall((:git_object_lookup_prefix, :libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
-                     obj_ptr, r, &oid, len, git_otype(T))
+                     obj_ptr, r, &id, len, git_otype(T))
     else
         @check ccall((:git_object_lookup, :libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                     obj_ptr, r, &oid, git_otype(T)) 
+                     obj_ptr, r, &id, git_otype(T)) 
     end
-    return T(objptr[1]) 
+    return T(ob_jptr[1]) 
 end
 
 lookup(r::GitRepo, id::Oid) = lookup(GitAnyObject, r, id)
@@ -795,20 +780,23 @@ function branch_names(r::GitRepo, filter::Symbol=:all)
     names = UTF8String[]
     while true
         err = ccall((:git_branch_next, :libgit2), Cint,
-                    (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, iter_ptr[1])
+                    (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}),
+                    branch_ptr, branch_type, iter_ptr[1])
         if err == api.ITEROVER
             break
         end
         if err != api.GIT_OK
             if iter_ptr[1] != C_NULL
-                ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), iter_ptr[1])
+                ccall((:git_branch_iterator_free, :libgit2), Void,
+                      (Ptr{Void},), iter_ptr[1])
             end
             throw(LibGitError(err))
         end
-        name_ptr = ccall((:git_reference_shorthand, :libgit2), Ptr{Uint8}, (Ptr{Void},), branch_ptr[1])
+        name_ptr = ccall((:git_reference_shorthand, :libgit2), Ptr{Uint8}, 
+                         (Ptr{Void},), branch_ptr[1])
         push!(names, utf8(bytestring(name_ptr)))
     end
-    ccall((:git_branch_free, :libgit2), Void, (Ptr{Void},), iter_ptr[1])
+    ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), iter_ptr[1])
     return names
 end
 
@@ -824,7 +812,8 @@ function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type:
     end
     branch_ptr = Ptr{Void}[0]
     err = ccall((:git_branch_lookup, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint), branch_ptr, r, branch_name, git_branch_type)
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint),
+                branch_ptr, r, branch_name, git_branch_type)
     if err == api.GIT_OK
         return GitBranch(branch_ptr[1])
     elseif err == api.ENOTFOUND
@@ -837,7 +826,7 @@ end
 lookup_branch(r::GitRepo, branch_name::String, branch_type=:local) = 
         lookup(GitBranch, r, branch_name, branch_type)
 
-lookup_branch(r::Repository, branch_id::Oid, branch_type=:local) = 
+lookup_branch(r::GitRepo, branch_id::Oid, branch_type=:local) = 
         lookup(GitBranch, r, string(branch_id), branch_type)
 
 
@@ -895,6 +884,8 @@ free!(b::BranchIterator) = begin
     end
 end
 
+Base.convert(::Type{Ptr{Void}}, b::BranchIterator) = b.ptr 
+
 function iter_branches(r::GitRepo, filter::Symbol=:all)
     local git_filter::Cint
     if filter == :all
@@ -931,12 +922,12 @@ Base.done(b::BranchIterator, state) = state == nothing
 Base.next(b::BranchIterator, state) = begin
     branch_ptr  = Ptr{Void}[0]
     branch_type = Cint[0] 
-    err = ccall((:git_branch_next, :libgit), Cint,
+    err = ccall((:git_branch_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
-    if ret == api.ITEROVER
+    if err == api.ITEROVER
         return (state, nothing)
-    elseif ret != api.GIT_OK
-        throw(LibGitError(ret))
+    elseif err != api.GIT_OK
+        throw(LibGitError(err))
     end
     return (state, GitBranch(branch_ptr[1]))
 end
@@ -990,7 +981,7 @@ end
 Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothing) = begin
     gopts = parse_merge_options(opts)
     idx_ptr = Ptr{Void}[0]
-    @check ccall((:git_merge_trees, api.libgit2), Cint,
+    @check ccall((:git_merge_trees, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
                  idx_ptr, r.ptr, ancestor.ptr, t1.ptr, t2.ptr, &gopts)
     return GitIndex(idx_ptr[1])
@@ -1002,7 +993,7 @@ function merge_commits(r::GitRepo, ours::Union(GitCommit, Oid), theirs::Union(Gi
     isa(ours,   Oid) && (ours   = lookup_commit(r, ours))
     isa(theirs, Oid) && (theirs = lookup_commit(r, theirs)) 
     index_ptr = Ptr{Void}[0] 
-    @check ccall((:git_merge_commits, api.libgit2), Cint,
+    @check ccall((:git_merge_commits, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void},
                   Ptr{Void}, Ptr{api.GitMergeTreeOpts}),
                  index_ptr, r, ours, theirs, &gopts)
@@ -1301,7 +1292,7 @@ function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_ty
         if !bool(allowed_types & api.CREDTYPE_USERPASS_PLAINTEXT)
             error("invalid credential type")
         end
-        @check ccall((:git_cred_userpass_plaintext_new, api.libgit2), Cint,
+        @check ccall((:git_cred_userpass_plaintext_new, :libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}),
                        cred_ptr,
                        bytestring(cred.username),
@@ -1310,7 +1301,7 @@ function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_ty
         if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
-        @check ccall((:git_cred_ssh_key_new, api.libgit2), Cint,
+        @check ccall((:git_cred_ssh_key_new, :libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Cchar}),
                      cred_ptr,
                      cred.username != nothing ? cred.username : C_NULL,
@@ -1321,7 +1312,7 @@ function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_ty
         if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
-        @check ccall((:git_cred_default_new, api.libgit2), Cint,
+        @check ccall((:git_cred_default_new, :libgit2), Cint,
                      (Ptr{Ptr{Void}},), cred_ptr)
     else
         error("invalid credential type")
@@ -1488,8 +1479,10 @@ Base.start(r::ReferenceIterator) = begin
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
-    if ret == api.ITEROVER
+    if err == api.ITEROVER
         return nothing
+    elseif err != api.GIT_OK
+        throw(LibGitError(err))
     end
     return GitReference(ref_ptr[1])
 end
@@ -1500,8 +1493,10 @@ Base.next(r::ReferenceIterator, state) = begin
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
-    if ret == api.ITEROVER
+    if err == api.ITEROVER
         return (state, nothing)
+    elseif err != api.GIT_OK
+        throw(LibGitError(err))
     end
     return (state, GitReference(ref_ptr[1]))
 end
