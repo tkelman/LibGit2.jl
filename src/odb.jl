@@ -99,7 +99,7 @@ function open_wstream{T<:GitObject}(::Type{T}, odb::Odb, len::Int)
     gtype = git_otype(T)
     stream_ptr = Ptr{Void}[0] 
     @check ccall((:git_odb_open_wstream, :libgit2), Cint, 
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t, Cint), stream_ptr, odb, clen, gtype)
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t, Cint), stream_ptr, odb, len, gtype)
     return OdbWrite(stream_ptr[1])
 end
 
@@ -108,10 +108,10 @@ Base.iswriteable(io::OdbWrite) = true
 
 #TODO: this needs to be reworked
 Base.write(io::OdbWrite, buffer::ByteString) = begin 
-    len = length(b)
+    len = length(buffer)
     @check ccall((:git_odb_stream_write, :libgit2), Cint, 
                  (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len) 
-    return io
+    return len
 end
 
 #TODO: this is broken...
@@ -121,7 +121,7 @@ Base.write{T}(io::OdbWrite, buffer::Array{T}) = begin
     len = convert(Csize_t, div(length(b) * sizeof(T), sizeof(Uint8)))
     @check ccall((:git_odb_stream_write, :libgit2), Cint, 
                  (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len)
-    return len
+    return io
 end
 
 Base.close(io::OdbWrite) = begin
