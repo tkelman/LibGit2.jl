@@ -278,10 +278,7 @@ with_tmp_repo_access("test reflog") do test_repo, path
     @test rlog[2].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test rlog[2].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test rlog[2].message == ""
-    @show name(rlog[2].committer)
-    @show email(rlog[2].committer)
     @test name(rlog[2].committer) == "foo"
-    @show email(rlog[2].committer) == "foo@bar"
 
     @test rlog[end].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test rlog[end].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
