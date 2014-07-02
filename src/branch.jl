@@ -37,36 +37,33 @@ end
 function name(b::GitBranch)
     name_ptr = Ptr{Uint8}[0]
     @check ccall((:git_branch_name, :libgit2), Cint, (Ptr{Ptr{Uint8}}, Ptr{Void}), name_ptr, b)
-    return bytestring(name_ptr[1])
+    return utf8(bytestring(name_ptr[1]))
 end
 
 #! this is redundant with git_reference
 ishead(b::GitBranch) = bool(ccall((:git_branch_is_head, :libgit2), Cint, (Ptr{Void},), b))
 isremote(b::GitBranch) = bool(ccall((:git_reference_is_remote, :libgit2), Cint, (Ptr{Void},), b))
-canonical_name(b::GitBranch) = bytestring(ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), b))
+canonical_name(b::GitBranch) = utf8(bytestring(ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), b)))
 
-function move(b::GitBranch, new_name::String; force::Bool=false, sig=nothing, logmsg=nothing)
+function move(b::GitBranch, newname::String; force::Bool=false, sig=nothing, logmsg=nothing)
     branch_ptr = Ptr{Void}[0]
-    bname = bytestring(new_name)
-    bmsg  = logmsg != nothing ? bytestring(logmsg) : C_NULL
     if sig != nothing
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
-        @check ccall((:git_branch_move, api.libgit2), Cint,
+        @check ccall((:git_branch_move, :libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
                        Ptr{api.GitSignature}, Ptr{Uint8}),
-                       branch_ptr, b, bname, force? 1:0, &gsig, bmsg)
+                       branch_ptr, b, newname, force? 1:0, &gsig, logmsg != nothing ? logmsg : C_NULL)
     else
-        @check ccall((:git_branch_move, api.libgit2), Cint,
+        @check ccall((:git_branch_move, :libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
                        Ptr{api.GitSignature}, Ptr{Uint8}),
-                       branch_ptr, b, bname, force? 1:0, C_NULL, bmsg)
+                       branch_ptr, b, newname, force? 1:0, C_NULL, logmsg != nothing ? logmsg : C_NULL)
     end
     return GitBranch(branch_ptr[1])
 end
 
 function remote_name(b::GitBranch)
-    return_ref = nothing
     ref_ptr = Ptr{Void}[0]
     if isremote(b)
         ref_ptr[1] = b.ptr 
@@ -75,28 +72,31 @@ function remote_name(b::GitBranch)
         if err == api.ENOTFOUND
             return nothing
         elseif err != api.GIT_OK
-            #! free ref ptr??
+            if ref_ptr[1] != C_NULL
+                ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), ref_ptr[1])
+            end
             throw(GitError(err))
         end
     end
-    refname = bytestring(ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), ref_ptr[1]))
     repo_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), b)
-    buf = api.GitBuffer()
-    err = ccall((:git_branch_remote_name, api.libgit2), Cint,
-                (Ptr{api.GitBuffer}, Ptr{Void}, Ptr{Uint8}),
-                &buf, repo_ptr, refname)
+    refname_ptr = ccall((:git_reference_name,  :libgit2), Ptr{Uint8}, (Ptr{Void},), ref_ptr[1])
+    buf_ptr = [BufferStruct()]
+    err = ccall((:git_branch_remote_name, :libgit2), Cint,
+                (Ptr{BufferStruct}, Ptr{Void}, Ptr{Uint8}), buf_ptr, repo_ptr, refname_ptr)
     if err == api.GIT_OK
-        return bytestring(buf.ptr)
+        str = utf8(bytestring(buf_ptr[1].ptr))
+        ccall((:git_buf_free, :libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
+        return str
     elseif err != api.GIT_OK
         throw(GitError(err))
     end
 end
 
 function remote(b::GitBranch)
-    rname = remote_name(b)
-    if rname != nothing
+    if remote_name(b) != nothing
         return lookup_remote(owner(b), "origin")
     end
+    return nothing
 end
 
 function upstream(b::GitBranch) 

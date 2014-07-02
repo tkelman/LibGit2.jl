@@ -22,6 +22,14 @@ end
 SignatureStruct() = SignatureStruct(zero(Ptr{Cchar}),
                                     zero(Ptr{Cchar}),
                                     zero(GitTimeT))
+immutable BufferStruct
+    ptr::Ptr{Uint8}
+    asize::Csize_t
+    size::Csize_t
+end
+
+BufferStruct() = BufferStruct(C_NULL, 0, 0)
+
 immutable TransferProgressStruct
     total_objects::Cuint
     indexed_objects::Cuint
