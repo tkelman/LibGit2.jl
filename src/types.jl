@@ -17,11 +17,11 @@ TimeStruct() = TimeStruct(zero(GitTimeT), zero(Cint))
 immutable SignatureStruct
     name::Ptr{Uint8}  # full name of the author
     email::Ptr{Uint8} # email of the author
-    when::GitTimeT    # time when the action happened
+    when::TimeStruct  # time when the action happened
 end
 SignatureStruct() = SignatureStruct(zero(Ptr{Cchar}),
                                     zero(Ptr{Cchar}),
-                                    zero(GitTimeT))
+                                    TimeStruct())
 immutable BufferStruct
     ptr::Ptr{Uint8}
     asize::Csize_t
@@ -29,7 +29,6 @@ immutable BufferStruct
 end
 
 BufferStruct() = BufferStruct(C_NULL, 0, 0)
-
 Base.bytestring(b::BufferStruct) = bytestring(b.ptr, b.size)
 
 immutable TransferProgressStruct

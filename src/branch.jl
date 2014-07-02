@@ -24,7 +24,7 @@ tip(b::GitBranch) = lookup(owner(b), target(resolve(b)))
 
 function owner(b::GitBranch)
     repo_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), b)
-    #! do not free repository handle
+    # do not free repository handle, pointer to repo is not owned by julia runtime
     return GitRepo(repo_ptr, false)
 end
 
@@ -41,23 +41,25 @@ function name(b::GitBranch)
 end
 
 #! this is redundant with git_reference
-ishead(b::GitBranch) = bool(ccall((:git_branch_is_head, :libgit2), Cint, (Ptr{Void},), b))
+ishead(b::GitBranch)   = bool(ccall((:git_branch_is_head, :libgit2), Cint, (Ptr{Void},), b))
 isremote(b::GitBranch) = bool(ccall((:git_reference_is_remote, :libgit2), Cint, (Ptr{Void},), b))
 canonical_name(b::GitBranch) = utf8(bytestring(ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), b)))
 
-function move(b::GitBranch, newname::String; force::Bool=false, sig=nothing, logmsg=nothing)
+function move(b::GitBranch, newname::String;
+              force::Bool=false, 
+              sig::Union(Nothing, Signature)=nothing, 
+              logmsg::Union(Nothing, Signature)=nothing)
     branch_ptr = Ptr{Void}[0]
     if sig != nothing
-        @assert isa(sig, Signature)
-        gsig = git_signature(sig)
+        sig_ptr = convert(Ptr{SignatureStruct}, sig)
         @check ccall((:git_branch_move, :libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
-                       Ptr{api.GitSignature}, Ptr{Uint8}),
-                       branch_ptr, b, newname, force? 1:0, &gsig, logmsg != nothing ? logmsg : C_NULL)
+                       Ptr{SignatureStruct}, Ptr{Uint8}),
+                       branch_ptr, b, newname, force? 1:0, sig_ptr, logmsg != nothing ? logmsg : C_NULL)
     else
         @check ccall((:git_branch_move, :libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint,
-                       Ptr{api.GitSignature}, Ptr{Uint8}),
+                       Ptr{SignatureStruct}, Ptr{Uint8}),
                        branch_ptr, b, newname, force? 1:0, C_NULL, logmsg != nothing ? logmsg : C_NULL)
     end
     return GitBranch(branch_ptr[1])
@@ -83,13 +85,14 @@ function remote_name(b::GitBranch)
     buf_ptr = [BufferStruct()]
     err = ccall((:git_branch_remote_name, :libgit2), Cint,
                 (Ptr{BufferStruct}, Ptr{Void}, Ptr{Uint8}), buf_ptr, repo_ptr, refname_ptr)
+    local str::UTF8String
     if err == api.GIT_OK
         str = utf8(bytestring(buf_ptr[1]))
         ccall((:git_buf_free, :libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
-        return str
     elseif err != api.GIT_OK
         throw(GitError(err))
     end
+    return str
 end
 
 function remote(b::GitBranch)
@@ -125,11 +128,6 @@ function set_upstream!(b::GitBranch, target::Union(GitBranch, GitReference))
     @check ccall((:git_branch_set_upstream, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), b, name_ptr[1])
     return b
 end 
-
-function set_upstream(b::GitBranch, ustream::GitReference)
-    @assert b.ptr != C_NULL && ustream.ptr != C_NULL
-    @check api.git_branch_set_upstream(b.ptr, C_NULL)
-end
 
 function rename(b::GitBranch, new_name::String; 
                 force::Bool=false, sig=nothing, logmsg=nothing)

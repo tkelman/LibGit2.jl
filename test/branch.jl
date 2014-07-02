@@ -265,7 +265,7 @@ end
 
 with_tmp_repo_access("branch set upstream on remote branch") do test_repo, path
     b1 = lookup_branch(test_repo, "origin/master", :remote)
-    b2 =  create_branch(test_repo, "test_branch",
+    b2 = create_branch(test_repo, "test_branch",
                       Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     @test_throws LibGitError{:Invalid,:Error} set_upstream!(b1, b2)        
 end
