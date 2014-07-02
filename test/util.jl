@@ -7,38 +7,6 @@ const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 context(f::Function) = f()
 context(f::Function, s::String) = (println(s); context(f))
 
-macro repo_clone_test(body)
-    local tmp_dir = tempname()
-    quote
-        mkdir($tmp_dir)
-        let tmppath = $tmp_dir
-            source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
-            try
-               $body
-            finally
-               #run($(`rm -r -f $tmp_dir`))
-           end
-        end
-    end
-end
-
-macro remote_transport_test(body)
-    local tmp_dir = joinpath(tempname(), "dir")
-    quote
-        mkpath($tmp_dir)
-        let test_repo = repo_init($tmp_dir, bare=false)
-            test_repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
-            test_remote = remote_add!(test_repo, "origin", test_repo_dir)
-            try
-                $body
-            finally
-                close(test_repo)
-                run($(`rm -r -f $tmp_dir`))
-            end
-        end
-    end
-end
-
 function remote_transport_test(f::Function) 
     local tmp_dir = joinpath(tempname(), "dir")
     mkpath(tmp_dir)
@@ -54,15 +22,6 @@ function remote_transport_test(f::Function)
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
 
-
-macro with_test_index(body)
-    quote
-        let test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index")
-            test_index = GitIndex(test_index_path)
-            $body
-        end
-    end
-end
 
 function with_test_index(f::Function)
     try
@@ -87,7 +46,7 @@ end
 
 function seed_test_repo(repo)
     sig = Signature("test", "test@test.com")
-    idx = repo_index(repo)
+    idx = GitIndex(repo)
     add!(idx, "README")
     tree_id = write_tree!(idx)
 
@@ -157,22 +116,6 @@ function teardown(sbt::SandBoxedTest)
     end
 end
 
-macro sandboxed_test(reponame, body)
-    quote
-        sbt = setup(SandBoxedTest, $reponame)
-        test_repo = sbt.repo
-        test_repo_path = sbt.path
-        try
-            $body
-        catch err
-            rethrow(err)
-        finally
-            close(test_repo)
-            teardown(sbt)
-        end
-    end
-end
-
 function sandboxed_test(f::Function, reponame::String)
     sbt = setup(SandBoxedTest, reponame)
     try
@@ -182,27 +125,8 @@ function sandboxed_test(f::Function, reponame::String)
         teardown(sbt)
     end
 end
-sandboxed_test(f::Function, reponame::String, s::String) = (println(s); sandboxed_test(f, reponame))
-
-macro sandboxed_checkout_test(body)
-    quote
-        sbt = setup(SandBoxedTest, "testrepo")
-        test_repo = sbt.repo
-        test_clone = clone(sbt, "testrepo", "cloned_testrepo")
-        _bare = setup(SandBoxedTest, "testrepo.git")
-        test_bare = repo_init(repo_path(_bare.repo), bare=true)
-        try
-            $body
-        finally
-            close(test_repo)
-            close(test_clone)
-            close(test_bare)
-            teardown(sbt)
-            teardown(_bare)
-        end
-    end
-end
-
+sandboxed_test(f::Function, reponame::String, s::String) = (println(s); 
+                                                            sandboxed_test(f, reponame))
 function sandboxed_checkout_test(f::Function)
     sbt = setup(SandBoxedTest, "testrepo")
     test_clone = clone(sbt.repo, "testrepo", "cloned_testrepo")
@@ -218,7 +142,8 @@ function sandboxed_checkout_test(f::Function)
         teardown(bare)
     end
 end
-sandboxed_checkout_test(f::Function, s::String) = (println(s); sandboxed_checkout_test(f))
+sandboxed_checkout_test(f::Function, s::String) = (println(s); 
+                                                   sandboxed_checkout_test(f))
 
 type RepoAccess
     path::String
@@ -228,16 +153,6 @@ end
 setup(::Type{RepoAccess}) = begin
     dir = joinpath(TESTDIR, "fixtures/testrepo.git")
     return RepoAccess(dir, GitRepo(dir))
-end
-
-macro with_repo_access(body)
-    quote
-        ra = setup(RepoAccess)
-        let test_repo_path = ra.path, 
-            test_repo  = ra.repo
-            $body
-        end
-    end
 end
 
 function with_repo_access(f::Function)
@@ -275,21 +190,6 @@ teardown(ra::TmpRepoAccess) = begin
             rethrow(err)
         finally
             ra.torndown = true
-        end
-    end
-end
-
-macro with_tmp_repo_access(body)
-    quote
-        ra = setup(TmpRepoAccess)
-        try
-            test_repo = ra.repo
-            test_repo_path = ra.path
-            $body
-        catch err
-            rethrow(err)
-        finally
-            teardown(ra)
         end
     end
 end
