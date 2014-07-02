@@ -686,12 +686,12 @@ function create_ref(r::GitRepo, refname::String, id::Oid;
         @assert isa(sig, Signature)
         gsig = git_signature(sig)
         @check ccall((:git_reference_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid},
                       Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
                       ref_ptr, r, bname, &id, force? 1:0, &gsig, bmsg)
     else
         @check ccall((:git_reference_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
+                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid},
                       Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
                       ref_ptr, r, bname, &id, force? 1:0, C_NULL, bmsg)
     end

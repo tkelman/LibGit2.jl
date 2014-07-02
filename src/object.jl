@@ -5,10 +5,7 @@ Base.isless(o1::GitObject, o2::GitObject)  = isless(Oid(o1), Oid(o2))
 Base.hash(o::GitObject) = hash(hex(o))
 Base.cmp(o1::GitObject, o2::GitObject) = cmp(Oid(o1), Oid(o2))
 
-Oid(o::GitObject) = begin
-    oid_ptr = ccall((:git_object_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), o)
-    return Oid(oid_ptr)
-end
+Oid(o::GitObject) = Oid(ccall((:git_object_id, :libgit2), Ptr{Oid}, (Ptr{Void},), o))
 
 Base.hex(o::GitObject) = begin
     oid_ptr = ccall((:git_object_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), o)

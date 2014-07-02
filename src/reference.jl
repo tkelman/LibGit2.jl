@@ -94,9 +94,10 @@ function peel{T}(r::GitReference{T})
     elseif err != api.GIT_OK
         throw(LibGitError(err))
     end
-    if isa(T, Oid)
-        target_id = ccall((:git_reference_target, :libgit2), Ptr{Oid}, (Ptr{Void},), r)
-        if !bool(ccall((:git_oid_cmp, :libgit2), Cint, (Ptr{Void}, Ptr{Oid}), obj_ptr[1], target_id)) 
+    if is(T, Oid) 
+        oid = Oid(ccall((:git_object_id, :libgit2), Ptr{Oid}, (Ptr{Void},), obj_ptr[1])) 
+        tid = Oid(ccall((:git_reference_target, :libgit2), Ptr{Oid}, (Ptr{Void},), r))
+        if oid == tid
             ccall((:git_object_free, :libgit2), Void, (Ptr{Void},), obj_ptr[1])
             return nothing
         end
@@ -170,11 +171,11 @@ has_reflog(r::GitReference) = bool(ccall((:git_reference_has_log, :libgit2), Cin
 function log!(r::GitReference, msg::String="", committer=nothing)
     reflog_ptr = Ptr{Void}[0]
     repo_ptr = ccall((:git_reference_owner, :libgit2), Ptr{Void}, (Ptr{Void},), r)
-    name_ptr = ccall((:git_refernce_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    name_ptr = ccall((:git_reference_name, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     @check ccall((:git_reflog_read, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), reflog_ptr, repo_ptr, name_ptr) 
     #TODO: memory leak with signature?
-    local sig_struct::SignatureStruct
+    #local sig_struct::SignatureStruct
     if committer == nothing
         sig_ptr = Ptr{SignatureStruct}[0]
         @check ccall((:git_signature_default, :libgit2), Cint,
@@ -187,7 +188,7 @@ function log!(r::GitReference, msg::String="", committer=nothing)
     target_ptr = ccall((:git_reference_target, :libgit2), Ptr{Void}, (Ptr{Void},), r)
     err = ccall((:git_reflog_append, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
-                 reflog_ptr[1], target_ptr, &gsig, msg)
+                 reflog_ptr[1], target_ptr, &sig_struct, msg)
     if err == api.GIT_OK
         err = ccall((:git_reflog_write, :libgit2), Cint, (Ptr{Void},), reflog_ptr[1])
     end

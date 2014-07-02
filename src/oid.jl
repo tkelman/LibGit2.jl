@@ -56,7 +56,7 @@ end
 Oid(id::Oid) = id
 
 Base.copy!(arr::Array{Uint8, 1}, id::Oid) = begin
-    unsafe_copy!(pointer(arr), convert(Ptr{Uint8}, _addrof(id)), OID_RAWSZ)
+    unsafe_copy!(convert(Ptr{Uint8}, arr), convert(Ptr{Uint8}, _addrof(id)), OID_RAWSZ)
     return arr
 end
 
@@ -65,9 +65,8 @@ raw(id::Oid) = copy!(Array(Uint8, OID_RAWSZ), id)
 const _hexstr = Array(Uint8, OID_HEXSZ)
 Base.hex(id::Oid) = begin
     ccall((:git_oid_nfmt, :libgit2), Void,
-          (Ptr{Uint8}, Csize_t, Ptr{Oid}), 
-           pointer(_hexstr), OID_HEXSZ, &id)
-    return bytestring(pointer(_hexstr), OID_HEXSZ)
+          (Ptr{Uint8}, Csize_t, Ptr{Oid}), _hexstr, OID_HEXSZ, &id)
+    return bytestring(convert(Ptr{Uint8}, _hexstr), OID_HEXSZ)
 end
 
 Base.string(id::Oid) = hex(id)

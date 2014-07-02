@@ -121,7 +121,8 @@ with_repo_access() do test_repo, path
     end
 end
 
-with_repo_access() do test_repo, path
+with_repo_access() do test_repo, path 
+
   context("test can open reference") do
     ref = lookup_ref(test_repo, "refs/heads/master")
     @test target(ref) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
@@ -189,18 +190,18 @@ with_repo_access() do test_repo, path
   end
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test create ref") do test_repo, path
     create_ref(test_repo, 
                "refs/heads/unit_test",
                "refs/heads/master")
-
+    
     create_ref(test_repo,
                "refs/heads/unit_test",
                "refs/heads/master",
                force=true)
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test create ref with unicode") do test_repo, path
     UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
     create_ref(test_repo,
                "refs/heads/$UNICODE_REF_NAME",
@@ -209,13 +210,13 @@ with_tmp_repo_access() do test_repo, path
     @test "heads/$UNICODE_REF_NAME" in refs
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test lookup non-existant ref") do test_repo, path
     ref = lookup_ref(test_repo, "lol/wut")
     @test ref == nothing
 end
 
-with_tmp_repo_access() do test_repo, path
-   @test repo_workdir(test_repo) == test_repo_path
+with_tmp_repo_access("test name ref") do test_repo, path
+   @test repo_workdir(test_repo) == path 
    
    o = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
    ref = create_ref(test_repo, "refs/heads/unit_test", o)
@@ -223,10 +224,10 @@ with_tmp_repo_access() do test_repo, path
    @test o == target(ref)
    @test isa(ref, GitReference{Oid})
    @test name(ref) == "refs/heads/unit_test"
-   delete!(test_repo, ref)
+   #delete!(test_repo, ref)
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test rename ref") do test_repo, path
     ref = create_ref(test_repo,
       "refs/heads/unit_test",
       Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
@@ -237,10 +238,10 @@ with_tmp_repo_access() do test_repo, path
 
     new_ref = rename(ref, "refs/heads/rug_new_name")
     @test name(new_ref) == "refs/heads/rug_new_name"
-    delete!(test_repo, new_ref)
+    #delete!(test_repo, new_ref)
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test set target ref") do test_repo, path
     ref = create_ref(test_repo,
                      "refs/heads/unit_test",
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
@@ -251,21 +252,21 @@ with_tmp_repo_access() do test_repo, path
     new_ref = set_target(ref, Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     t = target(new_ref)
     @test t == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    delete!(test_repo, new_ref)
+    #delete!(test_repo, new_ref)
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test create symbolic target") do test_repo, path
     ref1 = create_ref(test_repo, "refs/heads/Ångström", "refs/heads/master")
     ref2 = create_ref(test_repo, "refs/heads/foobar", "refs/heads/Ångström")
     @test name(ref1) == "refs/heads/Ångström"
     @test symbolic_target(ref2) ==  "refs/heads/Ångström"
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test reflog") do test_repo, path
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-    log!(ref, nothing, Signature("foo", "foo@bar"))
+    log!(ref, "", Signature("foo", "foo@bar"))
     log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
     rlog = reflog(ref)
     # TODO: this fails for travis (cannot reproduce in local tests)
@@ -277,8 +278,10 @@ with_tmp_repo_access() do test_repo, path
     @test rlog[2].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test rlog[2].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test rlog[2].message == ""
+    @show name(rlog[2].committer)
+    @show email(rlog[2].committer)
     @test name(rlog[2].committer) == "foo"
-    @test email(rlog[2].committer) == "foo@bar"
+    @show email(rlog[2].committer) == "foo@bar"
 
     @test rlog[end].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test rlog[end].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
@@ -287,7 +290,7 @@ with_tmp_repo_access() do test_repo, path
     @test email(rlog[end].committer) == "foo@bar"
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test ref log with config") do test_repo, path
     ref = create_ref(test_repo,
                      "refs/heads/test-reflog",
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
