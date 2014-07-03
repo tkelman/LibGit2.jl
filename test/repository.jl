@@ -72,7 +72,7 @@ sandboxed_test("testrepo.git", "test fails to open repos that dont' exist") do t
     @test_throws LibGitError{:OS,:NotFound} GitRepo("test")
 end
    
-sandboxed_test("testrepo.git", "can check if object exist") do test_repo, path 
+sandboxed_test("testrepo.git", "test can check if object exist") do test_repo, path 
     @test Oid("8496071c1b46c854b31185ea97743be6a8774479") in test_repo
     @test exists(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") in test_repo
@@ -83,14 +83,14 @@ sandboxed_test("testrepo.git", "can check if object exist") do test_repo, path
     @test !(exists(test_repo, Oid("8496071c1c46c854b31185ea97743be6a8774479")))
 end
 
-sandboxed_test("testrepo.git", "can read a raw object") do test_repo, path
+sandboxed_test("testrepo.git", "test can read a raw object") do test_repo, path
     rawobj = read(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test match(r"tree 181037049a54a1eb5fab404658a3a250b44335d7", data(rawobj)) != nothing
     @test sizeof(rawobj) == 172
     @test isa(rawobj, OdbObject{GitCommit})
 end
 
-sandboxed_test("testrepo.git", "can read object headers") do test_repo, path
+sandboxed_test("testrepo.git", "test can read object headers") do test_repo, path
     h = read_header(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test h[:type] == GitCommit
     @test h[:nbytes] == 172
@@ -131,27 +131,27 @@ sandboxed_test("testrepo.git", "test find reference") do test_repo, path
     @test name(ref) == "refs/heads/master"
 end
 
-sandboxed_test("testrepo.git", "match all refs") do test_repo, path
+sandboxed_test("testrepo.git", "test match all refs") do test_repo, path
     refs = collect(iter_refs(test_repo, "refs/heads/*"))
     @test length(refs) == 12
 end
 
-sandboxed_test("testrepo.git", "return all ref names") do test_repo, path
+sandboxed_test("testrepo.git", "test return all ref names") do test_repo, path
     rnames = ref_names(test_repo)
     @test length(rnames) == 21
 end
 
-sandboxed_test("testrepo.git", "return all tags") do test_repo, path 
+sandboxed_test("testrepo.git", "test return all tags") do test_repo, path 
     ts = tags(test_repo)
     @test length(ts) == 7
 end
 
-sandboxed_test("testrepo.git", "return all matching tags") do test_repo, path
+sandboxed_test("testrepo.git", "test return all matching tags") do test_repo, path
     @test length(tags(test_repo, "e90810b")) == 1
     @test length(tags(test_repo, "*tag*")) == 4
 end
 
-sandboxed_test("testrepo.git", "return a list of all remotes") do test_repo, path
+sandboxed_test("testrepo.git", "test return a list of all remotes") do test_repo, path
     rs = remotes(test_repo)
     @test length(rs) == 5
 end
@@ -254,7 +254,7 @@ end
 #---------------------------
 # Merge Commits Repo Test
 #---------------------------
-sandboxed_test("merge-resolve") do test_repo, path
+sandboxed_test("merge-resolve", "test merge commits") do test_repo, path
     our_commit   = lookup_branch(test_repo, "master") |> tip
     their_commit = lookup_branch(test_repo, "branch") |> tip
 
@@ -286,7 +286,7 @@ end
 #---------------------------
 # Shallow Repo Test
 #---------------------------
-sandboxed_test("testrepo.git", "shallow repo test") do test_repo, path
+sandboxed_test("testrepo.git", "test shallow repo") do test_repo, path
     shallow_sbt = setup(SandBoxedTest, "shallow.git")
     shallow = shallow_sbt.repo
     @test isshallow(test_repo) == false
@@ -294,10 +294,10 @@ sandboxed_test("testrepo.git", "shallow repo test") do test_repo, path
     teardown(shallow_sbt)
 end
 
-with_tmp_repo_access("repo write tests") do test_repo, path
+with_tmp_repo_access("test shallow repo write") do test_repo, path
     TEST_CONTENT = "my test data\n"
 
-    context("test_can_hash_data") do 
+    context("test can hash data") do 
         id = hash_data(GitBlob, TEST_CONTENT)
         @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
     end
