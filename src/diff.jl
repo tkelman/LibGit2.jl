@@ -31,7 +31,7 @@ DiffStats() = DiffStats(0, 0, 0)
 function cb_diff_file_stats(delta_ptr::Ptr{DiffDeltaStruct}, 
                             progress::Cfloat,
                             payload::Ptr{Void})
-    delta = unsafe_load(delta_ptr)
+    delta = unsafe_load(delta_ptr)::DiffDeltaStruct
     stats = unsafe_pointer_to_objref(payload)::DiffStats
     if delta.status == api.DELTA_ADDED ||
        delta.status == api.DELTA_DELETED ||
@@ -80,34 +80,16 @@ type DiffFile
 end
 
 function delta_status_symbol(s::Integer)
-    if s == api.DELTA_UNMODIFIED
-        return :unmodified
-    end
-    if s == api.DELTA_ADDED
-        return :added
-    end
-    if s == api.DELTA_DELETED
-        return :deleted
-    end
-    if s == api.DELTA_MODIFIED
-        return :modified
-    end
-    if s == api.DELTA_RENAMED
-        return :renamed
-    end
-    if s == api.DELTA_COPIED
-        return :copied
-    end 
-    if s == api.DELTA_IGNORED
-        return :ignored
-    end
-    if s == api.DELTA_UNTRACKED
-        return :untracked
-    end
-    if s == api.DELTA_TYPECHANGE
-        return :typechange
-    end
-    return :unknown
+    s == api.DELTA_UNMODIFIED && return :unmodified
+    s == api.DELTA_ADDED      && return :added
+    s == api.DELTA_DELETED    && return :deleted
+    s == api.DELTA_MODIFIED   && return :modified
+    s == api.DELTA_RENAMED    && return :renamed
+    s == api.DELTA_COPIED     && return :copied
+    s == api.DELTA_IGNORED    && return :ignored
+    s == api.DELTA_UNTRACKED  && return :untracked
+    s == api.DELTA_TYPECHANGE && return :typechange
+    throw(ArgumentError("Unknown status symbol :$s")) 
 end
 
 type DiffDelta
@@ -224,7 +206,7 @@ function patch(d::GitDiff; format::Symbol=:patch)
     elseif format === :patch
         cformat = api.DIFF_FORMAT_PATCH
     else
-      error("Unknown diff output format ($format)")
+      throw(ArgumentError(("Unknown diff output format ($format)")))
     end
     s = Uint8[]
     ccall((:git_diff_print, :libgit2), Cint,
@@ -253,34 +235,16 @@ Base.diff(repo::GitRepo,
     return nothing
 end
 
-Base.diff(repo::GitRepo,
-          left::GitCommit,
-          right::GitCommit,
-          opts=nothing) = begin
-    return diff(repo, 
-                GitTree(left), 
-                GitTree(right),
-                opts)
+Base.diff(repo::GitRepo, left::GitCommit, right::GitCommit, opts=nothing) = begin
+    return diff(repo, GitTree(left), GitTree(right), opts)
 end
 
-Base.diff(repo::GitRepo,
-          left::GitCommit,
-          right::Nothing,
-          opts=nothing) = begin
-    return diff(repo, 
-                GitTree(left), 
-                nothing,
-                opts)
+Base.diff(repo::GitRepo, left::GitCommit, right::Nothing, opts=nothing) = begin
+    return diff(repo, GitTree(left), nothing, opts)
 end
 
-Base.diff(repo::GitRepo,
-          left::Nothing,
-          right::GitCommit,
-          opts=nothing) = begin
-    return diff(repo,
-                nothing, 
-                GitTree(right),
-                opts)
+Base.diff(repo::GitRepo, left::Nothing, right::GitCommit, opts=nothing) = begin
+    return diff(repo, nothing, GitTree(right), opts)
 end
 
 Base.diff(repo::GitRepo, c::GitCommit, opts=nothing) = begin
@@ -302,10 +266,9 @@ Base.diff(repo::GitRepo, left::GitTree, right::GitCommit, opts=nothing) = begin
     return diff(repo, left, GitTree(right), opts)
 end
 
-Base.diff(repo::GitRepo,
-          left::Union(Nothing, GitTree),
-          right::Union(Nothing, GitTree),
-          opts=nothing) = begin
+typealias MaybeGitTree Union(Nothing, GitTree)
+
+Base.diff(repo::GitRepo, left::MaybeGitTree, right::MaybeGitTree, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_tree_to_tree, :libgit2), Cint,
@@ -343,7 +306,6 @@ Base.diff(repo::GitRepo, left::GitTree, right::GitIndex, opts=nothing) = begin
                  diff_ptr, repo, left, right, &gopts)
     return GitDiff(diff_ptr[1])
 end
-
 
 Base.diff(repo::GitRepo, idx::GitIndex, opts=nothing) = begin
     return diff(repo, idx, nothing, opts)
@@ -385,12 +347,10 @@ end
 
 function diff_workdir(repo::GitRepo, left::String, opts=nothing)
     l = rev_parse(repo, left)
-    diff_workdir(repo, l, opts)
+    return diff_workdir(repo, l, opts)
 end
 
-function diff_workdir(repo::GitRepo, left::GitCommit, opts=nothing)
-    diff_workdir(repo, GitTree(left), opts)
-end
+diff_workdir(repo::GitRepo, left::GitCommit, opts=nothing) = diff_workdir(repo, GitTree(left), opts)
 
 function diff_workdir(repo::GitRepo, left::GitTree, opts=nothing)
     gopts = parse_git_diff_options(opts)

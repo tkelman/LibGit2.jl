@@ -92,10 +92,7 @@ Base.stat(p::GitPatch) = begin
     return PatchStat(int(adds[1]), int(dels[1]))
 end
 
-function nchanges(p::GitPatch)
-    s = stat(p)
-    return s.adds + s.dels
-end
+nchanges(p::GitPatch) = (s = stat(p); s.adds + s.dels)
 
 @eval begin
     $(Expr(:type, false, :HeaderStruct,
@@ -127,6 +124,7 @@ type DiffHunk
         h = unsafe_load(ptr)
         head_arr = zeros(Uint8, 128)
         head = h.header
+        #TODO: get rid of this ugly hack
         for i=1:128
             head_arr[i] = getfield(head, symbol("c$i"))
         end
@@ -166,25 +164,13 @@ function hunks(p::GitPatch)
 end
 
 function line_origin_to_symbol(o::Cchar)
-    if o == api.DIFF_LINE_CONTEXT
-        return :context
-    end
-    if o == api.DIFF_LINE_ADDITION
-        return :addition
-    end
-    if o == api.DIFF_LINE_DELETION
-        return :deletion
-    end
-    if o == api.DIFF_LINE_CONTEXT_EOFNL
-        return :eof_no_newline
-    end
-    if o == api.DIFF_LINE_ADD_EOFNL
-        return :eof_newline_added
-    end
-    if o == api.DIFF_LINE_DEL_EOFNL
-        return :eof_newline_removed
-    end
-    return :unknown
+    o == api.DIFF_LINE_CONTEXT  && return :context
+    o == api.DIFF_LINE_ADDITION && return :addition
+    o == api.DIFF_LINE_DELETION && return :deletion
+    o == api.DIFF_LINE_ADD_EOFNL && return :eof_newline_added
+    o == api.DIFF_LINE_DEL_EOFNL && return :eof_newline_removed
+    o == api.DIFF_LINE_CONTEXT_EOFNL && return :eof_no_newline
+    throw(ArgumentError("Unknown line origin constant $o")) 
 end
 
 type DiffLine
@@ -265,10 +251,9 @@ const c_cb_patch_print = cfunction(cb_patch_print, Cint,
 
 Base.string(p::GitPatch) = begin
     s = Uint8[]
-    @check ccall((:git_patch_print, api.libgit2), Cint,
-                 (Ptr{Void}, Ptr{Void}, Any),
-                 p, c_cb_patch_print, &s)
-    return bytestring(convert(Ptr{Uint8}, s))
+    @check ccall((:git_patch_print, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{Void}, Any), p, c_cb_patch_print, &s)
+    return utf8(bytestring(convert(Ptr{Uint8}, s)))
 end
 
 nhunks(p::GitPatch) = int(ccall((:git_patch_num_hunks, :libgit2), Cint, (Ptr{Void},), p))
