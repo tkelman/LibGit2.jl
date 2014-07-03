@@ -138,11 +138,11 @@ function path(r::GitRepo)
 end
 
 function hash_data{T<:GitObject}(::Type{T}, content::String)
-    id = Oid()
+    id_ptr = [Oid()]
     @check ccall((:git_odb_hash, :libgit2), Cint,
                  (Ptr{Oid}, Ptr{Uint8}, Csize_t, Cint),
-                 &id, content, length(content), git_otype(T))
-    return id
+                 id_ptr, content, length(content), git_otype(T))
+    return id_ptr[1]
 end
 
 function default_signature(r::GitRepo)
@@ -415,12 +415,12 @@ function create_note!(
         author_ptr = sig_ptr[1]
     end
     tid = Oid(obj)
-    nid = Oid()
+    nid_ptr= [Oid()]
     @check ccall((:git_note_create, :libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{SignatureStruct},
                   Ptr{SignatureStruct}, Ptr{Uint8}, Ptr{Oid}, Ptr{Uint8}, Cint),
-                 &nid, repo_ptr, committer_ptr, author_ptr, bref, &tid, msg, force? 1:0)
-    return nid
+                  nid_ptr, repo_ptr, committer_ptr, author_ptr, bref, &tid, msg, force? 1:0)
+    return nid_ptr[1]
 end
 
 function remove_note!(obj::GitObject;
@@ -529,16 +529,16 @@ function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)
                  stream_ptr, odb, length(buf), gty)
     err = ccall((:git_odb_stream_write, :libgit2), Cint,
                 (Ptr{Void}, Ptr{Uint8}, Csize_t), stream_ptr[1], buf, length(buf))
-    out = Oid()
+    id_ptr = [Oid()]
     if err == api.GIT_OK
         err = ccall((:git_odb_stream_finalize_write, :libgit2), Cint,
-                    (Ptr{Oid}, Ptr{Void}), &out, stream_ptr[1])
+                    (Ptr{Oid}, Ptr{Void}), id_ptr, stream_ptr[1])
     end
     ccall((:git_odb_stream_free, :libgit2), Void, (Ptr{Void},), stream_ptr[1])
     if err != api.GIT_OK
         throw(LibGitError(err))
     end
-    return out
+    return id_ptr[1]
 end
 
 #TODO: implement
@@ -571,15 +571,15 @@ function merge_base(r::GitRepo, args...)
     arg_oids = vcat([raw(Oid(r, a)) for a in args]...)
     @assert length(arg_oids) == length(args) * api.OID_RAWSZ
     len = convert(Csize_t, length(args))
-    id = Oid()
+    id_ptr = [Oid()]
     err = ccall((:git_merge_base_many, :libgit2), Cint, 
-                (Ptr{Oid}, Ptr{Void}, Csize_t, Ptr{Uint8}), &id, r, len, arg_oids)
+                (Ptr{Oid}, Ptr{Void}, Csize_t, Ptr{Uint8}), id_ptr, r, len, arg_oids)
     if err == api.ENOTFOUND
         return nothing
     elseif err != api.GIT_OK
         throw(LibGitError(err))
     end
-    return id
+    return id_ptr[1]
 end
 #TODO: this could be more efficient
 rev_parse_oid(r::GitRepo, rev::Oid) = Oid(rev_parse(r, string(rev)))
@@ -614,22 +614,22 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::Oid)
     return T(obj_ptr[1])
 end
 
-function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::String)
-    id = Oid()
-    len = length(bid)
+function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
+    len = length(oid)
+    id_ptr  = [Oid()]
     obj_ptr = Ptr{Void}[0]
     @check ccall((:git_oid_fromstrn, :libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Uint8}, Csize_t), &id, id, len) 
+                 (Ptr{Oid}, Ptr{Uint8}, Csize_t), id_ptr, oid, len) 
     if len < OID_HEXSZ
         @check ccall((:git_object_lookup_prefix, :libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
-                     obj_ptr, r, &id, len, git_otype(T))
+                     obj_ptr, r, id_ptr, len, git_otype(T))
     else
         @check ccall((:git_object_lookup, :libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                     obj_ptr, r, &id, git_otype(T)) 
+                     obj_ptr, r, id_ptr, git_otype(T)) 
     end
-    return T(ob_jptr[1]) 
+    return T(obj_ptr[1]) 
 end
 
 lookup(r::GitRepo, id::Oid) = lookup(GitAnyObject, r, id)
@@ -650,23 +650,16 @@ function lookup_ref(r::GitRepo, refname::String)
 end
 
 function create_ref(r::GitRepo, refname::String, id::Oid; 
-                    force::Bool=false, sig=nothing, msg=nothing)
-    bname = bytestring(refname)
-    bmsg  = msg != nothing ? bytestring(msg) : C_NULL
+                    force::Bool=false, 
+                    sig::Union(Nothing,Signature)=nothing, 
+                    logmsg::Union(Nothing,String)=nothing)
     ref_ptr = Ptr{Void}[0]
-    if sig != nothing
-        @assert isa(sig, Signature)
-        gsig = git_signature(sig)
-        @check ccall((:git_reference_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid},
-                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
-                      ref_ptr, r, bname, &id, force? 1:0, &gsig, bmsg)
-    else
-        @check ccall((:git_reference_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid},
-                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
-                      ref_ptr, r, bname, &id, force? 1:0, C_NULL, bmsg)
-    end
+    @check ccall((:git_reference_create, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid},
+                  Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 ref_ptr, r, refname, &id, force? 1:0,
+                 sig != nothing ? sig : C_NULL,
+                 logmsg != nothing ? logmsg : C_NULL)
     return GitReference(ref_ptr[1])
 end
 
@@ -677,23 +670,13 @@ end
 
 function create_sym_ref(r::GitRepo, refname::String, target::String; 
                         force::Bool=false, sig=sig, logmsg=logmsg)
-    bname   = bytestring(refname)
-    btarget = bytestring(target)
-    bmsg    = logmsg != nothing ? bytestring(logmsg) : C_NULL
     ref_ptr = Ptr{Void}[0]
-    if sig != nothing
-        @assert isa(sig, Signature)
-        gsig = git_signature(sig)
-        @check ccall((:git_reference_symbolic_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
-                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
-                      ref_ptr, r, bname, btarget, force? 1:0, &gsig, bmsg)
-    else
-        @check ccall((:git_reference_symbolic_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Uint8},
-                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
-                      ref_ptr, r, bname, btarget, force? 1:0, C_NULL, bmsg)
-    end
+    @check ccall((:git_reference_symbolic_create, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
+                 Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 ref_ptr, r, refname, target, force? 1:0, 
+                 sig != nothing ? sig : C_NULL,
+                 logmsg != nothing ? logmsg : C_NULL)
     return GitReference(ref_ptr[1])
 end
 
@@ -742,7 +725,7 @@ function branch_names(r::GitRepo, filter::Symbol=:all)
     iter_ptr = Ptr{Void}[0]
     @check ccall((:git_branch_iterator_new, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
-    branch_ptr  = Ptr{Void}[0]
+    branch_ptr = Ptr{Void}[0]
     branch_type = Cint[0] 
     names = UTF8String[]
     while true
@@ -797,26 +780,19 @@ lookup_branch(r::GitRepo, branch_id::Oid, branch_type=:local) =
         lookup(GitBranch, r, string(branch_id), branch_type)
 
 
-function create_branch(r::GitRepo, n::String, target::Oid;
-                       force::Bool=false, sig=nothing, logmsg=nothing)
-    #TODO: give intelligent error msg when target
-    # does not exist
-    c = lookup_commit(r, target)
-    bmsg = logmsg != nothing ? bytestring(logmsg) : C_NULL
+#TODO: give intelligent error msg when target does not exist
+function create_branch(r::GitRepo, bname::String, target::Oid;
+                       force::Bool=false,
+                       sig::Union(Nothing,Signature)=nothing, 
+                       logmsg::Union(Nothing,String)=nothing)
+    commit = lookup_commit(r, target)
     branch_ptr = Ptr{Void}[0]
-    if sig != nothing
-        @assert(isa(sig, Signature))
-        gsig = git_signature(sig)
-        @check ccall((:git_branch_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void},
-                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
-                     branch_ptr, r.ptr, bytestring(n), c.ptr, force? 1:0, &gsig, bmsg)
-    else
-        @check ccall((:git_branch_create, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void},
-                      Cint, Ptr{api.GitSignature}, Ptr{Uint8}),
-                     branch_ptr, r.ptr, bytestring(n), c.ptr, force? 1:0, C_NULL, bmsg)
-    end
+    @check ccall((:git_branch_create, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void},
+                 Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 branch_ptr, r, bname, commit, force? 1:0,
+                 sig != nothing ? sig : C_NULL,
+                 logmsg != nothing ? logmsg : C_NULL)
     return GitBranch(branch_ptr[1]) 
 end
 
