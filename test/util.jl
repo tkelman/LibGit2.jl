@@ -127,11 +127,28 @@ function sandboxed_test(f::Function, reponame::String)
 end
 sandboxed_test(f::Function, reponame::String, s::String) = (println(s); 
                                                             sandboxed_test(f, reponame))
+function sandboxed_clone_test(f::Function, reponame::String)
+    sbt = setup(SandBoxedTest, reponame)
+    remote = sbt.repo
+    repo = clone(sbt, reponame, splitext(reponame)[1]) 
+    config(remote)["core.bare"] = true
+    try
+        f(repo, remote, sbt.path)
+    finally
+        close(repo)
+        close(remote)
+        teardown(sbt)
+    end
+end 
+sandboxed_clone_test(f::Function, reponame::String, s::String) = (println(s); 
+                                                                  sandboxed_clone_test(f, reponame))
+
 function sandboxed_checkout_test(f::Function)
     sbt = setup(SandBoxedTest, "testrepo")
-    test_clone = clone(sbt.repo, "testrepo", "cloned_testrepo")
+    test_repo  = sbt.repo
+    test_clone = clone(sbt, "testrepo", "cloned_testrepo")
     bare = setup(SandBoxedTest, "testrepo.git")
-    test_bare = repo_init(repo_path(bare.repo), bare=true)
+    test_bare = repo_init(path(bare.repo), bare=true)
     try
         f(test_repo, test_clone, test_bare)
     finally

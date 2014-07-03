@@ -1,11 +1,11 @@
-export repo_isbare, repo_isempty, repo_workdir, repo_path, path,
-       repo_open, repo_init, repo_index, head, set_head!, tags, tag!, commits, references,
+export isbare, isempty, workdir, path,
+       repo_open, repo_init, head, set_head!, tags, tag!, commits, references,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, iter_refs, config,  GitTreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
-       ahead_behind, merge_base, merge_commits,  blob_at, is_shallow, hash_data,
-       default_signature, repo_discover, is_bare, is_empty, namespace, set_namespace!,
+       ahead_behind, merge_base, merge_commits,  blob_at, isshallow, hash_data,
+       default_signature, repo_discover, isbare, isempty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
        branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
@@ -13,7 +13,7 @@ export repo_isbare, repo_isempty, repo_workdir, repo_path, path,
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
        repo_clone
 
-GitRepo(path::String; alternates::Vector{String}=String[]) = begin
+GitRepo(path::String; alternates={}) = begin
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_open, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}), repo_ptr, path)
@@ -26,12 +26,12 @@ GitRepo(path::String; alternates::Vector{String}=String[]) = begin
     repo = GitRepo(repo_ptr[1])
     if !isempty(alternates)
         odb = Odb(repo)
-        for path in alternates
-            if !isdir(path)
+        for pth in alternates
+            if !isdir(pth)
                 throw(ArgumentError("alternate $path is not a valid directory"))
             end
             @check ccall((:git_odb_add_disk_alternate, :libgit2), Cint,
-                         (Ptr{Void}, Ptr{Uint8}), odb, path)
+                         (Ptr{Void}, Ptr{Uint8}), odb, pth)
         end
     end
     return repo
@@ -107,20 +107,19 @@ exists(r::GitRepo, ref::String) = begin
 end
 exists(r::GitRepo, id::Oid) = id in r 
 
-function is_bare(r::GitRepo)
+function isbare(r::GitRepo)
     return bool(ccall((:git_repository_is_bare, :libgit2), Cint, (Ptr{Void},), r))
 end
 
-#TODO: this is a function in base isempty
-function is_empty(r::GitRepo)
+Base.isempty(r::GitRepo) = begin
     return bool(ccall((:git_repository_is_empty, :libgit2), Cint, (Ptr{Void},), r))
 end
 
-function is_shallow(r::GitRepo)
+function isshallow(r::GitRepo)
     return bool(ccall((:git_repository_is_shallow, :libgit2), Cint, (Ptr{Void},), r))
 end
 
-function repo_workdir(r::GitRepo)
+function workdir(r::GitRepo)
     dir = ccall((:git_repository_workdir, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     if dir == C_NULL
         return nothing
@@ -215,22 +214,12 @@ function Oid(r::GitRepo, val::String)
     return Oid(rev_parse(r, val))
 end
 
-#TODO: need to add tests for sig/logmsg
-#TODO: get rid of api.GitSignature
-function set_head!(r::GitRepo, ref::String; sig=nothing, logmsg=nothing)
-    bref = bytestring(ref)
-    bmsg = logmsg != nothing ? bytestring(logmsg) : C_NULL
-    if sig == nothing
-        @check ccall((:git_repository_set_head, :libgit2), Cint,
-                     (Ptr{Void}, Ptr{Uint8}, Ptr{api.SignatureStruct}, Ptr{Uint8}),
-                     r, bref, C_NULL, bmsg)
-    else
-        @assert isa(sig, Signature)
-        gsig = git_signature(sig)
-        @check ccall((:git_repository_set_head, :libgit2), Cint,
-                     (Ptr{Void}, Ptr{Uint8}, Ptr{api.GitSignature}, Ptr{Uint8}),
-                     r, bref, &gsig, bmsg)
-    end
+function set_head!(r::GitRepo, ref::String; 
+                   sig::Union(Nothing, Signature)=nothing, 
+                   logmsg::Union(Nothing, String)=nothing)
+    @check ccall((:git_repository_set_head, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{Uint8}, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 r, ref, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r
 end
 
@@ -330,7 +319,7 @@ Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
         throw(LibGitError(err))
     end
     err = ccall((:git_push_update_tips, :libgit2), Cint,
-                (Ptr{Void}, Ptr{api.GitSignature}, Ptr{Uint8}), p, C_NULL, C_NULL)
+                (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), p, C_NULL, C_NULL)
     if err != api.GIT_OK
         ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
@@ -515,13 +504,15 @@ function ahead_behind(r::GitRepo, lid::Oid, uid::Oid)
     return (int(ahead[1]), int(behind[1]))
 end
 
-function blob_at(r::GitRepo, rev::Oid, p::String)
+function blob_at(r::GitRepo, rev::Oid, pth::String)
     tree = GitTree(lookup_commit(r, rev))
     local blob_entry::GitTreeEntry
     try
-        blob_entry = GitTreeEntry(tree, p)
+        blob_entry = entry_bypath(tree, pth)
+        @show blob_entry
         @assert isa(blob_entry, GitTreeEntry{GitBlob})
-    catch
+    catch ex
+        @show ex
         return nothing
     end
     blob = lookup_blob(r, Oid(blob_entry))
@@ -555,14 +546,14 @@ function references(r::GitRepo)
     return nothing
 end
 
-function repo_discover(p::String="", acrossfs::Bool=true)
-    if isempty(p); p = pwd(); end
-    brepo = Array(Uint8, api.GIT_PATH_MAX)
-    bp = bytestring(p)
-    buf = api.GitBuffer()
+function repo_discover(pth::String="", acrossfs::Bool=true)
+    isempty(pth) && (pth = pwd())
+    brepo = zeros(Uint8, api.GIT_PATH_MAX)
+    buf_ptr = [BufferStruct()]
     @check ccall((:git_repository_discover, :libgit2), Cint,
-                 (Ptr{api.GitBuffer}, Ptr{Uint8}, Cint, Ptr{Uint8}), &buf, bp, acrossfs? 1 : 0, C_NULL)
-    return GitRepo(bytestring(buf.ptr))
+                 (Ptr{BufferStruct}, Ptr{Uint8}, Cint, Ptr{Uint8}), 
+                 buf_ptr, pth, acrossfs? 1:0, C_NULL)
+    return GitRepo(bytestring(buf_ptr[1]))
 end
 
 function rev_parse(r::GitRepo, rev::String)
@@ -608,11 +599,7 @@ Odb(r::GitRepo) = begin
     return Odb(odb_ptr[1])
 end
 
-#TODO: remove
-repo_odb(r::GitRepo) = Odb(r)
-
-#TODO: remove
-function repo_index(r::GitRepo)
+GitIndex(r::GitRepo) = begin
     idx_ptr = Ptr{Void}[0]
     @check ccall((:git_repository_index, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}), idx_ptr, r)

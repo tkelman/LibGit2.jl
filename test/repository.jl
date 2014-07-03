@@ -28,8 +28,8 @@ context("test creating bare repository") do
         repo = GitRepo(test_repo_path)
         try 
             @test isa(repo, GitRepo)
-            @test repo_isbare(repo)
-            @test repo_isempty(repo)
+            @test isbare(repo)
+            @test isempty(repo)
         finally
             close(repo)
         end 
@@ -42,11 +42,11 @@ context("test creating repository") do
         repo = GitRepo(test_repo_path)
         try
             @test isa(repo, GitRepo)
-            @test !(repo_isbare(repo))
-            @test repo_isempty(repo)
-            @test repo_workdir(repo) == abspath(test_repo_path)
-            @test repo_path(repo) == joinpath(test_repo_path, ".git")
-            @test isa(repo_index(repo), GitIndex)
+            @test !isbare(repo)
+            @test isempty(repo)
+            @test workdir(repo) == abspath(test_repo_path)
+            @test path(repo) == joinpath(test_repo_path, ".git")
+            @test isa(GitIndex(repo), GitIndex)
             # empty repo has no head
             @test head(repo) == nothing
             # empty repo has no tags
@@ -171,7 +171,7 @@ end
 sandboxed_test("testrepo.git", "test set head invalid") do test_repo, path
     @test_throws LibGitError{:Ref,:InvalidSpec} set_head!(test_repo, "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
 end
-
+#=
 sandboxed_test("testrepo.git", "test access a file") do test_repo, path
     id = Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
     blob = blob_at(test_repo, id, "new.txt")
@@ -183,14 +183,14 @@ sandboxed_test("testrepo.git", "test access a missing file") do test_repo, path
     blob = blob_at(test_repo, id, "file-not-found.txt")
     @test blob == nothing
 end
-
+=#
 sandboxed_test("testrepo.git", "test enumerate all objects") do test_repo, path
     @test count(x -> true, test_repo) == 1687
 end
 
-sandboxed_test("testrepo.git", "test load alternates") do test_repo, path
+sandboxed_test("testrepo.git", "test load alternates") do test_repo, _
     alt_path = joinpath(pwd(), "fixtures/alternate/objects")
-    repo = GitRepo(repo_path(test_repo); alternates=[alt_path])
+    repo = GitRepo(path(test_repo), alternates=[alt_path])
     try 
       @test count(x->true, repo) == 1690
       @test read(repo, Oid("146ae76773c91e3b1d00cf7a338ec55ae58297e2")) != nothing
@@ -199,8 +199,8 @@ sandboxed_test("testrepo.git", "test load alternates") do test_repo, path
     end
 end
 
-sandboxed_test("testrepo.git", "test alternates with invalid path type") do test_repo, path
-    @test_throws ArgumentError GitRepo(repo_path(test_repo), alternates=["error"])
+sandboxed_test("testrepo.git", "test alternates with invalid path type") do test_repo, _
+    @test_throws ArgumentError GitRepo(path(test_repo), alternates=["error"])
 end
 
 sandboxed_test("testrepo.git", "test find merge base between ids") do test_repo, path
@@ -263,23 +263,23 @@ sandboxed_test("merge-resolve") do test_repo, path
     @test length(index) == 8
 
     @test (Oid("233c0919c998ed110a4b6ff36f353aec8b713487") == 
-            Oid(getentry(index, "added-in-master.txt", 0)))
+            Oid(index["added-in-master.txt", 0]))
     @test (Oid("f2e1550a0c9e53d5811175864a29536642ae3821") ==
-            Oid(getentry(index, "automergeable.txt", 0)))
+            Oid(index["automergeable.txt", 0]))
     @test (Oid("4eb04c9e79e88f6640d01ff5b25ca2a60764f216") ==
-            Oid(getentry(index, "changed-in-branch.txt", 0)))
+            Oid(index["changed-in-branch.txt", 0]))
     @test (Oid("11deab00b2d3a6f5a3073988ac050c2d7b6655e2") ==
-            Oid(getentry(index, "changed-in-master.txt", 0)))
+            Oid(index["changed-in-master.txt", 0]))
 
     @test (Oid("d427e0b2e138501a3d15cc376077a3631e15bd46") == 
-            Oid(getentry(index, "conflicting.txt", 1)))
+            Oid(index["conflicting.txt", 1]))
     @test (Oid("4e886e602529caa9ab11d71f86634bd1b6e0de10") ==
-            Oid(getentry(index, "conflicting.txt", 2)))
+            Oid(index["conflicting.txt", 2]))
     @test (Oid("2bd0a343aeef7a2cf0d158478966a6e587ff3863") == 
-            Oid(getentry(index, "conflicting.txt", 3)))
+            Oid(index["conflicting.txt", 3]))
 
     @test (Oid("c8f06f2e3bb2964174677e91f0abead0e43c9e5d") ==
-            Oid(getentry(index, "unchanged.txt", 0)))
+            Oid(index["unchanged.txt", 0]))
     @test has_conflicts(index) 
 end
 
@@ -289,8 +289,8 @@ end
 sandboxed_test("testrepo.git", "shallow repo test") do test_repo, path
     shallow_sbt = setup(SandBoxedTest, "shallow.git")
     shallow = shallow_sbt.repo
-    @test is_shallow(test_repo) == false
-    @test is_shallow(shallow) == true
+    @test isshallow(test_repo) == false
+    @test isshallow(shallow) == true
     teardown(shallow_sbt)
 end
 
@@ -341,7 +341,7 @@ function discover_test(f::Function)
         teardown_dir(tmpdir)
     end
 end
-discover_test(f::Function, s::String) = discover_test(f)
+discover_test(f::Function, s::String) = (println(s); discover_test(f))
 
 discover_test("test discover false") do tmpdir
     @test_throws LibGitError{:Repo,:NotFound} repo_discover(tmpdir)
@@ -352,10 +352,10 @@ discover_test("test discover nested false") do tmpdir
 end
 
 discover_test("test discover true") do tmpdir
-    repo = repo_init(tmpdir; bare=true)
+    repo = repo_init(tmpdir, bare=true)
     root = repo_discover(tmpdir)
     try 
-        @test is_bare(root) == true
+        @test isbare(root) == true
         @test path(root) == path(repo)
     finally
         close(root)
@@ -364,10 +364,10 @@ discover_test("test discover true") do tmpdir
 end
 
 discover_test("test discover nested true") do tmpdir
-    repo = repo_init(tmpdir; bare=true)
+    repo = repo_init(tmpdir, bare=true)
     root = repo_discover(joinpath(tmpdir, "foo"))
     try 
-        @test is_bare(root) == true
+        @test isbare(root) == true
         @test path(root) == path(repo)
     finally
         close(root)
@@ -386,21 +386,21 @@ function repo_init_test(f::Function)
         teardown_dir(tmpdir)
     end
 end
-repo_init_test(f::Function, s::String) = repo_init_test(f)
+repo_init_test(f::Function, s::String) = (println(s); repo_init_test(f))
 
 repo_init_test("test init bare false") do tmpdir 
-    repo = repo_init(tmpdir; bare=false)
+    repo = repo_init(tmpdir, bare=false)
     try
-        @test is_bare(repo) == false
+        @test isbare(repo) == false
     finally
         close(repo)
     end
 end
 
 repo_init_test("test init bare true") do tmpdir
-    repo = repo_init(tmpdir; bare=true)
+    repo = repo_init(tmpdir, bare=true)
     try 
-        @test is_bare(repo) == true
+        @test isbare(repo) == true
     finally
         close
     end
@@ -409,7 +409,7 @@ end
 repo_init_test("test init non bare default") do tmpdir
     repo = repo_init(tmpdir)
     try
-        @test is_bare(repo) == false
+        @test isbare(repo) == false
     finally
         close(repo)
     end
@@ -442,7 +442,7 @@ end
 @repo_clone_test begin
     repo = repo_clone(source_path, tmppath, {:bare => true})
     try
-        @test is_bare(repo)
+        @test isbare(repo)
     catch
         close(repo)
     end
@@ -492,11 +492,11 @@ end
 #---------------------------
 # Repo Namespace Test
 #---------------------------
-sandboxed_test("testrepo.git" ) do test_repo, path
+sandboxed_test("testrepo.git", "test repo namespace") do test_repo, path
     @test namespace(test_repo) == nothing
 end
 
-sandboxed_test("testrepo.git" ) do test_repo, path
+sandboxed_test("testrepo.git", "test set repo namespace") do test_repo, path
     set_namespace!(test_repo, "foo")
     @test namespace(test_repo) == "foo"
 
@@ -510,7 +510,7 @@ sandboxed_test("testrepo.git" ) do test_repo, path
     @test namespace(test_repo) == nothing
 end
 
-sandboxed_test("testrepo.git") do test_repo, path
+sandboxed_test("testrepo.git", "test empty namespace") do test_repo, path
     set_namespace!(test_repo, "foo")
     @test isempty(ref_names(test_repo)) 
 end
@@ -518,78 +518,56 @@ end
 #---------------------------
 # Repo Push Test
 #---------------------------
-sandboxed_test("testrepo.git") do test_repo
-    remote_repo = test_repo
-    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
-    test_repo = clone(sbt, "testrepo.git", "testrepo")
-    config(remote_repo)["core.bare"] = "true"
+sandboxed_clone_test("testrepo.git", "test repo push") do test_repo, remote_repo, path
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    
     result = push!(test_repo, "origin", 
                 ["refs/heads/master",
                 "refs/heads/master:refs/heads/foobar", 
                 "refs/heads/unit_test"])
     @test isempty(result)
-
     @test (target(lookup_ref(remote_repo, "refs/heads/foobar"))
                 == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
     @test (target(lookup_ref(remote_repo, "refs/heads/unit_test"))
                 == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
 end
 
-sandboxed_test("testrepo.git", "test push to non bare raise err") do test_repo, path
-    remote_repo = test_repo
-    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
-    test_repo = clone(sbt, "testrepo.git", "testrepo")
-    config(remote_repo)["core.bare"] = "false"
+sandboxed_clone_test("testrepo.git", "test push to non bare raise err") do test_repo, remote_repo, path
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    #TODO: better error message
-    @test_throws ErrorException push!(test_repo, "origin", ["refs/heads/master"])
+    try
+        push!(test_repo, "origin", ["refs/heads/master"])
+        @test false 
+    except
+        @test true
+    end
 end
 
-sandboxed_test("testrepo.git", "test push to remote instance") do test_repo, path
-    remote_repo = test_repo
-    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
-    test_repo = clone(sbt, "testrepo.git", "testrepo")
-    config(remote_repo)["core.bare"] = "true"
-
+sandboxed_clone_test("testrepo.git", "test push to remote instance") do test_repo, remote_repo, path
     origin = lookup_remote(test_repo, "origin")
     result = push!(test_repo, origin, ["refs/heads/master"])
     @test isempty(result)
 end
 
-sandboxed_test("testrepo.git", "test push non ff raise error") do test_repo, path
-    remote_repo = test_repo
-    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
-    test_repo = clone(sbt, "testrepo.git", "testrepo")
-    config(remote_repo)["core.bare"] = "true"
+sandboxed_clone_test("testrepo.git", "test push non ff raise error") do test_repo, remote_repo, path
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-        #TODO: better error messages
     @test_throws ErrorException push!(test_repo, "origin",
                        ["refs/heads/unit_test:refs/heads/master"])
     @test (target(lookup_ref(remote_repo, "refs/heads/master"))
                 == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
 end
 
-sandboxed_test("testrepo.git", "test push non ff raise error") do test_repo, path
-    remote_repo = test_repo
-    source_path = joinpath(TESTDIR, "fixtures", "testrepo.git")
-    test_repo = clone(sbt, "testrepo.git", "testrepo")
-    config(remote_repo)["core.bare"] = "true"
+sandboxed_clone_test("testrepo.git", "test push non ff raise error") do test_repo, remote_repo, path
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-
     result = push!(test_repo, "origin", 
                    ["+refs/heads/unit_test:refs/heads/master"])
     @test isempty(result) 
-
     @test (target(lookup_ref(remote_repo, "refs/heads/master")) 
                == Oid("8496071c1b46c854b31185ea97743be6a8774479"))
 end
@@ -597,30 +575,29 @@ end
 #---------------------------
 # Repo Checkout Test
 #---------------------------
-
 sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, test_clone, test_bare
     checkout_tree!(test_repo, "refs/heads/dir", {:strategy => :force})
     set_head!(test_repo, "refs/heads/dir")
 
-    @test isfile(joinpath(repo_workdir(test_repo), "README"))
-    @test isfile(joinpath(repo_workdir(test_repo), "branch_file.txt"))
-    @test isfile(joinpath(repo_workdir(test_repo), "new.txt"))
-    @test isfile(joinpath(repo_workdir(test_repo), "a/b.txt"))
+    @test isfile(joinpath(workdir(test_repo), "README"))
+    @test isfile(joinpath(workdir(test_repo), "branch_file.txt"))
+    @test isfile(joinpath(workdir(test_repo), "new.txt"))
+    @test isfile(joinpath(workdir(test_repo), "a/b.txt"))
 
-    @test isfile(joinpath(repo_workdir(test_repo), "ab")) == false
+    @test isfile(joinpath(workdir(test_repo), "ab")) == false
 
     checkout_tree!(test_repo, "refs/heads/subtrees", {:strategy => :safe})
     set_head!(test_repo, "refs/heads/subtrees")
     
-    @test isfile(joinpath(repo_workdir(test_repo), "README"))
-    @test isfile(joinpath(repo_workdir(test_repo), "branch_file.txt"))
-    @test isfile(joinpath(repo_workdir(test_repo), "new.txt"))
-    @test isfile(joinpath(repo_workdir(test_repo), "ab/4.txt"))
-    @test isfile(joinpath(repo_workdir(test_repo), "ab/c/3.txt"))
-    @test isfile(joinpath(repo_workdir(test_repo), "ab/de/2.txt"))
-    @test isfile(joinpath(repo_workdir(test_repo), "ab/de/fgh/1.txt"))
+    @test isfile(joinpath(workdir(test_repo), "README"))
+    @test isfile(joinpath(workdir(test_repo), "branch_file.txt"))
+    @test isfile(joinpath(workdir(test_repo), "new.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab/4.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab/c/3.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab/de/2.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab/de/fgh/1.txt"))
     
-    @test isdir(joinpath(repo_workdir(test_repo), "a")) == false
+    @test isdir(joinpath(workdir(test_repo), "a")) == false
 end
 
 sandboxed_checkout_test("test checkout raises errors in callback") do test_repo, test_clone, test_bare
@@ -633,34 +610,24 @@ sandboxed_checkout_test("test checkout raises errors in callback") do test_repo,
     end
 end
 
-sandboxed_checkout_test() do test_repo, test_clone, test_bare
-    try
-        checkout_tree!(test_repo, "refs/heads/dir",
-                {:strategy => :force,
-                 :notify => (x...) -> error("fail")})
-    catch err
-        @test err.msg == "fail"
-    end
-end
-
 sandboxed_checkout_test("test checkout tree subdir") do test_repo, test_clone, test_bare
-    @test isfile(joinpath(repo_workdir(test_repo), "ab")) == false
+    @test isfile(joinpath(workdir(test_repo), "ab")) == false
     checkout_tree!(test_repo, "refs/heads/subtrees", 
                    {:strategy => :safe, :paths => "ab/de/"})
 
-    @test isdir(joinpath(repo_workdir(test_repo)), "ab")
-    @test isfile(joinpath(repo_workdir(test_repo)), "ab/de/2.txt")
-    @test isfile(joinpath(repo_workdir(test_repo)), "ab/de/fgh/1.txt")
+    @test isdir(joinpath(workdir(test_repo)), "ab")
+    @test isfile(joinpath(workdir(test_repo)), "ab/de/2.txt")
+    @test isfile(joinpath(workdir(test_repo)), "ab/de/fgh/1.txt")
 end
 
 sandboxed_checkout_test("test checkout tree subtree dir") do test_repo, test_clone, test_bare
-    @test isfile(joinpath(repo_workdir(test_repo), "de")) == false
+    @test isfile(joinpath(workdir(test_repo), "de")) == false
     checkout_tree!(test_repo, "refs/heads/subtrees:ab",
                    {:strategy => :safe, :paths => "de/"})
 
-    @test isdir(joinpath(repo_workdir(test_repo)), "de")
-    @test isfile(joinpath(repo_workdir(test_repo)), "de/2.txt")
-    @test isfile(joinpath(repo_workdir(test_repo)), "de/fgh/1.txt")
+    @test isdir(joinpath(workdir(test_repo)), "de")
+    @test isfile(joinpath(workdir(test_repo)), "de/2.txt")
+    @test isfile(joinpath(workdir(test_repo)), "de/fgh/1.txt")
 end
 
 sandboxed_checkout_test("test checkout tree raises with bare repo") do test_repo, test_clone, test_bare
@@ -687,10 +654,10 @@ end
 
 sandboxed_checkout_test("test checkout with head") do test_repo, test_clone, test_bare
     checkout!(test_repo, "dir", {:strategy => :force})
-    rm(joinpath(repo_workdir(test_repo), "README"))
+    rm(joinpath(workdir(test_repo), "README"))
 
     checkout!(test_repo, "HEAD", {:strategy => :force})
-    @test isfile(joinpath(repo_workdir(test_repo), "README"))
+    @test isfile(joinpath(workdir(test_repo), "README"))
     @test name(head(test_repo)) == "refs/heads/dir"
 end
 

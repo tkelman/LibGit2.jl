@@ -216,7 +216,7 @@ with_tmp_repo_access("test lookup non-existant ref") do test_repo, path
 end
 
 with_tmp_repo_access("test name ref") do test_repo, path
-   @test repo_workdir(test_repo) == path 
+   @test workdir(test_repo) == path 
    
    o = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
    ref = create_ref(test_repo, "refs/heads/unit_test", o)

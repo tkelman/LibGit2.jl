@@ -12,8 +12,8 @@ context() do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
     try
-        @test isdir(repo_workdir(repo)) 
-        idx = repo_index(repo)
+        @test isdir(workdir(repo)) 
+        idx = GitIndex(repo)
         @test isa(idx, GitIndex)
         add!(idx, "README")
         tree_id = write_tree!(idx)
@@ -154,7 +154,7 @@ context("test adding a path") do
     tmp_path = mktempdir()
     test_repo  = repo_init(tmp_path, bare=false)
     try
-        test_index1 = repo_index(test_repo)
+        test_index1 = GitIndex(test_repo)
         fh = open(joinpath(tmp_path, "test.txt"), "w")
         write(fh, "test content")
         close(fh)
@@ -173,7 +173,7 @@ context("test reloading index") do
     tmp_path = mktempdir()
     test_repo = repo_init(tmp_path, bare=false)
     try
-        index = repo_index(test_repo)
+        index = GitIndex(test_repo)
         fh = open(joinpath(tmp_path, "test.txt"), "w")
         write(fh, "test content")
         close(fh)
@@ -202,7 +202,7 @@ end
 with_tmp_repo_access("test idempotent read write") do test_repo, path
     head_id = lookup_ref(test_repo, "HEAD") |> resolve |> target
     tree = GitTree(lookup(test_repo, head_id))
-    index = repo_index(test_repo)
+    index = GitIndex(test_repo)
     read_tree!(index, tree)
     
     index_tree_id = write_tree!(index)
@@ -214,7 +214,7 @@ with_tmp_repo_access("test build tree from index") do test_repo, path
     head_id = lookup_ref(test_repo,
                 "refs/remotes/origin/packed") |> resolve |> target
     tree = GitTree(test_repo[head_id])
-    index = repo_index(test_repo)
+    index = GitIndex(test_repo)
     read_tree!(index, tree)
     remove!(index, "second.txt")
 
@@ -230,7 +230,7 @@ end
 # test add all lifecycle
 sandboxed_test("testrepo.git") do test_repo, path
     test_repo = repo_init(joinpath(path, "add-all"))
-    cd(repo_workdir(test_repo)) do
+    cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
             write(fh, "a file")
         end
@@ -250,7 +250,7 @@ sandboxed_test("testrepo.git") do test_repo, path
             write(fh, "*.foo\n")
         end
 
-        index = repo_index(test_repo)
+        index = GitIndex(test_repo)
         
         add_all!(index, "file.*")
         @test index["file.foo"]  == nothing
@@ -271,7 +271,7 @@ end
 # test update all
 sandboxed_test("testrepo.git") do test_repo, path
     test_repo = repo_init(joinpath(path, "add-all"))
-    cd(repo_workdir(test_repo)) do
+    cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
             write(fh, "a file")
         end
@@ -291,7 +291,7 @@ sandboxed_test("testrepo.git") do test_repo, path
             write(fh, "*.foo\n")
         end
 
-        index = repo_index(test_repo)
+        index = GitIndex(test_repo)
         add_all!(index, "file.*")
 
         open("file.bar", "w") do fh
@@ -315,7 +315,7 @@ end
 # test remove all
 sandboxed_test("testrepo.git") do test_repo, path
     test_repo = repo_init(joinpath(path, "add-all"))
-    cd(repo_workdir(test_repo)) do
+    cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
             write(fh, "a file")
         end
@@ -335,7 +335,7 @@ sandboxed_test("testrepo.git") do test_repo, path
             write(fh, "*.foo\n")
         end
 
-        index = repo_index(test_repo)
+        index = GitIndex(test_repo)
         
         add_all!(index, "file.*")
         remove_all!(index, "*.zzz")

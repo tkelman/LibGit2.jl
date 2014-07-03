@@ -44,13 +44,13 @@ let
         ccall((:git_tree_entry_filemode, :libgit2), Cint, (Ptr{Void},), ptr)
     end
 
-    #TODO: ownership of tree entry pointer 
     function GitTreeEntry(ptr::Ptr{Void}, owns::Bool=false)
         @assert ptr != C_NULL
         ty   = tree_entry_type(ptr)
         name = tree_entry_name(ptr)
         id   = tree_entry_oid(ptr)
         fm   = tree_entry_filemode(ptr)
+        owns && ccall((:git_tree_entry_free, :libgit2), Void, (Ptr{Void},), ptr)
         return GitTreeEntry{ty}(name, id, fm, owns)
     end
 end
@@ -58,35 +58,30 @@ end
 function entry_byname(t::GitTree, filename::String)
     eptr = ccall((:git_tree_entry_byname, :libgit2), Ptr{Void},
                  (Ptr{Void}, Ptr{Uint8}), t, filename)
-    if eptr == C_NULL
-        return nothing
-    end
-    return GitTreeEntry(eptr)
+    return eptr == C_NULL ? nothing : 
+                            GitTreeEntry(eptr, false)
 end
 
 function entry_bypath(t::GitTree, path::String)
-    eptr = Ptr{Void}[0]
+    entry_ptr = Ptr{Void}[0]
     @check ccall((:git_tree_entry_bypath, :libgit2), Cint,
-                  (Ptr{Ptr{Void}}, Ptr{Uint8}), eptr, path)
-    return GitTreeEntry(eptr[1], true)
+                  (Ptr{Ptr{Void}}, Ptr{Uint8}), entry_ptr, path)
+    return entry_ptr[1] == C_NULL ? nothing :
+                                    GitTreeEntry(entry_ptr[1], true)
 end
 
 function entry_byindex(t::GitTree, idx::Integer)
-    eptr = ccall((:git_tree_entry_byindex, :libgit2), Ptr{Void},
-                 (Ptr{Void}, Csize_t), t, idx - 1) 
-    if eptr == C_NULL
-        return nothing
-    end
-    return GitTreeEntry(eptr)
+    entry_ptr = ccall((:git_tree_entry_byindex, :libgit2), Ptr{Void},
+                      (Ptr{Void}, Csize_t), t, idx - 1) 
+    return entry_ptr == C_NULL ? nothing :
+                                 GitTreeEntry(entry_ptr, false)
 end
 
 function entry_byid(t::GitTree, id::Oid)
-    eptr = ccall((:git_tree_entry_byid, :libgit2), Ptr{Void},
-                 (Ptr{Void}, Ptr{Oid}), t, &id)
-    if eptr == C_NULL
-        return nothing
-    end
-    return GitTreeEntry(eptr)
+    entry_ptr = ccall((:git_tree_entry_byid, :libgit2), Ptr{Void},
+                      (Ptr{Void}, Ptr{Oid}), t, &id)
+    return entry_ptr == C_NULL ? nothing :
+                                 GitTreeEntry(entry_ptr, false)
 end
 
 Base.getindex(t::GitTree, entry::Integer) = entry_byindex(t, entry)
