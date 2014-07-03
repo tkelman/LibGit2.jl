@@ -8,7 +8,7 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-context() do
+context("test lookup git objects") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
     try
@@ -54,7 +54,7 @@ with_repo_access() do test_repo, path
    
    @test LibGit2.path(test_repo) == path
    
-   context("lookup any object type") do 
+   context("test lookup any object type") do 
        blob = test_repo[Oid("fa49b077972391ad58037050f2a75f74e3671e92")]
        @test isa(blob, GitBlob)
 

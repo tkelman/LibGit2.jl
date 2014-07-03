@@ -1,4 +1,4 @@
-with_repo_access("lookup raises error if object type does not match") do test_repo, path
+with_repo_access("test lookup raises error if object type does not match") do test_repo, path
     # blob
     @test_throws LibGitError{:Invalid,:NotFound} lookup_tree(test_repo, Oid("fa49b077972391ad58037050f2a75f74e3671e92"))
     # commit
@@ -11,7 +11,7 @@ with_repo_access() do test_repo, path
     id = Oid("c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     test_tree = lookup_tree(test_repo, id)
 
-    context("test_read_tree_data") do 
+    context("test read tree data") do 
         @test id == Oid(test_tree)
         @test isa(test_tree, GitTree)
         @test length(test_tree) == 3
@@ -80,7 +80,7 @@ with_repo_access() do test_repo, path
 end
 
 #TODO: treebuilder api is akward
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access("test tree builder") do test_repo, path
   builder = GitTreeBuilder(test_repo)
   insert!(builder, "README.txt", 
                    Oid("1385f264afb75a56a5bec74243be9b367ba4ca08"),

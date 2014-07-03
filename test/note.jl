@@ -27,7 +27,7 @@ with_repo_access() do test_repo, path
         @test notes(obj, "refs/notes/missing") == nothing
     end
 
-    context("iterate over notes") do 
+    context("test iterate over notes") do 
         for (note_blob, ann_obj) in iter_notes(test_repo, "refs/notes/commits")
             @test content(note_blob) == "note text\n"
             @test Oid(ann_obj) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")

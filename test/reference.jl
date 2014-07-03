@@ -8,7 +8,7 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-context() do
+context("test create / lookup ref") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
     try
@@ -94,7 +94,7 @@ end
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
 with_repo_access() do test_repo, path
-    context("test_reference validity") do 
+    context("test reference validity") do 
         valid = "refs/foobar"
         invalid = "refs/nope^*"
         @test isvalid_ref(valid) == true
