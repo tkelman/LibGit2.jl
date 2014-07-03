@@ -1,5 +1,5 @@
 # test 2alt
-sandboxed_test("merge-resolve") do test_repo, path
+sandboxed_test("merge-resolve", "test merge no conflict") do test_repo, path
     ours   = rev_parse(test_repo, "trivial-2alt")
     theirs = rev_parse(test_repo, "trivial-2alt-branch")
     base   = rev_parse(test_repo, merge_base(test_repo, ours, theirs))
@@ -11,7 +11,7 @@ sandboxed_test("merge-resolve") do test_repo, path
 end
 
 # test_4
-sandboxed_test("merge-resolve") do test_repo, path
+sandboxed_test("merge-resolve", "test merge has conflicts") do test_repo, path
     ours   = rev_parse(test_repo, "trivial-4")
     theirs = rev_parse(test_repo, "trivial-4-branch")
     base   = rev_parse(test_repo, merge_base(test_repo, ours, theirs))
