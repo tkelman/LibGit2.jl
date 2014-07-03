@@ -1,5 +1,5 @@
 # test_to_s
-sandboxed_test("diff") do test_repo, test_repo_path
+sandboxed_test("diff", "test patch") do test_repo, test_repo_path
     t1 = GitTree(test_repo[Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")])
     t2 = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d  = diff(test_repo, t1, t2, {:context_lines => 0})
