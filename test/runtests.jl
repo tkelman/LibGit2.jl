@@ -21,7 +21,7 @@ testnames = ["oid",
              "diff", 
              "note", 
              "merge", 
-             #"remote"
+             "remote"
              ]
 
 tests = isempty(ARGS) || ARGS == ["all"] ? testnames : ARGS

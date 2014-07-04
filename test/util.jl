@@ -17,7 +17,7 @@ function remote_transport_test(f::Function)
         f(test_repo, test_remote)
     finally
         close(test_repo)
-        run($(`rm -r -f $tmp_dir`))
+        run(`rm -r -f $tmp_dir`)
     end
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))

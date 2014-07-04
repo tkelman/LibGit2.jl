@@ -4,7 +4,7 @@ test_repo_path = joinpath(pwd(), "TestLibGit2")
 function cleanup_repo(path)
     p = abspath(path)
     if isdir(p)
-        run(`rm -f -R $p`)
+        run(`rm -rf $p`)
     end
 end
 
@@ -642,8 +642,8 @@ sandboxed_checkout_test("test checkout tree works with bare repo and target dir"
         @test isfile(joinpath(d, "README"))
         @test isfile(joinpath(d, "new.txt"))
     finally
-       # XXX: clean up here
-       # run(`rm -r -f $d`)
+        # Operation not permitted error
+        #rm(d, recursive=true)
     end
 end
 

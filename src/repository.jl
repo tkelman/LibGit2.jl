@@ -252,12 +252,13 @@ function remotes(r::GitRepo)
 end
 
 function remote_names(r::GitRepo)
-    rs = StrArrayStruct()
+    sa_ptr = [StrArrayStruct()]
     @check ccall((:git_remote_list, :libgit2), Cint,
-                  (Ptr{StrArrayStruct}, Ptr{Void}), &rs, r)
-    ns = Array(UTF8String, rs.count)
-    for i in 1:rs.count
-        ns[i] = utf8(bytestring(unsafe_load(rs.strings, i)))
+                  (Ptr{StrArrayStruct}, Ptr{Void}), sa_ptr, r)
+    sa = sa_ptr[1]
+    ns = Array(UTF8String, sa.count)
+    for i in 1:sa.count
+        ns[i] = utf8(bytestring(unsafe_load(sa.strings, i)))
     end
     return ns
 end
@@ -638,10 +639,11 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
     return T(obj_ptr[1]) 
 end
 
-lookup(r::GitRepo, id::Oid)   = lookup(GitAnyObject, r, id)
-lookup_tree(r::GitRepo, id)   = lookup(GitTree, r, id)
-lookup_blob(r::GitRepo, id)   = lookup(GitBlob, r, id)
-lookup_commit(r::GitRepo, id) = lookup(GitCommit, r, id)
+lookup(r::GitRepo, id::String) = lookup(GitAnyObject, r, id)
+lookup(r::GitRepo, id::Oid)    = lookup(GitAnyObject, r, id)
+lookup_tree(r::GitRepo, id)    = lookup(GitTree, r, id)
+lookup_blob(r::GitRepo, id)    = lookup(GitBlob, r, id)
+lookup_commit(r::GitRepo, id)  = lookup(GitCommit, r, id)
 
 function lookup_ref(r::GitRepo, refname::String)
     ref_ptr = Ptr{Void}[0]

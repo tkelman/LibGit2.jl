@@ -1,4 +1,4 @@
-export name, isconnected, disconnect, url, set_url!, 
+export name, connected, disconnected, disconnect, url, set_url!, 
        push_url, set_push_url!, fetch_refspecs, push_refspecs, 
        add_fetch!, add_push!, clear_refspecs!, save!, rename!,
        update_tips!
@@ -23,9 +23,8 @@ function name(r::GitRemote)
     return name_ptr != C_NULL ? bytestring(name_ptr) : nothing
 end
 
-function isconnected(r::GitRemote)
-    return bool(ccall((:git_remote_connected, :libgit2), Cint, (Ptr{Void},), r))
-end
+connected(r::GitRemote) = bool(ccall((:git_remote_connected, :libgit2), Cint, (Ptr{Void},), r))
+disconnected(r::GitRemote) = !connected(r)
 
 function disconnect(r::GitRemote)
     @check ccall((:git_remote_disconnect, :libgit2), Cint, (Ptr{Void},), r)
@@ -117,39 +116,42 @@ function save!(r::GitRemote)
     return r
 end
 
-function cb_remote_rename(refspec_name::Ptr{Uint8}, payload::Ptr{Void})
-    errs = unsafe_pointer_to_objref(payload)::Array{UTF8String, 1}
-    push!(errs, utf8(bytestring(refspec_name)))
+function cb_remote_rename(problem_refspec::Ptr{Uint8}, payload::Ptr{Void})
+    errs = unsafe_pointer_to_objref(payload)::Vector{UTF8String}
+    @show bytestring(problem_refspec)
+    push!(errs, utf8(bytestring(problem_refspec)))
     return api.GIT_OK
 end
 
 const c_cb_remote_rename = cfunction(cb_remote_rename, Cint, (Ptr{Uint8}, Ptr{Void}))
 
-function rename!(r::GitRemote, name::String) 
+function rename!(r::GitRemote, newname::String) 
     errs = UTF8String[]
     @check ccall((:git_remote_rename, :libgit2), Cint,
-                  (Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Any), r, name, c_cb_remote_rename, &errs)
+                  (Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Void}),
+                  r, newname, c_cb_remote_rename, &errs)
     return length(errs) == 0 ? nothing : errs
 end
 
 type RemoteHead
-    remoteid::Oid
     islocal::Bool
-    localid::Union(Nothing, Oid)
+    id::Oid
+    lid::MaybeOid
     name::ByteString
 end
 
-RemoteHead(struct::RemoteHeadStruct) = 
-    RemoteHead(bool(struct.islocal),
-               struct.id,
-               iszero(struct.lid)? nothing : lid,
-               struct.name == C_NULL ? "" : bytestring(struct.name))
+RemoteHead(struct::RemoteHeadStruct) =  begin
+    id  = Oid(string(struct.id))
+    lid = Oid(string(struct.lid))
+    name = struct.name != C_NULL ? "" : bytestring(struct.name)
+    return RemoteHead(bool(struct.islocal), id, iszero(lid) ? nothing : lid, name)
+end
 
-Base.ls(r::GitRemote) = begin
+ls(r::GitRemote) = begin
     nheads = Csize_t[0]
     head_ptrs = Ptr{Ptr{RemoteHeadStruct}}[0]
     @check ccall((:git_remote_ls, :libgit2), Cint,
-                 (Ptr{Ptr{RemoteHeadStruct}}, Ptr{Csize_t}, Ptr{Void}), head_ptrs, nheads, r)
+                 (Ptr{Ptr{Ptr{RemoteHeadStruct}}}, Ptr{Csize_t}, Ptr{Void}), head_ptrs, nheads, r)
     head_ptr = head_ptrs[1]
     remote_heads = RemoteHead[]
     for i in 1:nheads[1]

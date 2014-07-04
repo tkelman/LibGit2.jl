@@ -76,7 +76,7 @@ end
 macro check(git_func)
     quote
         local err::Cint
-        err = $(esc(git_func))
+        err = $(esc(git_func::Expr))
         if err < 0
             throw(LibGitError(err))
         end
