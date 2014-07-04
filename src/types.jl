@@ -13,14 +13,13 @@ end
 TimeStruct() = TimeStruct(zero(GitTimeT), zero(Cint))
 
 # an action signature (committers, taggers, etc)
-
 immutable SignatureStruct
     name::Ptr{Uint8}  # full name of the author
     email::Ptr{Uint8} # email of the author
     when::TimeStruct  # time when the action happened
 end
-SignatureStruct() = SignatureStruct(zero(Ptr{Cchar}),
-                                    zero(Ptr{Cchar}),
+SignatureStruct() = SignatureStruct(zero(Ptr{Uint8}),
+                                    zero(Ptr{Uint8}),
                                     TimeStruct())
 immutable BufferStruct
     ptr::Ptr{Uint8}
@@ -50,7 +49,7 @@ TransferProgressStruct() = TransferProgressStruct(zero(Cuint),
 
 # pointers to string data must not be valid references
 # for the entire lifetime of the ccall
-type StrArrayStruct
+immutable StrArrayStruct
    strings::Ptr{Ptr{Uint8}}
    count::Csize_t
 end
@@ -95,7 +94,7 @@ end
 
 # git diff option struct
 immutable DiffOptionsStruct
-    version::Cint
+    version::Cuint
     flags::Uint32 
 
     # options controlling which files are in the diff
@@ -112,7 +111,6 @@ immutable DiffOptionsStruct
     old_prefix::Ptr{Uint8}
     new_prefix::Ptr{Uint8}
 end 
-
 DiffOptionsStruct() = DiffOptionsStruct(api.DIFF_OPTIONS_VERSION,
                                         zero(Uint32),
                                         api.SUBMODULE_IGNORE_DEFAULT, 
@@ -123,8 +121,8 @@ DiffOptionsStruct() = DiffOptionsStruct(api.DIFF_OPTIONS_VERSION,
                                         zero(Uint16),
                                         zero(Uint16),
                                         zero(Coff_t),
-                                        zero(Ptr{Void}),
-                                        zero(Ptr{Void}))
+                                        zero(Ptr{Uint8}),
+                                        zero(Ptr{Uint8}))
 immutable RemoteHeadStruct
     islocal::Cint
     id::Oid
@@ -158,8 +156,6 @@ free!(r::GitRepo) = begin
 end
 
 Base.convert(::Type{Ptr{Void}}, r::GitRepo) = r.ptr
-#TODO: REMOVE
-Base.pointer(r::GitRepo) = r.ptr
 
 # -------------
 # Git Objects
