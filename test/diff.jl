@@ -33,10 +33,10 @@ sandboxed_test("attr", "test with oid string") do test_repo, path
   @test sum(x -> x.status == :modified? 1 : 0, ds) == 2
 
   @test length(hs) == 5
-  @show (7 + 24 + 1 + 6 + 6) == length(ls)
-  @show sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
-  @show sum(x -> x.line_origin == :addition? 1 : 0, ls) == (24 + 1 + 5 + 5)
-  @show sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1)
+  @test (7 + 24 + 1 + 6 + 6) == length(ls)
+  @test  sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
+  @test  sum(x -> x.line_origin == :addition? 1 : 0, ls) == (24 + 1 + 5 + 5)
+  @test  sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1)
 end
 
 #= TODO:

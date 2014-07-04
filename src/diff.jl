@@ -244,7 +244,7 @@ end
 Base.diff(repo::GitRepo, c::GitCommit, opts=nothing) = begin
     ps = parents(c)
     if length(ps) > 0
-        return diff(repo, GitTree(c), GitTree(p[1]), opts)
+        return diff(repo, GitTree(c), GitTree(ps[1]), opts)
     else
         return diff(repo, GitTree(c), nothing, opts)
     end

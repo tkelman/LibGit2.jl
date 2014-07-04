@@ -18,7 +18,7 @@ testnames = ["oid",
              "repository_pack", 
              "reference", 
              #"odb", 
-             #"diff", 
+             "diff", 
              "note", 
              "merge", 
              #"remote"
