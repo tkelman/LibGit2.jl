@@ -164,9 +164,9 @@ function hunks(p::GitPatch)
 end
 
 function line_origin_to_symbol(o::Cchar)
-    o == api.DIFF_LINE_CONTEXT  && return :context
-    o == api.DIFF_LINE_ADDITION && return :addition
-    o == api.DIFF_LINE_DELETION && return :deletion
+    o == api.DIFF_LINE_CONTEXT   && return :context
+    o == api.DIFF_LINE_ADDITION  && return :addition
+    o == api.DIFF_LINE_DELETION  && return :deletion
     o == api.DIFF_LINE_ADD_EOFNL && return :eof_newline_added
     o == api.DIFF_LINE_DEL_EOFNL && return :eof_newline_removed
     o == api.DIFF_LINE_CONTEXT_EOFNL && return :eof_no_newline
@@ -183,7 +183,7 @@ type DiffLine
 
     function DiffLine(h::DiffHunk, ptr::Ptr{DiffLineStruct})
         @assert ptr != C_NULL
-        l = unsafe_load(ptr)
+        l = unsafe_load(ptr)::DiffLineStruct
         c = Array(Uint8, l.content_len)
         for i in 1:l.content_len
             c[i] = unsafe_load(l.content, i)
