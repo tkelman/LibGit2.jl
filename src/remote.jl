@@ -74,23 +74,25 @@ function set_push_url!(r::GitRemote, url::String)
 end
 
 function fetch_refspecs(r::GitRemote) 
-    sarr = StrArrayStruct()
+    sa_ptr = [StrArrayStruct()]
     @check ccall((:git_remote_get_fetch_refspecs, :libgit2), Cint,
-                  (Ptr{StrArrayStruct}, Ptr{Void}), &sarr, r)
-    refs = Array(UTF8String, sarr.count)
-    for i in 1:sarr.count
-        refs[i] = utf8(bytestring(unsafe_load(sarr.strings, i)))
+                  (Ptr{StrArrayStruct}, Ptr{Void}), sa_ptr, r)
+    sa = sa_ptr[1]
+    refs = Array(UTF8String, sa.count)
+    for i in 1:sa.count
+        refs[i] = utf8(bytestring(unsafe_load(sa.strings, i)))
     end
     return refs
 end
 
 function push_refspecs(r::GitRemote)
-    sarr = StrArrayStruct()
+    sa_ptr = [StrArrayStruct()]
     @check ccall((:git_remote_get_push_refspecs, :libgit2), Cint,
-                  (Ptr{StrArrayStruct}, Ptr{Void}), &sarr, r)
-    refs = Array(UTF8String, sarr.count)
-    for i in 1:sarr.count
-        refs[i] = utf8(bytestring(unsafe_load(sarr.strings, i)))
+                  (Ptr{StrArrayStruct}, Ptr{Void}), sa_ptr, r)
+    sa = sa_ptr[1]
+    refs = Array(UTF8String, sa.count)
+    for i in 1:sa.count
+        refs[i] = utf8(bytestring(unsafe_load(sa.strings, i)))
     end
     return refs
 end
@@ -106,7 +108,7 @@ function add_fetch!(r::GitRemote, ref::String)
 end
 
 function clear_refspecs!(r::GitRemote)
-    api.git_remote_clear_refspecs(r.ptr)
+    ccall((:git_remote_clear_refspecs, :libgit2), Void, (Ptr{Void},), r)
     return r
 end
 
@@ -137,21 +139,22 @@ type RemoteHead
     name::ByteString
 end
 
-RemoteHead(struct::RemoteHeadStruct) = RemoteHead(bool(ghead.islocal),
-                                                  struct.id,
-                                                  iszero(struct.lid)? nothing : lid,
-                                                  struct.name == C_NULL ? "" : bytestring(struct.name))
+RemoteHead(struct::RemoteHeadStruct) = 
+    RemoteHead(bool(struct.islocal),
+               struct.id,
+               iszero(struct.lid)? nothing : lid,
+               struct.name == C_NULL ? "" : bytestring(struct.name))
 
 Base.ls(r::GitRemote) = begin
     nheads = Csize_t[0]
-    head_ptrs = Array(Ptr{Ptr{RemoteHeadStruct}}, 1)
+    head_ptrs = Ptr{Ptr{RemoteHeadStruct}}[0]
     @check ccall((:git_remote_ls, :libgit2), Cint,
                  (Ptr{Ptr{RemoteHeadStruct}}, Ptr{Csize_t}, Ptr{Void}), head_ptrs, nheads, r)
     head_ptr = head_ptrs[1]
     remote_heads = RemoteHead[]
     for i in 1:nheads[1]
-        ghead = unsafe_load(unsafe_load(head_ptr, i))::RemoteHeadStruct
-        push!(remote_heads, RemoteHead(ghead))
+        struct = unsafe_load(unsafe_load(head_ptr, i))::RemoteHeadStruct
+        push!(remote_heads, RemoteHead(struct))
     end
     return remote_heads
 end
@@ -161,9 +164,11 @@ Base.download(r::GitRemote) = begin
     return r
 end
 
-#TODO: this should accept a signature and message
-function update_tips!(r::GitRemote)
+function update_tips!(r::GitRemote,
+                     sig::MaybeSignature=nothing,
+                     logmsg::MaybeString=nothing)
     @check ccall((:git_remote_update_tips, :libgit2), Cint,
-                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), r, C_NULL, C_NULL)
+                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), 
+                 r, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r
 end
