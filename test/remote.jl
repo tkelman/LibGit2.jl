@@ -144,7 +144,7 @@ with_tmp_repo_access("test remote rename exists") do test_repo, path
 end
 
 with_tmp_repo_access("test remote rename error callback") do test_repo, path
-    config(test_repo)["remote.origin.fetch"]  = "+refs/*:refs/*"
+    GitConfig(test_repo)["remote.origin.fetch"]  = "+refs/*:refs/*"
     remote = lookup_remote(test_repo, "origin")
     @test ["+refs/*:refs/*"] == rename!(remote, "test_remote")
 end

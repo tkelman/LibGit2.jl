@@ -294,7 +294,7 @@ with_tmp_repo_access("test ref log with config") do test_repo, path
     testname = "Julia User"
     testemail = "user@julia.com"
     
-    cfg = config(test_repo)
+    cfg = GitConfig(test_repo)
     cfg["user.name"] = testname
     cfg["user.email"] = testemail
 

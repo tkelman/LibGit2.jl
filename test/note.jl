@@ -66,8 +66,8 @@ end
 with_tmp_repo_access("test create note without signature") do test_repo, path
     testname = "Julia"
     testemail = "julia@julia.com"
-    config(test_repo)["user.name"] = testname
-    config(test_repo)["user.email"] = testemail
+    GitConfig(test_repo)["user.name"] = testname
+    GitConfig(test_repo)["user.email"] = testemail
 
     id = Oid("8496071c1b46c854b31185ea97743be6a8774479")
     msg ="This is the note message\n\nThis note is created from Rugged"
@@ -122,8 +122,8 @@ end
 with_tmp_repo_access("test remote without signature") do test_repo, path
     testname = "Julia"
     testemail = "rugged@example.com"
-    config(test_repo)["user.name"] = testname
-    config(test_repo)["user.email"] = testemail
+    GitConfig(test_repo)["user.name"] = testname
+    GitConfig(test_repo)["user.email"] = testemail
     id = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
 
     msg ="This is the note message\n\nThis note is created from Rugged"

@@ -48,8 +48,8 @@ end
 with_tmp_repo_access("test writing a tag without a signature") do test_repo, path
     testname = "Julia"
     testemail = "julia@julia.com"
-    config(test_repo)["user.name"] = testname
-    config(test_repo)["user.email"] = testemail
+    GitConfig(test_repo)["user.name"] = testname
+    GitConfig(test_repo)["user.email"] = testemail
     id = tag!(test_repo, 
               name="tag", 
               message="test tag message\n",

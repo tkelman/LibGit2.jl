@@ -56,7 +56,7 @@ context("test creating repository") do
             # empty repo has no references
             @test references(repo) == nothing
             
-            @test isa(config(repo), GitConfig)
+            @test isa(GitConfig(repo), GitConfig)
             @test isa(GitTreeBuilder(repo), GitTreeBuilder)
         finally
             close(repo)
@@ -319,8 +319,8 @@ with_tmp_repo_access("test shallow repo write") do test_repo, path
     context("test default signature") do
         testname = "Test User"
         testemail = "test@example.com"
-        config(test_repo)["user.name"] = testname
-        config(test_repo)["user.email"] = testemail
+        GitConfig(test_repo)["user.name"] = testname
+        GitConfig(test_repo)["user.email"] = testemail
         @assert isa(default_signature(test_repo), Signature)
         @test testname == (default_signature(test_repo) |> name)
         @test testemail == (default_signature(test_repo) |> email)
