@@ -42,13 +42,12 @@ Base.getindex(c::GitConfig, key::String) = lookup(String, c, key)
 Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::String) = set!(T, c, key, v)
 
 Base.delete!(c::GitConfig, key::String) = begin
-    err = ccall((:git_config_delete_entry, :libgit2), Cint, 
-                (Ptr{Void}, Ptr{Uint8}), c, key)
+    err = ccall((:git_config_delete_entry, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), c, key)
     return err == GitErrorConst.ENOTFOUND ? false : true
 end
 
 function cb_each_key(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
-    entry = unsafe_load(entry_ptr) 
+    entry = unsafe_load(entry_ptr)::ConfigEntryStruct
     n = bytestring(entry.name)
     produce(n)
     return GitErrorConst.GIT_OK
@@ -109,7 +108,7 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
     @check ccall((:git_config_get_bool, :libgit2), Cint,
                  (Ptr{Cint}, Ptr{Void}, Ptr{Uint8}), out, c, name)
     if err == GitErrorConst.GIT_OK
-        return out[1] > 0 ? true : false
+        return bool(out[1])
     elseif err == GitErrorConst.ENOTFOUND
         return nothing
     else
@@ -118,7 +117,6 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
 end
 
 function set!(::Type{Bool}, c::GitConfig, name::String, value::Bool)
-    cval = value ? 1 : 0
     @check ccall((:git_config_set_bool, :libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Cint), c, name, value)
     return c
