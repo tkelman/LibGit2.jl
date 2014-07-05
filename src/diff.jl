@@ -76,6 +76,14 @@ type DiffFile
     mode::Int
 end
 
+DiffFile(struct::DiffFileStruct) = begin
+    DiffFile(Oid(string(struct.id)),
+             bytestring(struct.path),
+             struct.size, 
+             struct.flags,
+             struct.mode)
+end
+    
 function delta_status_symbol(s::Integer)
     s == GitConst.DELTA_UNMODIFIED && return :unmodified
     s == GitConst.DELTA_ADDED      && return :added

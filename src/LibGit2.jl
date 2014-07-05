@@ -8,6 +8,7 @@ else
     error("LibGit2 not properly installed. Please run Pkg.build(\"LibGit2\")")
 end
 =#
+
 function __init__()
     err = ccall((:git_threads_init, :libgit2), Cint, ())
     if err != zero(Cint)
@@ -31,7 +32,6 @@ end
 
 const __threads_handle = LibGitHandle()
 
-include("api.jl")
 include("constants.jl")
 include("error.jl")
 include("oid.jl")

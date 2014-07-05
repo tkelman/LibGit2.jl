@@ -130,6 +130,50 @@ immutable RemoteHeadStruct
     name::Ptr{Uint8}
 end
 
+immutable MergeTreeOptsStruct
+    version::Cuint
+    flags::Cint
+    rename_threshold::Cuint
+    target_limit::Cuint
+    metric::Ptr{Void}
+    automerge_flags::Cint
+end
+
+MergeTreeOptsStruct() = MergeTreeOptsStruct(one(Cuint),
+                                            zero(Cint),
+                                            zero(Cuint),
+                                            zero(Cuint),
+                                            zero(Ptr{Void}),
+                                            zero(Cint))
+                                            
+immutable DiffFileStruct
+    id::Oid
+    path::Ptr{Uint8}
+    size::Coff_t
+    flags::Uint32
+    mode::Uint16
+end
+
+immutable CheckoutOptionsStruct
+    version::Cuint
+    checkout_strategy::Cuint
+    disable_filters::Cint
+    dir_mode::Cuint
+    file_mode::Cuint
+    file_open_flags::Cint
+    notify_flags::Cuint
+    notify_cb::Ptr{Void}
+    notify_payload::Ptr{Void}
+    progress_cb::Ptr{Void}
+    progress_payload::Ptr{Void}
+    paths::StrArrayStruct
+    baseline::Ptr{Void}
+    target_directory::Ptr{Uint8}
+    ancestor_label::Ptr{Uint8}
+    our_label::Ptr{Uint8}
+    their_label::Ptr{Uint8}
+end
+
 # --------------
 # Git Repository
 # --------------
