@@ -1,34 +1,24 @@
 export message, GitNote 
 
 type GitNote
-    msg::ByteString
     id::Oid
+    msg::UTF8String
 end
 
-let
-    function git_note_message(nptr::Ptr{Void})
-        msgptr = ccall((:git_note_message, :libgit2), Ptr{Uint8}, (Ptr{Void},), nptr)
-        return bytestring(msgptr)
-    end
-
-    function git_note_oid(nptr::Ptr{Void})
-        idptr = ccall((:git_note_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), nptr)
-        return Oid(idptr)
-    end
-
-    function GitNote(ptr::Ptr{Void})
-        @assert ptr != C_NULL
-        return GitNote(git_note_message(ptr),
-                       git_note_oid(ptr))
-    end
+GitNote(ptr::Ptr{Void}) = begin
+    @assert ptr != C_NULL
+    id  = Oid(ccall((:git_note_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), nptr))
+    msg = utf8(bytestring(ccall((:git_note_message, :libgit2), Ptr{Uint8}, (Ptr{Void},), nptr)))
+    return GitNote(id, msg)
+                   
 end
 
 Oid(n::GitNote) = n.id
+
 message(n::GitNote) = n.msg
+notes(obj::GitObject, ref::MaybeString=nothing) = lookup_note(obj, ref)
 
-notes(obj::GitObject, ref::Union(Nothing, String)=nothing) = lookup_note(obj, ref)
-
-function lookup_note(obj::GitObject, ref::Union(Nothing, String)=nothing)
+function lookup_note(obj::GitObject, ref::MaybeString=nothing)
     oid = Oid(obj)
     note_ptr = Ptr{Void}[0]
     repo_ptr = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
@@ -38,11 +28,12 @@ function lookup_note(obj::GitObject, ref::Union(Nothing, String)=nothing)
     if err == GitErrorConst.ENOTFOUND
         return nothing
     elseif err != GitErrorConst.GIT_OK
+        if note_ptr[1] != C_NULL
+            ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+        end
         throw(LibGitError(err))
     end
     n = GitNote(note_ptr[1])
-    #api.git_note_free(note_ptr[1])
+    ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
     return n
 end
-
-
