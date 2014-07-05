@@ -1,8 +1,10 @@
-export GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
+export Signature, GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
        GitTree, GitReference, GitBranch, GitRemote, Sym
 
 typealias GitOffT Int64
 typealias GitTimeT Int64
+
+typealias MaybeString Union(Nothing, String)
 
 # time in a signature
 
@@ -172,6 +174,17 @@ immutable CheckoutOptionsStruct
     ancestor_label::Ptr{Uint8}
     our_label::Ptr{Uint8}
     their_label::Ptr{Uint8}
+end
+
+# --------------
+# Git Signature
+# --------------
+
+type Signature
+    name::UTF8String
+    email::UTF8String
+    time::Int32
+    time_offset::Int32
 end
 
 # --------------

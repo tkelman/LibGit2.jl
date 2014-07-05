@@ -16,11 +16,9 @@ context("test create / lookup ref") do
         
         _ = create_ref(repo, "refs/tags/tree", tid, force=true)
         tag = lookup_ref(repo, "refs/tags/tree")
-        @test git_reftype(tag) == 1 #api.REF_OID 
         @test isa(tag, GitReference{Oid})
         
         ref = lookup_ref(repo, "HEAD")
-        @test git_reftype(ref) == 2 #api.REF_SYMBOLIC
         @test isa(ref, GitReference{Sym})
 
         @test target(ref) == nothing
@@ -97,8 +95,8 @@ with_repo_access() do test_repo, path
     context("test reference validity") do 
         valid = "refs/foobar"
         invalid = "refs/nope^*"
-        @test isvalid_ref(valid) == true
-        @test isvalid_ref(invalid) == false 
+        @test is_valid_ref(valid) == true
+        @test is_valid_ref(invalid) == false 
     end
 
     # test can handle exceptions
@@ -150,9 +148,9 @@ with_repo_access() do test_repo, path
   context("test load reflog") do
       ref = lookup_ref(test_repo, "refs/heads/master")
       #@test has_reflog(ref) == true
-      rlog = reflog(ref)
+      rlog = GitReflog(ref)
       entry = rlog[2]
-      @test isa(entry, ReflogEntry)
+      @test isa(entry, GitReflogEntry)
       @test entry.id_old == Oid("8496071c1b46c854b31185ea97743be6a8774479")
       @test entry.id_new == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
       @test entry.message == "commit: another commit"
@@ -268,7 +266,7 @@ with_tmp_repo_access("test reflog") do test_repo, path
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
     log!(ref, "", Signature("foo", "foo@bar"))
     log!(ref, "commit: bla bla", Signature("foo", "foo@bar"))
-    rlog = reflog(ref)
+    rlog = GitReflog(ref)
     # TODO: this fails for travis (cannot reproduce in local tests)
     # travis states that length(rlog) == 3 with fist reflog entry
     # containing no information (unknown user/email) 
@@ -301,7 +299,7 @@ with_tmp_repo_access("test ref log with config") do test_repo, path
     log!(ref)
     log!(ref, "commit: bla bla")
     
-    rlog = reflog(ref)
+    rlog = GitReflog(ref)
     # TODO: this fails for travis (cannot reproduce in local tests)
     # travis states that length(rlog) == 3 with fist reflog entry
     # containing no information (unknown user/email) 
