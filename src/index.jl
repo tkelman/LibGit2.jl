@@ -71,10 +71,10 @@ Base.length(idx::GitIndex) = int(ccall((:git_index_entrycount, :libgit2), Cint,
                                        (Ptr{Void},), idx))
 
 function write_tree!(idx::GitIndex)
-    id = Oid()
+    id_ptr = [Oid()]
     @check ccall((:git_index_write_tree, :libgit2), Cint, 
-                 (Ptr{Oid}, Ptr{Void}), &id, idx)
-    return id
+                 (Ptr{Oid}, Ptr{Void}), id_ptr, idx)
+    return id_ptr[1]
 end
 
 type GitIndexEntry

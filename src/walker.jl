@@ -32,28 +32,28 @@ end
 Base.convert(::Type{Ptr{Void}}, w::GitRevWalker) = w.ptr
 
 Base.start(w::GitRevWalker) = begin
-    cid = Oid()
-    err = ccall((:git_revwalk_next, :libgit2), Cint, (Ptr{Oid}, Ptr{Void}), &cid, w)
+    id_ptr = [Oid()]
+    err = ccall((:git_revwalk_next, :libgit2), Cint, (Ptr{Oid}, Ptr{Void}), id_ptr, w)
     if err == api.ITEROVER
         return (nothing, true)
     elseif err != api.GIT_OK
         throw(LibGitError(err))
     end
-    return (lookup_commit(w.repo, cid), false)
+    return (lookup_commit(w.repo, id_ptr[1]), false)
 end
 
 Base.done(w::GitRevWalker, state) = state[2]::Bool
 
 Base.next(w::GitRevWalker, state) = begin
-    cid = Oid()
+    id_ptr = [Oid()]
     err = ccall((:git_revwalk_next, :libgit2), Cint,
-                (Ptr{Oid}, Ptr{Void}), &cid, w)
+                (Ptr{Oid}, Ptr{Void}), id_ptr, w)
     if err == api.ITEROVER
         return (state[1], (nothing, true))
     elseif err != api.GIT_OK
         throw(LibGitError(err))
     end
-    return (state[1], (lookup_commit(w.repo, cid), false))
+    return (state[1], (lookup_commit(w.repo, id_ptr[1]), false))
 end
 
 Base.push!(w::GitRevWalker, cid::Oid) = begin

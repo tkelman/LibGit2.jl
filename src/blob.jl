@@ -73,11 +73,11 @@ end
 isbinary(b::GitBlob) = bool(ccall((:git_blob_is_binary, :libgit2), Cint, (Ptr{Void},), b))
 
 function blob_from_buffer(r::GitRepo, bufptr::Ptr{Uint8}, len::Int)
-    id = Oid()
+    id_ptr = [Oid()]
     @check ccall((:git_blob_create_frombuffer, :libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Csize_t),
-                 &id, r, bufptr, len)
-    return id
+                 id_ptr, r, bufptr, len)
+    return id_ptr[1]
 end
 
 blob_from_buffer(r::GitRepo, buf::Vector{Uint8}) = blob_from_buffer(r::GitRepo, convert(Ptr{Uint8}, buf), length(buf))
@@ -85,18 +85,18 @@ blob_from_buffer(r::GitRepo, buf::ByteString)    = blob_from_buffer(r::GitRepo, 
 blob_from_buffer(r::GitRepo, buf::IOBuffer)      = blob_from_buffer(r::GitRepo, buf.data)
 
 function blob_from_workdir(r::GitRepo, path::String)
-    id = Oid()
+    id_ptr = [Oid()]
     @check ccall((:git_blob_create_fromworkdir, :libgit2), Cint,
                   (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
-                  &id, r, bytestring(path))
-    return id
+                  id_ptr, r, bytestring(path))
+    return id_ptr[1]
 end
 
 function blob_from_disk(r::GitRepo, path::String)
-    id = Oid()
+    id_ptr = [Oid()]
     @check ccall((:git_blob_create_fromdisk, :libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}), &id, r, path)
-    return id
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}), id_ptr, r, path)
+    return id_ptr[1]
 end
 
 function cb_blob_get_chunk(contentptr::Ptr{Uint8}, maxlen::Csize_t, payloadptr::Ptr{Void})
@@ -119,11 +119,11 @@ const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
                                       (Ptr{Uint8}, Csize_t, Ptr{Void}))
 
 function blob_from_stream(r::GitRepo, io::IO, hintpath::ByteString="")
-    id = Oid()
+    id_ptr = [Oid()]
     payload = {io, nothing}
     err = ccall((:git_blob_create_fromchunks, :libgit2), Cint,
                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Any),
-                &id, r, !isempty(hintpath) ? hintpath : C_NULL, 
+                id_ptr, r, !isempty(hintpath) ? hintpath : C_NULL, 
                 c_cb_blob_get_chunk, &payload)
     if isa(payload[2], Exception)
         throw(payload[2])
@@ -131,5 +131,5 @@ function blob_from_stream(r::GitRepo, io::IO, hintpath::ByteString="")
     if err != api.GIT_OK
         throw(LibGitError(err))
     end
-    return id
+    return id_ptr[1]
 end

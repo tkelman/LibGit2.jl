@@ -199,8 +199,8 @@ Base.insert!(tb::GitTreeBuilder, filename::String, id::Oid, filemode::Int) = beg
 end
 
 function write!(tb::GitTreeBuilder)
-    id = Oid()
+    id_ptr = [Oid()]
     @check ccall((:git_treebuilder_write, :libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Void}, Ptr{Void}), &id, tb.repo, tb) 
-    return id
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Void}), id_ptr, tb.repo, tb) 
+    return id_ptr[1]
 end
