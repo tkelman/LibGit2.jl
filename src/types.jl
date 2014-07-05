@@ -111,9 +111,9 @@ immutable DiffOptionsStruct
     old_prefix::Ptr{Uint8}
     new_prefix::Ptr{Uint8}
 end 
-DiffOptionsStruct() = DiffOptionsStruct(api.DIFF_OPTIONS_VERSION,
+DiffOptionsStruct() = DiffOptionsStruct(GitConst.DIFF_OPTIONS_VERSION,
                                         zero(Uint32),
-                                        api.SUBMODULE_IGNORE_DEFAULT, 
+                                        GitConst.SUBMODULE_IGNORE_DEFAULT, 
                                         StrArrayStruct(),
                                         zero(Ptr{Void}),
                                         zero(Ptr{Void}),
@@ -230,11 +230,11 @@ end
 
 Base.convert(::Type{Ptr{Void}}, o::GitTree) = o.ptr
 
-git_otype(::Type{GitBlob})      = api.OBJ_BLOB
-git_otype(::Type{GitCommit})    = api.OBJ_COMMIT
-git_otype(::Type{GitTag})       = api.OBJ_TAG 
-git_otype(::Type{GitTree})      = api.OBJ_TREE
-git_otype(::Type{GitAnyObject}) = api.OBJ_ANY
+git_otype(::Type{GitBlob})      = GitConst.OBJ_BLOB
+git_otype(::Type{GitCommit})    = GitConst.OBJ_COMMIT
+git_otype(::Type{GitTag})       = GitConst.OBJ_TAG 
+git_otype(::Type{GitTree})      = GitConst.OBJ_TREE
+git_otype(::Type{GitAnyObject}) = GitConst.OBJ_ANY
 
 git_otype{T<:GitObject}(o::T) = git_otype(T)
 

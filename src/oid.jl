@@ -84,7 +84,7 @@ Base.isless(id1::Oid, id2::Oid)  = cmp(id1, id2) < 0
 
 iszero(id::Oid) = begin
     idptr = convert(Ptr{Uint8}, _addrof(id))
-    for i=1:api.OID_RAWSZ
+    for i=1:OID_RAWSZ
         if unsafe_load(idptr, i) != zero(Uint8)
             return false
         end

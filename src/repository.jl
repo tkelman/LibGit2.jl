@@ -21,7 +21,7 @@ GitRepo(path::String; alternates={}) = begin
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_open, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}), repo_ptr, path)
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         if repo_ptr[1] != C_NULL
             ccall((:git_repository_free, :libgit2), Void, (Ptr{Void},), repo_ptr[1])
         end
@@ -52,9 +52,9 @@ Base.in(id::Oid, r::GitRepo) = exists(Odb(r), id)::Bool
 function cb_iter_oids(idptr::Ptr{Uint8}, o::Ptr{Void})
     try
         produce(Oid(idptr))
-        return api.GIT_OK
+        return GitErrorConst.GIT_OK
     catch err
-        return api.ERROR
+        return GitErrorConst.ERROR
     end
 end
 
@@ -102,9 +102,9 @@ exists(r::GitRepo, ref::String) = begin
     err = ccall((:git_reference_lookup, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, ref)
     ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), ref_ptr[1])
-    if err == api.ENOTFOUND
+    if err == GitErrorConst.ENOTFOUND
         return false
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return true
@@ -166,7 +166,7 @@ function repo_init(path::String; bare::Bool=false)
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_init, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}, Cint), repo_ptr, path, bare? 1 : 0)
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         if repo_ptr[1] != C_NULL
             ccall((:git_repository_free, :libgit2), Void, (Ptr{Void},), repo_ptr[1])
         end
@@ -198,9 +198,9 @@ function head(r::GitRepo)
     head_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_head, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), head_ptr, r)
-    if err == api.ENOTFOUND || err == api.EUNBORNBRANCH
+    if err == GitErrorConst.ENOTFOUND || err == GitErrorConst.EUNBORNBRANCH
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end 
     return GitReference(head_ptr[1])
@@ -210,7 +210,7 @@ Oid(r::GitRepo, val::GitObject) = Oid(val)
 Oid(r::GitRepo, val::Oid) = val
 
 function Oid(r::GitRepo, val::String)
-    if length(val) == api.OID_HEXSZ
+    if length(val) == OID_HEXSZ
         try
             return Oid(val)
         end
@@ -276,7 +276,7 @@ function cb_push_status(ref_ptr::Ptr{Uint8}, msg_ptr::Ptr{Uint8}, payload::Ptr{V
         result = unsafe_pointer_to_objref(payload)::Dict{UTF8String,UTF8String}
         result[utf8(bytestring(ref_ptr))] = utf8(bytestring(msg_ptr))
     end
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 const c_cb_push_status = cfunction(cb_push_status, Cint,
@@ -289,7 +289,7 @@ Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
     err = ccall((:git_push_new, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), push_ptr, remote)
     p = push_ptr[1]
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         if p != C_NULL
             ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         end
@@ -299,14 +299,14 @@ Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
     for ref in refs
         err = ccall((:git_push_add_refspec, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), p, ref)
     end
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
     err = ccall((:git_push_finish, :libgit2), Cint, (Ptr{Void},), p)
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
-        if err == api.ENONFASTFORWARD
+        if err == GitErrorConst.ENONFASTFORWARD
             error("non-fast-forward upate rejected")
         #TODO: error constant
         elseif err == -8
@@ -314,20 +314,20 @@ Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
         end
     end
     err = ccall((:git_push_unpack_ok, :libgit2), Cint, (Ptr{Void},), p)
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         error("remote side did not unpack successfully")
     end
     result = Dict{UTF8String, UTF8String}()
     err = ccall((:git_push_status_foreach, :libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Any), p, c_cb_push_status, &result)
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
     err = ccall((:git_push_update_tips, :libgit2), Cint,
                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), p, C_NULL, C_NULL)
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
@@ -345,9 +345,9 @@ function lookup(::Type{GitRemote}, r::GitRepo, remote_name::String)
     remote_ptr = Ptr{Void}[0]
     err = ccall((:git_remote_load, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote_name)
-    if err == api.ENOTFOUND
+    if err == GitErrorConst.ENOTFOUND
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return GitRemote(remote_ptr[1])
@@ -460,9 +460,9 @@ function remove_note!(obj::GitObject;
                 (Ptr{Void}, Ptr{Cchar}, 
                  Ptr{SignatureStruct}, Ptr{SignatureStruct}, Ptr{Oid}),
                  repo_ptr, notes_ref, author_ptr, committer_ptr, &tid)
-    if err == api.ENOTFOUND
+    if err == GitErrorConst.ENOTFOUND
         return false
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return true
@@ -480,11 +480,11 @@ function cb_iter_notes(blob_id::Ptr{Oid}, ann_obj_id::Ptr{Oid}, repo_ptr::Ptr{Vo
     blob_ptr    = Ptr{Void}[0]
     err = ccall((:git_object_lookup, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                ann_obj_ptr, repo_ptr, ann_obj_id, api.OBJ_BLOB)
+                ann_obj_ptr, repo_ptr, ann_obj_id, GitConst.OBJ_BLOB)
     err |= ccall((:git_object_lookup, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                 blob_ptr, repo_ptr, blob_id, api.OBJ_BLOB)
-    if err == api.GIT_OK
+                 blob_ptr, repo_ptr, blob_id, GitConst.OBJ_BLOB)
+    if err == GitErrorConst.GIT_OK
         res = (gitobj_from_ptr(ann_obj_id[1]), gitobj_from_ptr(blob_ptr[1]))
         produce(res)
     end
@@ -536,12 +536,12 @@ function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)
     err = ccall((:git_odb_stream_write, :libgit2), Cint,
                 (Ptr{Void}, Ptr{Uint8}, Csize_t), stream_ptr[1], buf, length(buf))
     id_ptr = [Oid()]
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         err = ccall((:git_odb_stream_finalize_write, :libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}), id_ptr, stream_ptr[1])
     end
     ccall((:git_odb_stream_free, :libgit2), Void, (Ptr{Void},), stream_ptr[1])
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return id_ptr[1]
@@ -554,7 +554,7 @@ end
 
 function repo_discover(pth::String="", acrossfs::Bool=true)
     isempty(pth) && (pth = pwd())
-    brepo = zeros(Uint8, api.GIT_PATH_MAX)
+    brepo = zeros(Uint8, GitConst.GIT_PATH_MAX)
     #TODO: do we have to free the buffer?
     buf_ptr = [BufferStruct()]
     @check ccall((:git_repository_discover, :libgit2), Cint,
@@ -576,14 +576,14 @@ function merge_base(r::GitRepo, args...)
         throw(ArgumentError("merge_base needs 2+ commits"))
     end
     arg_oids = vcat([raw(Oid(r, a)) for a in args]...)
-    @assert length(arg_oids) == length(args) * api.OID_RAWSZ
+    @assert length(arg_oids) == length(args) * OID_RAWSZ
     len = convert(Csize_t, length(args))
     id_ptr = [Oid()]
     err = ccall((:git_merge_base_many, :libgit2), Cint, 
                 (Ptr{Oid}, Ptr{Void}, Csize_t, Ptr{Uint8}), id_ptr, r, len, arg_oids)
-    if err == api.ENOTFOUND
+    if err == GitErrorConst.ENOTFOUND
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return id_ptr[1]
@@ -642,9 +642,9 @@ function lookup_ref(r::GitRepo, refname::String)
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_lookup, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, refname)
-    if err == api.ENOTFOUND
+    if err == GitErrorConst.ENOTFOUND
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         return LibGitError(err)
     end
     return GitReference(ref_ptr[1])
@@ -715,11 +715,11 @@ end
 function branch_names(r::GitRepo, filter::Symbol=:all)
     local git_filter::Cint 
     if filter == :all
-        git_filter = api.BRANCH_LOCAL | api.BRANCH_REMOTE
+        git_filter = GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE
     elseif filter == :local
-        git_filter = api.BRANCH_LOCAL
+        git_filter = GitConst.BRANCH_LOCAL
     elseif filter == :remote
-        git_filter = api.BRANCH_REMOTE
+        git_filter = GitConst.BRANCH_REMOTE
     else
         throw(ArgumentError("filter can be :all, :local, or :remote"))
     end
@@ -733,10 +733,10 @@ function branch_names(r::GitRepo, filter::Symbol=:all)
         err = ccall((:git_branch_next, :libgit2), Cint,
                     (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}),
                     branch_ptr, branch_type, iter_ptr[1])
-        if err == api.ITEROVER
+        if err == GitErrorConst.ITEROVER
             break
         end
-        if err != api.GIT_OK
+        if err != GitErrorConst.GIT_OK
             if iter_ptr[1] != C_NULL
                 ccall((:git_branch_iterator_free, :libgit2), Void,
                       (Ptr{Void},), iter_ptr[1])
@@ -755,9 +755,9 @@ end
 function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type::Symbol=:local)
     local git_branch_type::Cint
     if branch_type == :local
-        git_branch_type = api.BRANCH_LOCAL
+        git_branch_type = GitConst.BRANCH_LOCAL
     elseif branch_type == :remote 
-        git_branch_type = api.BRANCH_REMOTE
+        git_branch_type = GitConst.BRANCH_REMOTE
     else
         throw(ArgumentError("branch_type can be :local or :remote"))
     end
@@ -765,9 +765,9 @@ function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type:
     err = ccall((:git_branch_lookup, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint),
                 branch_ptr, r, branch_name, git_branch_type)
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         return GitBranch(branch_ptr[1])
-    elseif err == api.ENOTFOUND
+    elseif err == GitErrorConst.ENOTFOUND
         return nothing
     else
         throw(LibGitError(err))
@@ -832,11 +832,11 @@ Base.convert(::Type{Ptr{Void}}, b::BranchIterator) = b.ptr
 function iter_branches(r::GitRepo, filter::Symbol=:all)
     local git_filter::Cint
     if filter == :all
-        git_filter = api.BRANCH_LOCAL | api.BRANCH_REMOTE
+        git_filter = GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE
     elseif filter == :local
-        git_filter = api.BRANCH_LOCAL
+        git_filter = GitConst.BRANCH_LOCAL
     elseif filter == :remote
-        git_filter == api.BRANCH_REMOTE
+        git_filter == GitConst.BRANCH_REMOTE
     else
         throw(ArgumentError("filter can be :all, :local, or :remote"))
     end 
@@ -852,9 +852,9 @@ Base.start(b::BranchIterator) = begin
     branch_type = Cint[0]
     err = ccall((:git_branch_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
-    if err == api.ITEROVER
+    if err == GitErrorConst.ITEROVER
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return GitBranch(branch_ptr[1])
@@ -867,9 +867,9 @@ Base.next(b::BranchIterator, state) = begin
     branch_type = Cint[0] 
     err = ccall((:git_branch_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
-    if err == api.ITEROVER
+    if err == GitErrorConst.ITEROVER
         return (state, nothing)
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return (state, GitBranch(branch_ptr[1]))
@@ -894,13 +894,13 @@ function parse_merge_options(opts::Dict)
     if haskey(opts, :automerge)
         a = opts[:automerge]
         if a == :normal
-            merge_opts.flags = api.MERGE_AUTOMERGE_NORMAL
+            merge_opts.flags = GitConst.MERGE_AUTOMERGE_NORMAL
         elseif a == :none
-            merge_opts.flags = api.MERGE_AUTOMERGE_NONE
+            merge_opts.flags = GitConst.MERGE_AUTOMERGE_NONE
         elseif a == :favor_ours
-            merge_opts.flags = api.MERGE_AUTOMERGE_FAVOR_OURS
+            merge_opts.flags = GitConst.MERGE_AUTOMERGE_FAVOR_OURS
         elseif a == :favor_theirs
-            merge_opts.flags = api.MERGE_AUTOMERGE_FAVOR_THEIRS
+            merge_opts.flags = GitConst.MERGE_AUTOMERGE_FAVOR_THEIRS
         else
             error("Unknown automerge option :$a")
         end
@@ -966,15 +966,15 @@ function cb_checkout_notify(why::Cint,
     callback = unsafe_pointer_to_objref(payload)::Function
     path = path_ptr != C_NULL ? bytestring(path_ptr) : nothing
     local reason::Symbol
-    if why == api.CHECKOUT_NOTIFY_CONFLICT
+    if why == GitConst.CHECKOUT_NOTIFY_CONFLICT
         reason = :conflict
-    elseif why == api.CHECKOUT_NOTIFY_DIRTY
+    elseif why == GitConst.CHECKOUT_NOTIFY_DIRTY
         reason = :dirty
-    elseif why == api.CHECKOUT_NOTIFY_UPDATED
+    elseif why == GitConst.CHECKOUT_NOTIFY_UPDATED
         reason = :updated
-    elseif why == api.CHECKOUT_NOTIFY_UNTRACKED
+    elseif why == GitConst.CHECKOUT_NOTIFY_UNTRACKED
         reason = :untracked
-    elseif why == api.CHECKOUT_NOTIFY_IGNORED
+    elseif why == GitConst.CHECKOUT_NOTIFY_IGNORED
         reason = :ignored
     else
         reason = :unknown
@@ -984,9 +984,9 @@ function cb_checkout_notify(why::Cint,
                  DiffFile(baseline),
                  DiffFile(target), 
                  DiffFile(workdir))
-        return api.GIT_OK
+        return GitErrorConst.GIT_OK
     catch
-        return api.ERROR
+        return GitErrorConst.ERROR
     end
 end
 
@@ -1030,37 +1030,37 @@ function parse_checkout_options(opts::Dict)
         end
         for s in strategy
             if s == :safe
-                gopts.checkout_strategy |= api.CHECKOUT_SAFE
+                gopts.checkout_strategy |= GitConst.CHECKOUT_SAFE
             elseif s == :safe_create
-                gopts.checkout_strategy |= api.CHECKOUT_SAFE_CREATE
+                gopts.checkout_strategy |= GitConst.CHECKOUT_SAFE_CREATE
             elseif s == :force
-                gopts.checkout_strategy |= api.CHECKOUT_FORCE
+                gopts.checkout_strategy |= GitConst.CHECKOUT_FORCE
             elseif s == :allow_conflicts
-                gopts.checkout_strategy |= api.CHECKOUT_ALLOW_CONFLICTS
+                gopts.checkout_strategy |= GitConst.CHECKOUT_ALLOW_CONFLICTS
             elseif s == :remove_untracked
-                gopts.checkout_strategy |= api.CHECKOUT_REMOVE_UNTRACKED
+                gopts.checkout_strategy |= GitConst.CHECKOUT_REMOVE_UNTRACKED
             elseif s == :remove_ignored
-                gopts.checkout_strategy |= api.CHECKOUT_REMOVE_IGNORED
+                gopts.checkout_strategy |= GitConst.CHECKOUT_REMOVE_IGNORED
             elseif s == :update_only
-                gopts.checkout_strategy |= api.CHECKOUT_UPDATE_ONLY
+                gopts.checkout_strategy |= GitConst.CHECKOUT_UPDATE_ONLY
             elseif s == :dont_update_index
-                gopts.checkout_strategy |= api.CHECKOUT_DONT_UPDATE_INDEX
+                gopts.checkout_strategy |= GitConst.CHECKOUT_DONT_UPDATE_INDEX
             elseif s == :no_refresh
-                gopts.checkout_strategy |= api.CHECKOUT_NO_REFRESH
+                gopts.checkout_strategy |= GitConst.CHECKOUT_NO_REFRESH
             elseif s == :disable_pathspec_match
-                gopts.checkout_strategy |= api.CHECKOUT_DISABLE_PATHSPEC_MATCH
+                gopts.checkout_strategy |= GitConst.CHECKOUT_DISABLE_PATHSPEC_MATCH
             elseif s == :skip_locked_directories
-                gopts.checkout_strategy |= api.CHECKOUT_SKIP_LOCKED_DIRECTORIES
+                gopts.checkout_strategy |= GitConst.CHECKOUT_SKIP_LOCKED_DIRECTORIES
             elseif s == :skip_unmerged
-                gopts.checkout_strategy |= api.CHECKOUT_SKIP_UNMERGED
+                gopts.checkout_strategy |= GitConst.CHECKOUT_SKIP_UNMERGED
             elseif s == :use_ours
-                gopts.checkout_strategy |= api.CHECKOUT_USE_OURS
+                gopts.checkout_strategy |= GitConst.CHECKOUT_USE_OURS
             elseif s == :use_theirs
-                gopts.checkout_strategy |= api.CHECKOUT_USE_THEIRS
+                gopts.checkout_strategy |= GitConst.CHECKOUT_USE_THEIRS
             elseif s == :update_submodules
-                gopts.checkout_strategy |= api.CHECKOUT_UPDATE_SUBMODULES
+                gopts.checkout_strategy |= GitConst.CHECKOUT_UPDATE_SUBMODULES
             elseif s == :update_submodules_if_changed
-                gopts.checkout_strategy |= api.CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED
+                gopts.checkout_strategy |= GitConst.CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED
             else
                 throw(ArgumentError("unknown checkout strategy flag :$s"))
             end
@@ -1076,17 +1076,17 @@ function parse_checkout_options(opts::Dict)
         end
         for f in flags
             if f == :conflict
-                gopts.notify_flags |= api.CHECKOUT_NOTIFY_CONFLICT
+                gopts.notify_flags |= GitConst.CHECKOUT_NOTIFY_CONFLICT
             elseif f == :dirty
-                gopts.notify_flags |= api.CHECKOUT_NOTIFY_DIRTY
+                gopts.notify_flags |= GitConst.CHECKOUT_NOTIFY_DIRTY
             elseif f == :updated
-                gopts.notify_flags |= api.CHECKOUT_NOTIFY_UPDATED
+                gopts.notify_flags |= GitConst.CHECKOUT_NOTIFY_UPDATED
             elseif f == :untracked
-                gopts.notify_flags |= api.CHECKOUT_NOTIFY_UNTRACKED
+                gopts.notify_flags |= GitConst.CHECKOUT_NOTIFY_UNTRACKED
             elseif f == :ignored
-                gopts.notify_flags |= api.CHECKOUT_NOTIFY_IGNORED
+                gopts.notify_flags |= GitConst.CHECKOUT_NOTIFY_IGNORED
             elseif f == :all
-                gopts.notify_flags |= api.CHECKOUT_NOTIFY_ALL
+                gopts.notify_flags |= GitConst.CHECKOUT_NOTIFY_ALL
             else
                 throw(ArgumentError("unknown checkout notify flag :$f"))
             end
@@ -1144,7 +1144,7 @@ function checkout_tree!(r::GitRepo, tree::Treeish, opts=nothing)
                 (Ptr{Void}, Ptr{Void}, Ptr{api.GitCheckoutOpts}),
                 r, tree, &gopts)
     #TODO: memory leak with option strings
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return r 
@@ -1155,7 +1155,7 @@ function checkout_head!(r::GitRepo, opts=nothing)
     err = ccall((:git_checkout_head, :libgit2), Cint,
                 (Ptr{Void}, Ptr{api.GitCheckoutOpts}),r, &gopts)
     #TODO: memory leak with option strings??, cleanup on exceptions, etc...
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(GitError(err))
     end
     return r
@@ -1220,10 +1220,10 @@ function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
                  stats.indexed_objects,
                  stats.received_objects,
                  stats.received_bytes)
-        return api.GIT_OK
+        return GitErrorConst.GIT_OK
     catch err
         payload[:exception] = err
-        return api.ERROR
+        return GitErrorConst.ERROR
     end
 end
 
@@ -1232,7 +1232,7 @@ const c_cb_remote_transfer = cfunction(cb_remote_transfer, Cint,
 
 function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_types::Cuint)
     if isa(cred, CredPlainText)
-        if !bool(allowed_types & api.CREDTYPE_USERPASS_PLAINTEXT)
+        if !bool(allowed_types & GitConst.CREDTYPE_USERPASS_PLAINTEXT)
             error("invalid credential type")
         end
         @check ccall((:git_cred_userpass_plaintext_new, :libgit2), Cint,
@@ -1241,7 +1241,7 @@ function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_ty
                        bytestring(cred.username),
                        bytestring(cred.password))
     elseif isa(cred, CredSSHKey)
-        if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
+        if !bool(allowed_types & GitConst.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
         @check ccall((:git_cred_ssh_key_new, :libgit2), Cint,
@@ -1252,7 +1252,7 @@ function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_ty
                      cred.privatekey != nothing ? cred.privatekey : C_NULL,
                      cred.passphrase != nothing ? cred.passphrase : C_NULL)
     elseif (cred, CredDefault)
-        if !bool(allowed_types & api.CREDTYPE_SSH_KEY)
+        if !bool(allowed_types & GitConst.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
         @check ccall((:git_cred_default_new, :libgit2), Cint,
@@ -1272,10 +1272,10 @@ function cb_default_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
     cred = payload[:credentials]
     try
         extract_cred!(cred, cred_ptr, allowed_types)
-        return api.GIT_OK
+        return GitErrorConst.GIT_OK
     catch err
         payload[:exception] = err
-        return api.ERROR
+        return GitErrorConst.ERROR
     end
 end
 
@@ -1290,13 +1290,13 @@ function cb_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
     cred_func = payload[:credentials]::Function
     types = Symbol[]
-    if bool(allowed_types & api.CREDTYPE_USERPASS_PLAINTEXT)
+    if bool(allowed_types & GitConst.CREDTYPE_USERPASS_PLAINTEXT)
         push!(types, :plaintext)
     end
-    if bool(allowed_types & api.CREDTYPE_SSH_KEY)
+    if bool(allowed_types & GitConst.CREDTYPE_SSH_KEY)
         push!(types, :sshkey)
     end
-    if bool(allowed_types & api.CREDTYPE_DEFAULT)
+    if bool(allowed_types & GitConst.CREDTYPE_DEFAULT)
         push!(types, :default)
     end 
     try
@@ -1308,10 +1308,10 @@ function cb_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
             error("returned credential is not a git credential subtype")
         end
         extract_cred!(cred, cred_ptr, allowed_types)
-        return api.GIT_OK
+        return GitErrorConst.GIT_OK
     catch err
         payload[:exception] = err
-        return api.ERROR
+        return GitErrorConst.ERROR
     end
 end
 
@@ -1363,7 +1363,7 @@ function repo_clone(url::String, path::String, opts=nothing)
     err = ccall((:git_clone, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{api.GitCloneOpts}),
                  repo_ptr, url, path, &gopts)
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
         if haskey(payload, :exception)
             throw(payload[:exception])
@@ -1422,9 +1422,9 @@ Base.start(r::ReferenceIterator) = begin
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
-    if err == api.ITEROVER
+    if err == GitErrorConst.ITEROVER
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return GitReference(ref_ptr[1])
@@ -1436,9 +1436,9 @@ Base.next(r::ReferenceIterator, state) = begin
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
-    if err == api.ITEROVER
+    if err == GitErrorConst.ITEROVER
         return (state, nothing)
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return (state, GitReference(ref_ptr[1]))

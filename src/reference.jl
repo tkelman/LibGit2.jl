@@ -75,10 +75,10 @@ name(r::GitReference) = utf8(bytestring(ccall((:git_reference_name, :libgit2), P
 function peel{T}(r::GitReference{T})
     obj_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_peel, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}, Cint), obj_ptr, r, api.OBJ_ANY)
-    if err == api.ENOTFOUND
+                (Ptr{Ptr{Void}}, Ptr{Void}, Cint), obj_ptr, r, GitConst.OBJ_ANY)
+    if err == GitErrorConst.ENOTFOUND
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     if is(T, Oid) 
@@ -108,7 +108,7 @@ end
 
 free!(r::Reflog) = begin
     if r.ptr != C_NULL
-        api.git_reflog_free(r.ptr)
+        ccall((:git_reflog_free, :libgit2), Void, (Ptr{Void},), r.ptr)
         r.ptr = C_NULL
     end
 end
@@ -170,12 +170,12 @@ function log!(r::GitReference, msg::String="", committer::Union(Nothing, Signatu
     err = ccall((:git_reflog_append, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
                  reflog_ptr[1], target_ptr, sig_ptr, msg)
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         err = ccall((:git_reflog_write, :libgit2), Cint, (Ptr{Void},), reflog_ptr[1])
     end
     @assert reflog_ptr[1] != C_NULL
     ccall((:git_reflog_free, :libgit2), Void, (Ptr{Void},), reflog_ptr[1])
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return nothing
@@ -183,9 +183,9 @@ end
 
 git_reftype{T}(r::GitReference{T}) = begin
     if T <: Sym
-        return api.REF_SYMBOLIC
+        return GitConst.REF_SYMBOLIC
     elseif T <: Oid
-        return api.REF_OID
+        return GitConst.REF_OID
     else
         error("Unknown reference type $T")
     end

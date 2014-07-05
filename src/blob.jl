@@ -107,7 +107,7 @@ function cb_blob_get_chunk(contentptr::Ptr{Uint8}, maxlen::Csize_t, payloadptr::
         buff = readbytes(io, maxlen)
     catch err
         payload[2] = err
-        return api.ERROR
+        return GitErrorConst.ERROR
     end
     len = length(buff)
     len > maxlen && (len = maxlen)
@@ -128,7 +128,7 @@ function blob_from_stream(r::GitRepo, io::IO, hintpath::ByteString="")
     if isa(payload[2], Exception)
         throw(payload[2])
     end
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return id_ptr[1]

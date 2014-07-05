@@ -35,9 +35,9 @@ function lookup_note(obj::GitObject, ref::Union(Nothing, String)=nothing)
     err = ccall((:git_note_read, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}),
                 note_ptr, repo_ptr, ref != nothing ? ref : C_NULL, &oid)
-    if err == api.ENOTFOUND
+    if err == GitErrorConst.ENOTFOUND
         return nothing
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     n = GitNote(note_ptr[1])

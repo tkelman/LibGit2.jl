@@ -44,21 +44,21 @@ Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::String) = set!(T, c, k
 Base.delete!(c::GitConfig, key::String) = begin
     err = ccall((:git_config_delete_entry, :libgit2), Cint, 
                 (Ptr{Void}, Ptr{Uint8}), c, key)
-    return err == api.ENOTFOUND ? false : true
+    return err == GitErrorConst.ENOTFOUND ? false : true
 end
 
 function cb_each_key(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
     entry = unsafe_load(entry_ptr) 
     n = bytestring(entry.name)
     produce(n)
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 function cb_each_val(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
     entry = unsafe_load(entry_ptr)
     v = bytestring(entry.value)
     produce(v)
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 function cb_each_pair(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
@@ -66,7 +66,7 @@ function cb_each_pair(entry_ptr::Ptr{ConfigEntryStruct}, o::Ptr{Void})
     n = bytestring(entry.name)
     v = bytestring(entry.value)
     produce((n, v))
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 const c_cb_each_key    = cfunction(cb_each_key,  Cint, (Ptr{ConfigEntryStruct}, Ptr{Void}))
@@ -108,9 +108,9 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
     out = Cint[0]
     @check ccall((:git_config_get_bool, :libgit2), Cint,
                  (Ptr{Cint}, Ptr{Void}, Ptr{Uint8}), out, c, name)
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         return out[1] > 0 ? true : false
-    elseif err == api.ENOTFOUND
+    elseif err == GitErrorConst.ENOTFOUND
         return nothing
     else
         throw(GitError(err))
@@ -128,7 +128,7 @@ function lookup(::Type{Int32}, c::GitConfig, name::String)
     out = Int32[0]
     err = ccall((:git_config_get_int32, :libgit2), Cint,
                 (Ptr{Int32}, Ptr{Void}, Ptr{Uint8}), out, c, name)
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         return out[1]
     elseif err == ENOTFOUND
         return nothing
@@ -147,9 +147,9 @@ function lookup(::Type{Int64}, c::GitConfig, name::String)
     out = Int64[0]
     err = ccall((:git_config_get_int64, :libgit2), Cint,
                 (Ptr{Int64}, Ptr{Void}, Ptr{Uint8}), out, c, name)
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         return out[1]
-    elseif err == api.ENOTFOUND
+    elseif err == GitErrorConst.ENOTFOUND
         return nothing
     else
         throw(GitError(err))
@@ -166,9 +166,9 @@ function lookup{T<:String}(::Type{T}, c::GitConfig, name::String)
     out = Ptr{Uint8}[0] 
     err = ccall((:git_config_get_string, :libgit2), Cint,
                 (Ptr{Ptr{Uint8}}, Ptr{Void}, Ptr{Uint8}), out, c, name)
-    if err == api.GIT_OK
+    if err == GitErrorConst.GIT_OK
         return bytestring(out[1])
-    elseif err == api.ENOTFOUND
+    elseif err == GitErrorConst.ENOTFOUND
         return nothing
     else
         throw(GitError(err))

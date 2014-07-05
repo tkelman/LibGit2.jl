@@ -9,7 +9,7 @@ Oid(o::GitObject) = Oid(ccall((:git_object_id, :libgit2), Ptr{Oid}, (Ptr{Void},)
 
 Base.hex(o::GitObject) = begin
     oid_ptr = ccall((:git_object_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), o)
-    hex_buff = Array(Uint8, api.OID_HEXSZ)
+    hex_buff = Array(Uint8, OID_HEXSZ)
     @check ccall((:git_oid_fmt, :libgit2), Cint, (Ptr{Uint8}, Ptr{Uint8}), hex_buff, oid_ptr)
     return bytestring(hex_buff)
 end
@@ -24,7 +24,7 @@ function raw(o::GitObject)
     err = ccall((:git_odb_read, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, odb_ptr[1], oid_ptr)
     ccall((:git_odb_free, :libgit2), Void, (Ptr{Void},), odb_ptr[1])
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(GitError(err))
     end
     return OdbObject(obj_ptr[1])
@@ -38,10 +38,10 @@ function gitobj_from_ptr(ptr::Ptr{Void})
 end
 
 function gitobj_const_type(typ::Cint)
-    typ == api.OBJ_BLOB   && return GitBlob
-    typ == api.OBJ_TREE   && return GitTree
-    typ == api.OBJ_COMMIT && return GitCommit
-    typ == api.OBJ_TAG    && return GitTag
-    typ == api.OBJ_ANY    && return GitAnyObject
+    typ == GitConst.OBJ_BLOB   && return GitBlob
+    typ == GitConst.OBJ_TREE   && return GitTree
+    typ == GitConst.OBJ_COMMIT && return GitCommit
+    typ == GitConst.OBJ_TAG    && return GitTag
+    typ == GitConst.OBJ_ANY    && return GitAnyObject
     error("Unknown git type const: $obj_type")
 end

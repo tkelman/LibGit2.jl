@@ -30,15 +30,15 @@ DiffStats() = DiffStats(0, 0, 0)
 function cb_diff_file_stats(delta_ptr::Ptr{DiffDeltaStruct}, progress::Cfloat, payload::Ptr{Void})
     delta = unsafe_load(delta_ptr)::DiffDeltaStruct
     stats = unsafe_pointer_to_objref(payload)::DiffStats
-    if delta.status == api.DELTA_ADDED ||
-       delta.status == api.DELTA_DELETED ||
-       delta.status == api.DELTA_MODIFIED ||
-       delta.status == api.DELTA_RENAMED ||
-       delta.status == api.DELTA_COPIED ||
-       delta.status == api.DELTA_TYPECHANGE
+    if delta.status == GitConst.DELTA_ADDED ||
+       delta.status == GitConst.DELTA_DELETED ||
+       delta.status == GitConst.DELTA_MODIFIED ||
+       delta.status == GitConst.DELTA_RENAMED ||
+       delta.status == GitConst.DELTA_COPIED ||
+       delta.status == GitConst.DELTA_TYPECHANGE
         stats.files += 1
     end
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 const c_cb_diff_file_stats = cfunction(cb_diff_file_stats, Cint,
@@ -50,12 +50,12 @@ function cb_diff_line_stats(delta_ptr::Ptr{Void},
                             payload::Ptr{Void})
     line  = unsafe_load(line_ptr)
     stats = unsafe_pointer_to_objref(payload)::DiffStats
-    if line.origin == api.DIFF_LINE_ADDITION
+    if line.origin == GitConst.DIFF_LINE_ADDITION
         stats.adds += 1
-    elseif line.origin == api.DIFF_LINE_DELETION
+    elseif line.origin == GitConst.DIFF_LINE_DELETION
         stats.dels += 1
     end
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 const c_cb_diff_line_stats = cfunction(cb_diff_line_stats, Cint,
@@ -77,15 +77,15 @@ type DiffFile
 end
 
 function delta_status_symbol(s::Integer)
-    s == api.DELTA_UNMODIFIED && return :unmodified
-    s == api.DELTA_ADDED      && return :added
-    s == api.DELTA_DELETED    && return :deleted
-    s == api.DELTA_MODIFIED   && return :modified
-    s == api.DELTA_RENAMED    && return :renamed
-    s == api.DELTA_COPIED     && return :copied
-    s == api.DELTA_IGNORED    && return :ignored
-    s == api.DELTA_UNTRACKED  && return :untracked
-    s == api.DELTA_TYPECHANGE && return :typechange
+    s == GitConst.DELTA_UNMODIFIED && return :unmodified
+    s == GitConst.DELTA_ADDED      && return :added
+    s == GitConst.DELTA_DELETED    && return :deleted
+    s == GitConst.DELTA_MODIFIED   && return :modified
+    s == GitConst.DELTA_RENAMED    && return :renamed
+    s == GitConst.DELTA_COPIED     && return :copied
+    s == GitConst.DELTA_IGNORED    && return :ignored
+    s == GitConst.DELTA_UNTRACKED  && return :untracked
+    s == GitConst.DELTA_TYPECHANGE && return :typechange
     throw(ArgumentError("Unknown status symbol :$s")) 
 end
 
@@ -114,8 +114,8 @@ type DiffDelta
                         int(d.new_file.flags),
                         int(d.new_file.mode))
         return new(fold, fnew, int(d.similarity), delta_status_symbol(d.status),
-                   (bool(d.flags & api.DIFF_FLAG_NOT_BINARY) &&
-                    bool(d.flags & api.DIFF_FLAG_BINARY)))
+                   (bool(d.flags & GitConst.DIFF_FLAG_NOT_BINARY) &&
+                    bool(d.flags & GitConst.DIFF_FLAG_BINARY)))
     end
 end
 
@@ -146,12 +146,12 @@ function patches(d::GitDiff)
     for i in 1:ndelta
         err = ccall((:git_patch_from_diff, :libgit2), Cint,
                     (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t), patch_ptr, d, i-1) 
-        if err != api.GIT_OK
+        if err != GitErrorConst.GIT_OK
             break
         end
         push!(ps, GitPatch(patch_ptr[1]))
     end
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(GitError(err))
     end
     return ps
@@ -165,9 +165,9 @@ function cb_diff_print(delta_ptr::Ptr{Void},
     l = unsafe_load(line_ptr)
     s = unsafe_pointer_to_objref(payload)::Array{Uint8,1}
     add_origin = false
-    if l.origin == api.DIFF_LINE_CONTEXT ||
-       l.origin == api.DIFF_LINE_ADDITION ||
-       l.origin == api.DIFF_LINE_DELETION
+    if l.origin == GitConst.DIFF_LINE_CONTEXT ||
+       l.origin == GitConst.DIFF_LINE_ADDITION ||
+       l.origin == GitConst.DIFF_LINE_DELETION
        add_origin = true
     end 
     prev_len = length(s)
@@ -183,7 +183,7 @@ function cb_diff_print(delta_ptr::Ptr{Void},
             s[prev_len + i] = unsafe_load(l.content, i)
         end
     end
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 const c_cb_diff_print = cfunction(cb_diff_print, Cint, (Ptr{Void}, Ptr{Void}, Ptr{DiffLineStruct}, Ptr{Void}))
@@ -191,15 +191,15 @@ const c_cb_diff_print = cfunction(cb_diff_print, Cint, (Ptr{Void}, Ptr{Void}, Pt
 function patch(d::GitDiff; format::Symbol=:patch)
     cformat = zero(Cint)
     if format === :name_status
-        cformat = api.DIFF_FORMAT_NAME_STATUS
+        cformat = GitConst.DIFF_FORMAT_NAME_STATUS
     elseif format === :name_only
-        cformat = api.DIFF_FORMAT_NAME_ONLY
+        cformat = GitConst.DIFF_FORMAT_NAME_ONLY
     elseif format === :raw
-        cformat = api.DIFF_FORMAT_RAW
+        cformat = GitConst.DIFF_FORMAT_RAW
     elseif format === :header
-        cformat = api.DIFF_FORMAT_PATCH_HEADER
+        cformat = GitConst.DIFF_FORMAT_PATCH_HEADER
     elseif format === :patch
-        cformat = api.DIFF_FORMAT_PATCH
+        cformat = GitConst.DIFF_FORMAT_PATCH
     else
         throw(ArgumentError(("Unknown diff output format ($format)")))
     end
@@ -376,61 +376,61 @@ function parse_git_diff_options(opts::Dict)
     end
     flags = zero(Uint32) 
     if get(opts, :reverse, false)
-        flags |= api.DIFF_REVERSE
+        flags |= GitConst.DIFF_REVERSE
     end
     if get(opts, :force_text, false)
-        flags |= api.DIFF_FORCE_TEXT
+        flags |= GitConst.DIFF_FORCE_TEXT
     end
     if get(opts, :ignore_whitespace, false)
-        flags |= api.DIFF_IGNORE_WHITESPACE
+        flags |= GitConst.DIFF_IGNORE_WHITESPACE
     end
     if get(opts, :ignore_whitespace_change, false)
-        flags |= api.DIFF_IGNORE_WHITESPACE_CHANGE
+        flags |= GitConst.DIFF_IGNORE_WHITESPACE_CHANGE
     end
     if get(opts, :ignore_whitespace_eol, false)
-        flags |= api.DIFF_IGNORE_WHITESPACE_EOL
+        flags |= GitConst.DIFF_IGNORE_WHITESPACE_EOL
     end
     if get(opts, :ignore_submodules, false)
-        flags |= api.DIFF_IGNORE_SUBMODULES
+        flags |= GitConst.DIFF_IGNORE_SUBMODULES
     end
     if get(opts, :patience, false)
-        flags |= api.DIFF_PATIENCE
+        flags |= GitConst.DIFF_PATIENCE
     end
     if get(opts, :minimal, false)
-        flags |= api.DIFF_MINIMAL
+        flags |= GitConst.DIFF_MINIMAL
     end
     if get(opts, :include_ignored, false)
-        flags |= api.DIFF_INCLUDE_IGNORED
+        flags |= GitConst.DIFF_INCLUDE_IGNORED
     end
     if get(opts, :include_untracked, false)
-        flags |= api.DIFF_INCLUDE_UNTRACKED
+        flags |= GitConst.DIFF_INCLUDE_UNTRACKED
     end
     if get(opts, :include_unmodified, false)
-        flags |= api.DIFF_INCLUDE_UNMODIFIED
+        flags |= GitConst.DIFF_INCLUDE_UNMODIFIED
     end
     if get(opts, :recurse_untracked_dirs, false)
-       flags |= api.DIFF_RECURSE_UNTRACKED_DIRS
+       flags |= GitConst.DIFF_RECURSE_UNTRACKED_DIRS
     end
     if get(opts, :disable_pathspec_match, false)
-       flags |= api.DIFF_DISABLE_PATHSPEC_MATCH
+       flags |= GitConst.DIFF_DISABLE_PATHSPEC_MATCH
     end
     if get(opts, :show_untracked_content, false)
-       flags |= api.DIFF_SHOW_UNTRACKED_CONTENT
+       flags |= GitConst.DIFF_SHOW_UNTRACKED_CONTENT
     end
     if get(opts, :skip_binary_check, false)
-       flags |= api.DIFF_SKIP_BINARY_CHECK
+       flags |= GitConst.DIFF_SKIP_BINARY_CHECK
     end
     if get(opts, :include_typechange, false)
-       flags |= api.DIFF_INCLUDE_TYPECHANGE
+       flags |= GitConst.DIFF_INCLUDE_TYPECHANGE
     end
     if get(opts, :include_typechange_trees, false)
-       flags |= api.DIFF_INCLUDE_TYPECHANGE_TREES
+       flags |= GitConst.DIFF_INCLUDE_TYPECHANGE_TREES
     end
     if get(opts, :ignore_filemode, false)
-       flags |= api.DIFF_IGNORE_FILEMODE
+       flags |= GitConst.DIFF_IGNORE_FILEMODE
     end
     if get(opts, :recurse_ignored_dirs, false)
-       flags |= api.DIFF_RECURSE_IGNORED_DIRS
+       flags |= GitConst.DIFF_RECURSE_IGNORED_DIRS
     end
     pathspec = StrArrayStruct()
     if haskey(opts, :paths)
@@ -446,9 +446,9 @@ function parse_git_diff_options(opts::Dict)
         pathspec = StrArrayStruct(str_ptrs, length(paths))
     end
     #TODO: rest of the options
-    return DiffOptionsStruct(api.DIFF_OPTIONS_VERSION,
+    return DiffOptionsStruct(GitConst.DIFF_OPTIONS_VERSION,
                              flags,
-                             api.SUBMODULE_IGNORE_DEFAULT,
+                             GitConst.SUBMODULE_IGNORE_DEFAULT,
                              pathspec,
                              C_NULL, 
                              C_NULL, 

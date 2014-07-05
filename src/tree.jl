@@ -33,10 +33,10 @@ let
 
     function tree_entry_type(ptr::Ptr{Void})
         t = ccall((:git_tree_entry_type, :libgit2), Cint, (Ptr{Void},), ptr)
-        t == api.OBJ_BLOB   && return GitBlob
-        t == api.OBJ_COMMIT && return GitCommit
-        t == api.OBJ_TAG    && return GitTag
-        t == api.OBJ_TREE   && return GitTree
+        t == GitConst.OBJ_BLOB   && return GitBlob
+        t == GitConst.OBJ_COMMIT && return GitCommit
+        t == GitConst.OBJ_TAG    && return GitTag
+        t == GitConst.OBJ_TREE   && return GitTree
         error("unknown git_type $(t)")
     end
 
@@ -115,9 +115,9 @@ end
 function cb_treewalk(root::Ptr{Uint8}, entry::Ptr{Void}, data::Ptr{Void})
     try 
         produce(bytestring(root), GitTreeEntry(entry))
-        return api.GIT_OK
+        return GitErrorConst.GIT_OK
     catch err
-        return api.ERROR
+        return GitErrorConst.ERROR
     end
 end
 
@@ -127,9 +127,9 @@ const c_cb_treewalk = cfunction(cb_treewalk, Cint,
 function walk(t::GitTree, order=:postorder)
     local mode::Cint
     if order == :postorder
-        mode = api.TREEWALK_POST
+        mode = GitConst.TREEWALK_POST
     elseif order == :preorder
-        mode = api.TREEWALK_PRE
+        mode = GitConst.TREEWALK_PRE
     else
         throw(ArgumentError("walk order can be :preorder or :postorder, got :$order"))
     end

@@ -34,8 +34,8 @@ end
 # direction can be :fetch or :push
 Base.connect(r::GitRemote, direction::Symbol) = begin
     local dir::Cint
-    dir = direction == :fetch ? api.DIRECTION_FETCH :
-          direction == :push  ? api.DIRECTION_PUSH  :
+    dir = direction == :fetch ? GitConst.DIRECTION_FETCH :
+          direction == :push  ? GitConst.DIRECTION_PUSH  :
           throw(ArgumentError("direction can be :fetch or :push, got :$direction"))
     @check ccall((:git_remote_connect, :libgit2), Cint, (Ptr{Void}, Cint), r, dir)
     return r 

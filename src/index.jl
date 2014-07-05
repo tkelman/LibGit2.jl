@@ -130,10 +130,10 @@ Oid(entry::GitIndexEntry) = entry.id
 
 IndexEntryStruct(entry::GitIndexEntry) = begin
     flags = uint16(0x0)
-    flags &= ~api.IDXENTRY_STAGEMASK
-    flags |= (uint16(entry.stage) << api.IDXENTRY_STAGESHIFT) & api.IDXENTRY_STAGEMASK
-    flags &= ~api.IDXENTRY_VALID
-    entry.valid && (flags |= api.IDXENTRY_VALID)
+    flags &= ~GitConst.IDXENTRY_STAGEMASK
+    flags |= (uint16(entry.stage) << GitConst.IDXENTRY_STAGESHIFT) & GitConst.IDXENTRY_STAGEMASK
+    flags &= ~GitConst.IDXENTRY_VALID
+    entry.valid && (flags |= GitConst.IDXENTRY_VALID)
     #TODO: rounding
     ctime = IndexTimeStruct(ifloor(entry.ctime), ifloor(entry.ctime - floor(entry.ctime) * 1e3))
     mtime = IndexTimeStruct(ifloor(entry.mtime), ifloor(entry.mtime - floor(entry.mtime) * 1e3))
@@ -162,8 +162,8 @@ function GitIndexEntry(ptr::Ptr{IndexEntryStruct})
     mode  = int(entry.mode)
     uid   = int(entry.uid)
     gid   = int(entry.gid)
-    valid = bool(entry.flags & api.IDXENTRY_VALID)
-    stage = int((entry.flags & api.IDXENTRY_STAGEMASK) >> api.IDXENTRY_STAGESHIFT)
+    valid = bool(entry.flags & GitConst.IDXENTRY_VALID)
+    stage = int((entry.flags & GitConst.IDXENTRY_STAGEMASK) >> GitConst.IDXENTRY_STAGESHIFT)
     file_size = int(entry.file_size)
     id = entry.id
     return GitIndexEntry(path, id, ctime, mtime, file_size,
@@ -256,15 +256,15 @@ function add_all!(idx::GitIndex, pathspecs::Vector{String};
                   force::Bool=false,
                   disable_pathsepc_match::Bool=false,
                   check_pathspec::Bool=false)
-    flags = api.INDEX_ADD_DEFAULT
+    flags = GitConst.INDEX_ADD_DEFAULT
     if force
-        flags |= api.INDEX_ADD_FORCE
+        flags |= GitConst.INDEX_ADD_FORCE
     end
     if disable_pathsepc_match
-        flags |= api.INDEX_ADD_DISABLE_PATHSPEC_MATCH
+        flags |= GitConst.INDEX_ADD_DISABLE_PATHSPEC_MATCH
     end
     if check_pathspec
-        flags |= api.INDEX_ADD_CHECK_PATHSPEC
+        flags |= GitConst.INDEX_ADD_CHECK_PATHSPEC
     end
     exptr  = Cint[0]
     strs   = [bytestring(s) for s in pathspecs]
@@ -273,7 +273,7 @@ function add_all!(idx::GitIndex, pathspecs::Vector{String};
     @check ccall((:git_index_add_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Cuint, Ptr{Void}, Ptr{Cint}),
                  idx, &strarr, flags, C_NULL, exptr)
-    if exptr[1] != api.GIT_OK
+    if exptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(exptr[1]))
     end
     return idx
@@ -287,7 +287,7 @@ function update_all!(idx::GitIndex, pathspecs::Vector{String})
     @check ccall((:git_index_update_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
                  idx, &strarr, C_NULL, exptr)
-    if exptr[1] != api.GIT_OK
+    if exptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(exptr[1]))
     end
     return idx
@@ -303,7 +303,7 @@ function remove_all!(idx::GitIndex, pathspecs::Vector{String})
     @check ccall((:git_index_remove_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
                  idx, &strarr, C_NULL, exptr)
-    if exptr[1] != api.GIT_OK
+    if exptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(exptr[1]))
     end
     return idx

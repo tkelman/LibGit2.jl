@@ -152,24 +152,24 @@ function hunks(p::GitPatch)
         err = ccall((:git_patch_get_hunk, :libgit2), Cint,
                     (Ptr{Ptr{DiffHunkStruct}}, Ptr{Csize_t}, Ptr{Void}, Csize_t),
                     hunk_ptr, lines_ptr, p, i-1)
-        if err != api.GIT_OK
+        if err != GitErrorConst.GIT_OK
             break
         end
         push!(hs, DiffHunk(p, hunk_ptr[1], i, lines_ptr[1]))
     end
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(GitError(err))
     end
     return hs
 end
 
 function line_origin_to_symbol(o::Cchar)
-    o == api.DIFF_LINE_CONTEXT   && return :context
-    o == api.DIFF_LINE_ADDITION  && return :addition
-    o == api.DIFF_LINE_DELETION  && return :deletion
-    o == api.DIFF_LINE_ADD_EOFNL && return :eof_newline_added
-    o == api.DIFF_LINE_DEL_EOFNL && return :eof_newline_removed
-    o == api.DIFF_LINE_CONTEXT_EOFNL && return :eof_no_newline
+    o == GitConst.DIFF_LINE_CONTEXT   && return :context
+    o == GitConst.DIFF_LINE_ADDITION  && return :addition
+    o == GitConst.DIFF_LINE_DELETION  && return :deletion
+    o == GitConst.DIFF_LINE_ADD_EOFNL && return :eof_newline_added
+    o == GitConst.DIFF_LINE_DEL_EOFNL && return :eof_newline_removed
+    o == GitConst.DIFF_LINE_CONTEXT_EOFNL && return :eof_no_newline
     throw(ArgumentError("Unknown line origin constant $o")) 
 end
 
@@ -207,12 +207,12 @@ function lines(h::DiffHunk)
         err = ccall((:git_patch_get_line_in_hunk, :libgit2), Cint,
                     (Ptr{Ptr{DiffLineStruct}}, Ptr{Void}, Csize_t, Csize_t),
                     line_ptr, h.patch, hi-1, i-1)
-        if err != api.GIT_OK 
+        if err != GitErrorConst.GIT_OK 
             break
         end
         push!(ls, DiffLine(h, line_ptr[1]))
     end
-    if err != api.GIT_OK
+    if err != GitErrorConst.GIT_OK
         throw(GitError(err))
     end
     return ls
@@ -225,9 +225,9 @@ function cb_patch_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
     l = unsafe_load(line_ptr)
     s = unsafe_pointer_to_objref(payload)::Array{Uint8,1}
     add_origin = false
-    if l.origin == api.DIFF_LINE_CONTEXT ||
-       l.origin == api.DIFF_LINE_ADDITION ||
-       l.origin == api.DIFF_LINE_DELETION
+    if l.origin == GitConst.DIFF_LINE_CONTEXT ||
+       l.origin == GitConst.DIFF_LINE_ADDITION ||
+       l.origin == GitConst.DIFF_LINE_DELETION
        add_origin = true
     end 
     prev_len = length(s)
@@ -243,7 +243,7 @@ function cb_patch_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
             s[prev_len + i] = unsafe_load(l.content, i)
         end
     end
-    return api.GIT_OK
+    return GitErrorConst.GIT_OK
 end
 
 const c_cb_patch_print = cfunction(cb_patch_print, Cint,

@@ -34,9 +34,9 @@ Base.convert(::Type{Ptr{Void}}, w::GitRevWalker) = w.ptr
 Base.start(w::GitRevWalker) = begin
     id_ptr = [Oid()]
     err = ccall((:git_revwalk_next, :libgit2), Cint, (Ptr{Oid}, Ptr{Void}), id_ptr, w)
-    if err == api.ITEROVER
+    if err == GitErrorConst.ITEROVER
         return (nothing, true)
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return (lookup_commit(w.repo, id_ptr[1]), false)
@@ -48,9 +48,9 @@ Base.next(w::GitRevWalker, state) = begin
     id_ptr = [Oid()]
     err = ccall((:git_revwalk_next, :libgit2), Cint,
                 (Ptr{Oid}, Ptr{Void}), id_ptr, w)
-    if err == api.ITEROVER
+    if err == GitErrorConst.ITEROVER
         return (state[1], (nothing, true))
-    elseif err != api.GIT_OK
+    elseif err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
     return (state[1], (lookup_commit(w.repo, id_ptr[1]), false))
@@ -63,16 +63,16 @@ Base.push!(w::GitRevWalker, cid::Oid) = begin
 end
 
 function _symbol_to_gitsort(s::Symbol)
-    s == :none && return api.SORT_NONE
-    s == :topo && return api.SORT_TOPOLOGICAL
-    s == :date && return api.SORT_TIME
+    s == :none && return GitConst.SORT_NONE
+    s == :topo && return GitConst.SORT_TOPOLOGICAL
+    s == :date && return GitConst.SORT_TIME
     error("unknown git sort flag :$s")
 end
 
 #TODO: this does not mimic Base's sortby! functionality so it should be renamed
 Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false) = begin
     s = _symbol_to_gitsort(sort_mode)
-    rev && (s |= api.SORT_REVERSE)
+    rev && (s |= GitConst.SORT_REVERSE)
     sortby!(w, s)
     return 
 end
@@ -96,7 +96,7 @@ end
 
 function walk(r::GitRepo, from::Oid, sorting=SortDate)
     walker = GitRevWalker(r)
-    sortby!(walker, api.SORT_TIME)
+    sortby!(walker, GitConst.SORT_TIME)
     push!(walker, from)
     return (@task for c in walker
         produce(c)
@@ -108,7 +108,7 @@ end
 # end
 function walk(f::Function, r::GitRepo, from::Oid, sorting=SortDate)
     walker = GitRevWalker(r)
-    sortby!(walker, api.SORT_TIME)
+    sortby!(walker, GitConst.SORT_TIME)
     push!(walker, from) 
     for c in walker
         f(c)

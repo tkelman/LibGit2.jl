@@ -32,7 +32,7 @@ end
 const __threads_handle = LibGitHandle()
 
 include("api.jl")
-include("macros.jl")
+include("constants.jl")
 include("error.jl")
 include("oid.jl")
 include("types.jl")
