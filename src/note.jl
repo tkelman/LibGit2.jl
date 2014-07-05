@@ -7,10 +7,9 @@ end
 
 GitNote(ptr::Ptr{Void}) = begin
     @assert ptr != C_NULL
-    id  = Oid(ccall((:git_note_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), nptr))
-    msg = utf8(bytestring(ccall((:git_note_message, :libgit2), Ptr{Uint8}, (Ptr{Void},), nptr)))
+    id  = Oid(ccall((:git_note_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), ptr))
+    msg = utf8(bytestring(ccall((:git_note_message, :libgit2), Ptr{Uint8}, (Ptr{Void},), ptr)))
     return GitNote(id, msg)
-                   
 end
 
 Oid(n::GitNote) = n.id
