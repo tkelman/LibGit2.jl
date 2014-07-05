@@ -20,6 +20,13 @@ GitConfig(path::String) = begin
     return GitConfig(cfg_ptr[1])
 end
 
+GitConfig(r::GitRepo) = begin
+    cfg_ptr = Ptr{Void}[0]
+    @check ccall((:git_repository_config, :libgit2), Cint, 
+                 (Ptr{Ptr{Void}}, Ptr{Void}), cfg_ptr, r)
+    return GitConfig(cfg_ptr[1])
+end
+
 free!(cfg::GitConfig) = begin
     if cfg.ptr != C_NULL
         ccall((:git_config_free, :libgit2), Void, (Ptr{Void},), cfg.ptr)

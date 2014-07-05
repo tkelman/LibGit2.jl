@@ -130,8 +130,8 @@ sandboxed_test(f::Function, reponame::String, s::String) = (println(s);
 function sandboxed_clone_test(f::Function, reponame::String)
     sbt = setup(SandBoxedTest, reponame)
     remote = sbt.repo
+    GitConfig(remote)["core.bare"] = true
     repo = clone(sbt, reponame, splitext(reponame)[1]) 
-    config(remote)["core.bare"] = true
     try
         f(repo, remote, sbt.path)
     finally

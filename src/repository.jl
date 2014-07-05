@@ -592,13 +592,6 @@ end
 rev_parse_oid(r::GitRepo, rev::Oid) = Oid(rev_parse(r, string(rev)))
 rev_parse_oid(r::GitRepo, rev::String) = Oid(rev_parse(r, rev))
 
-function config(r::GitRepo)
-    cfg_ptr = Ptr{Void}[0]
-    @check ccall((:git_repository_config, :libgit2), Cint, 
-                 (Ptr{Ptr{Void}}, Ptr{Void}), cfg_ptr, r)
-    return GitConfig(cfg_ptr[1])
-end
-
 Odb(r::GitRepo) = begin
     odb_ptr = Ptr{Void}[0]
     @check ccall((:git_repository_odb, :libgit2), Cint,
