@@ -29,7 +29,6 @@ with_repo_access("test remote new invalid url") do test_repo, path
     @test_throws ArgumentError GitRemote(test_repo, "libgit2")
 end
 
-
 with_repo_access("test remote url set") do test_repo, path
     new_url = "git://github.com/libgit2/TestGitRepository.git"
     remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
@@ -119,7 +118,7 @@ end
 with_tmp_repo_access("test remote add with invalid url") do test_repo, path
     @test_throws ArgumentError remote_add!(test_repo, "upstream", "libgit2")
 end
-#=
+
 with_tmp_repo_access("test remote url set") do test_repo, path
     new_url = "git://github.com/l?#!@#ibgit2/TestGitRepository.git"
     remote = lookup_remote(test_repo, "origin")
@@ -150,25 +149,24 @@ with_tmp_repo_access("test remote rename error callback") do test_repo, path
     @test ["+refs/*:refs/*"] == rename!(remote, "test_remote")
 end
 
-sandboxed_clone_test("test remote push single ref") do test_repo, test_clone, path 
-    create_ref(test_clone, "refs/heads/unit_test", 
-               Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+sandboxed_clone_test("testrepo.git", "test remote push single ref") do test_repo, test_clone, path 
+    create_ref(test_clone, "refs/heads/unit_test", Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    @show remote_names(test_clone)
     remote = lookup_remote(test_clone, "origin")
-
+    @show remote
     result = push!(test_repo, remote,
                    ["refs/heads/master", 
                     "refs/heads/master:refs/heads/foobar",
                     "refs/heads/unit_test"])
     @test isempty(result)
-
     @test (target(lookup_ref(test_repo, "refs/heads/foobar")) 
             == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
-
     @test (target(lookup_ref(test_repo, "refs/heads/unit_test"))
             == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
 end
 
-sandboxed_clone_test("test push non bare raise error") do test_repo, test_clone, path
+sandboxed_clone_test("testrepo.git", "test push non bare raise error") do test_repo, test_clone, path
+    
     create_ref(test_clone, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     remote = lookup_remote(test_clone, "origin")
@@ -176,19 +174,19 @@ sandboxed_clone_test("test push non bare raise error") do test_repo, test_clone,
     @test_throws ErrorException push!(test_clone, remote, ["refs/heads/master"])
 end
 
-sandboxed_clone_test("test remote push non ff raise error") do test_repo, test_clone, path
+sandboxed_clone_test("testrepo.git", "test remote push non ff raise error") do test_repo, test_clone, path
     create_ref(test_clone, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     remote = lookup_remote(test_clone, "origin")
     #TODO: better errors
     @test_throws ErrorException push!(test_clone, remote, 
                                       ["refs/heads/unit_test:refs/heads/master"])
-
-    @test (target(lookup_ref(remote_repo, "refs/heads/master"))
+    @show target(lookup_ref(test_repo, "refs/heads/master"))
+    @test (target(lookup_ref(test_repo, "refs/heads/master"))
               == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
 end
 
-sandboxed_test("testrepo.git", "test remote push non ff raise no error") do test_repo, path
+sandboxed_clone_test("testrepo.git", "test remote push non ff raise no error") do test_repo, test_clone, path
     create_ref(test_clone, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     remote = lookup_remote(test_clone, "origin")
@@ -197,7 +195,7 @@ sandboxed_test("testrepo.git", "test remote push non ff raise no error") do test
     @test (target(lookup_ref(test_repo, "refs/heads/master"))
             == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
 end
-=#
+
 remote_transport_test("test remote disconnect") do test_repo, test_remote
     connect(test_remote, :fetch)
     @test connected(test_remote)
