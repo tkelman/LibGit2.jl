@@ -1,12 +1,19 @@
-#=
+
 with_repo_access("test isconnected") do test_repo, path
-    remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
-    connect(remote, :fetch) do r
-        @test connected(r) 
+    skip = false
+    try
+        download("www.google.com")
+    catch
+        skip = true 
     end
-    @test disconnected(remote)
+    if !skip
+        remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
+        connect(remote, :fetch) do r
+            @test connected(r) 
+        end
+        @test disconnected(remote)
+    end
 end
-=#
 
 with_repo_access("test remote names") do test_repo, path
     ns = remote_names(test_repo)
@@ -150,50 +157,43 @@ with_tmp_repo_access("test remote rename error callback") do test_repo, path
 end
 
 sandboxed_clone_test("testrepo.git", "test remote push single ref") do test_repo, test_clone, path 
-    create_ref(test_clone, "refs/heads/unit_test", Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    @show remote_names(test_clone)
-    remote = lookup_remote(test_clone, "origin")
-    @show remote
-    result = push!(test_repo, remote,
+    create_ref(test_repo, "refs/heads/unit_test", Oid("8496071c1b46c854b31185ea97743be6a8774479"))
+    remote = lookup_remote(test_repo, "origin")
+    result = push!(test_clone, remote,
                    ["refs/heads/master", 
                     "refs/heads/master:refs/heads/foobar",
                     "refs/heads/unit_test"])
     @test isempty(result)
-    @test (target(lookup_ref(test_repo, "refs/heads/foobar")) 
-            == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
-    @test (target(lookup_ref(test_repo, "refs/heads/unit_test"))
-            == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
+    @test target(lookup_ref(test_clone, "refs/heads/foobar")) == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    @test target(lookup_ref(test_clone, "refs/heads/unit_test")) == Oid("8496071c1b46c854b31185ea97743be6a8774479") 
 end
 
 sandboxed_clone_test("testrepo.git", "test push non bare raise error") do test_repo, test_clone, path
-    
-    create_ref(test_clone, "refs/heads/unit_test", 
+    GitConfig(test_clone)["core.bare"] = false
+    create_ref(test_repo, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    remote = lookup_remote(test_clone, "origin")
+    remote = lookup_remote(test_repo, "origin")
     #TODO: better errors
     @test_throws ErrorException push!(test_clone, remote, ["refs/heads/master"])
 end
 
 sandboxed_clone_test("testrepo.git", "test remote push non ff raise error") do test_repo, test_clone, path
-    create_ref(test_clone, "refs/heads/unit_test", 
+    create_ref(test_repo, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    remote = lookup_remote(test_clone, "origin")
+    remote = lookup_remote(test_repo, "origin")
     #TODO: better errors
     @test_throws ErrorException push!(test_clone, remote, 
                                       ["refs/heads/unit_test:refs/heads/master"])
-    @show target(lookup_ref(test_repo, "refs/heads/master"))
-    @test (target(lookup_ref(test_repo, "refs/heads/master"))
-              == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
+    @test target(lookup_ref(test_clone, "refs/heads/master")) == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
 end
 
 sandboxed_clone_test("testrepo.git", "test remote push non ff raise no error") do test_repo, test_clone, path
-    create_ref(test_clone, "refs/heads/unit_test", 
+    create_ref(test_repo, "refs/heads/unit_test", 
                Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    remote = lookup_remote(test_clone, "origin")
+    remote = lookup_remote(test_repo, "origin")
     result = push!(test_clone, remote, ["+refs/heads/unit_test:refs/heads/master"])
     @test isempty(result)
-    @test (target(lookup_ref(test_repo, "refs/heads/master"))
-            == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
+    @test target(lookup_ref(test_clone, "refs/heads/master")) == Oid("8496071c1b46c854b31185ea97743be6a8774479")
 end
 
 remote_transport_test("test remote disconnect") do test_repo, test_remote
@@ -214,7 +214,7 @@ remote_transport_test("test remote ls") do test_repo, test_remote
     end
 end
 
-remote_transport_test("test git remote fetch") do test_repo, test_remote
+remote_transport_test("test remote git fetch") do test_repo, test_remote
     connect(test_remote, :fetch) do r
         download(r) |> update_tips!
     end
