@@ -116,21 +116,16 @@ function save!(r::GitRemote)
     return r
 end
 
-function cb_remote_rename(problem_refspec::Ptr{Uint8}, payload::Ptr{Void})
-    errs = unsafe_pointer_to_objref(payload)::Vector{UTF8String}
-    @show bytestring(problem_refspec)
-    push!(errs, utf8(bytestring(problem_refspec)))
-    return api.GIT_OK
-end
-
-const c_cb_remote_rename = cfunction(cb_remote_rename, Cint, (Ptr{Uint8}, Ptr{Void}))
-
 function rename!(r::GitRemote, newname::String) 
-    errs = UTF8String[]
+    sa_ptr = [StrArrayStruct()] 
     @check ccall((:git_remote_rename, :libgit2), Cint,
-                  (Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Void}),
-                  r, newname, c_cb_remote_rename, &errs)
-    return length(errs) == 0 ? nothing : errs
+                  (Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Uint8}), sa_ptr, r, newname)
+    sa = sa_ptr[1]
+    errs = UTF8String[]
+    for i=1:sa.count
+        push!(errs, utf8(bytestring(unsafe_load(sa.strings, i))))
+    end
+    return errs
 end
 
 type RemoteHead
