@@ -1,28 +1,6 @@
 cint(i)  = convert(Cint, i)
 cuint(i) = convert(Cuint, i)
 
-module GitErrorConst
-    import ..cint
-    import ..cuint 
-
-    const GIT_OK     = cint(0)
-    const ERROR      = cint(-01)  
-    const ENOTFOUND  = cint(-03)  
-    const EEXISTS    = cint(-04) 
-    const EAMBIGUOUS = cint(-05) 
-    const EBUFS      = cint(-06) 
-    const EUSER      = cint(-07) 
-    const EBAREREPO       = cint(-08) 
-    const EUNBORNBRANCH   = cint(-09) 
-    const EUNMERGED       = cint(-10) 
-    const ENONFASTFORWARD = cint(-11) 
-    const EINVALIDSPEC    = cint(-12) 
-    const EMERGECONFLICT  = cint(-13) 
-    const ELOCKED         = cint(-14) 
-    const PASSTHROUGH     = cint(-30) 
-    const ITEROVER        = cint(-31)
-end
-
 module GitConst
     import ..cint
     import ..cuint
