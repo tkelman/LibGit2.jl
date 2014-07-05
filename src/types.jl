@@ -66,6 +66,21 @@ end
 
 typealias DiffDeltaT Cint
 
+@eval begin
+    $(Expr(:type, false, :HeaderStruct,
+        Expr(:block, 
+            [Expr(:(::), symbol("c$i"), :Uint8) for i=1:128]...)))
+end
+
+immutable DiffHunkStruct
+    old_start::Cint
+    old_lines::Cint
+    new_start::Cint
+    new_lines::Cint
+    header_len::Csize_t
+    header::HeaderStruct
+end
+
 immutable DiffFileStruct
     id::Oid
     path::Ptr{Uint8}

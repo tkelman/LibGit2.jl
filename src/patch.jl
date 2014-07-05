@@ -78,7 +78,7 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::String, opts= nothing) = begin
     return GitPatch(patch_ptr[1])
 end
 
-type PatchStat
+type GitPatchStat
     adds::Int
     dels::Int
 end
@@ -89,25 +89,10 @@ Base.stat(p::GitPatch) = begin
     @check ccall((:git_patch_line_stats, :libgit2), Cint,
                  (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}),
                  C_NULL, adds, dels, p)
-    return PatchStat(int(adds[1]), int(dels[1]))
+    return GitPatchStat(int(adds[1]), int(dels[1]))
 end
 
 nchanges(p::GitPatch) = (s = stat(p); s.adds + s.dels)
-
-@eval begin
-    $(Expr(:type, false, :HeaderStruct,
-        Expr(:block, 
-            [Expr(:(::), symbol("c$i"), :Uint8) for i=1:128]...)))
-end
-
-immutable DiffHunkStruct
-    old_start::Cint
-    old_lines::Cint
-    new_start::Cint
-    new_lines::Cint
-    header_len::Csize_t
-    header::HeaderStruct
-end
 
 type DiffHunk
     patch::GitPatch
@@ -144,7 +129,7 @@ function hunks(p::GitPatch)
     if nhunks == 0
         return nothing
     end
-    err::Cint = 0
+    err = zero(Cint)
     hunk_ptr  = Ptr{DiffHunkStruct}[0]
     lines_ptr = Csize_t[0]
     hs = DiffHunk[]
@@ -152,9 +137,7 @@ function hunks(p::GitPatch)
         err = ccall((:git_patch_get_hunk, :libgit2), Cint,
                     (Ptr{Ptr{DiffHunkStruct}}, Ptr{Csize_t}, Ptr{Void}, Csize_t),
                     hunk_ptr, lines_ptr, p, i-1)
-        if err != GitErrorConst.GIT_OK
-            break
-        end
+        err == GitErrorConst.GIT_OK || break
         push!(hs, DiffHunk(p, hunk_ptr[1], i, lines_ptr[1]))
     end
     if err != GitErrorConst.GIT_OK
@@ -163,7 +146,7 @@ function hunks(p::GitPatch)
     return hs
 end
 
-function line_origin_to_symbol(o::Cchar)
+function line_origin_to_symbol(o)
     o == GitConst.DIFF_LINE_CONTEXT   && return :context
     o == GitConst.DIFF_LINE_ADDITION  && return :addition
     o == GitConst.DIFF_LINE_DELETION  && return :deletion
@@ -207,9 +190,7 @@ function lines(h::DiffHunk)
         err = ccall((:git_patch_get_line_in_hunk, :libgit2), Cint,
                     (Ptr{Ptr{DiffLineStruct}}, Ptr{Void}, Csize_t, Csize_t),
                     line_ptr, h.patch, hi-1, i-1)
-        if err != GitErrorConst.GIT_OK 
-            break
-        end
+        err == GitErrorConst.GIT_OK || break
         push!(ls, DiffLine(h, line_ptr[1]))
     end
     if err != GitErrorConst.GIT_OK
