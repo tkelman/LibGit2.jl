@@ -31,7 +31,7 @@ function committer(c::GitCommit)
     return Signature(ptr)
 end
 
-function parent(c::GitCommit, n::Integer)
+Base.parent(c::GitCommit, n::Integer) = begin
     n >= 1 || throw(ArgumentError("n must be greater than or equal to 1"))
     commit_ptr = Ptr{Void}[0]
     @check ccall((:git_commit_parent, :libgit2), Cint,
