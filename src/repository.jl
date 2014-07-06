@@ -125,18 +125,14 @@ end
 
 function workdir(r::GitRepo)
     dir = ccall((:git_repository_workdir, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
-    if dir == C_NULL
-        return nothing
-    end
+    dir == C_NULL && return nothing
     # remove trailing slash
     return bytestring(dir)[1:end-1]
 end
 
 function path(r::GitRepo)
     cpath = ccall((:git_repository_path, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
-    if cpath == C_NULL
-        return nothing
-    end
+    cpath == C_NULL && return nothing
     # remove trailing slash
     return bytestring(cpath)[1:end-1]
 end
@@ -188,9 +184,7 @@ end
 
 function namespace(r::GitRepo)
     ns_ptr = ccall((:git_repository_get_namespace, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
-    if ns_ptr == C_NULL
-        return nothing
-    end
+    ns_ptr == C_NULL && return nothing
     return bytestring(ns_ptr)
 end
 
@@ -237,9 +231,7 @@ function remotes(r::GitRepo)
     @check ccall((:git_remote_list, :libgit2), Cint,
                  (Ptr{StrArrayStruct}, Ptr{Void}), sa_ptr, r)
     sa = sa_ptr[1]
-    if sa.count == 0 
-        return nothing 
-    end
+    sa.count == 0 && return nothing 
     remote_ptr = Ptr{Void}[0]
     out = Array(GitRemote, sa.count)
     for i in 1:sa.count 
@@ -361,9 +353,7 @@ function tags(r::GitRepo, glob::String="")
     @check ccall((:git_tag_list_match, :libgit2), Cint,
                  (Ptr{StrArrayStruct}, Ptr{Uint8}, Ptr{Void}), sa_ptr, glob, r)
     sa = sa_ptr[1]
-    if sa.count == 0
-        return nothing
-    end
+    sa.count == 0 && return nothing
     out = Array(UTF8String, sa.count)
     for i in 1:sa.count
         out[i] = utf8(bytestring(unsafe_load(sa.strings, i)))
@@ -476,8 +466,8 @@ function note_default_ref(r::GitRepo)
 end
 
 function cb_iter_notes(blob_id::Ptr{Oid}, ann_obj_id::Ptr{Oid}, repo_ptr::Ptr{Void})
-    ann_obj_ptr = Ptr{Void}[0]
     blob_ptr    = Ptr{Void}[0]
+    ann_obj_ptr = Ptr{Void}[0]
     err = ccall((:git_object_lookup, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
                 ann_obj_ptr, repo_ptr, ann_obj_id, GitConst.OBJ_BLOB)
@@ -588,7 +578,6 @@ function merge_base(r::GitRepo, args...)
     end
     return id_ptr[1]
 end
-#TODO: this could be more efficient
 rev_parse_oid(r::GitRepo, rev::Oid) = Oid(rev_parse(r, string(rev)))
 rev_parse_oid(r::GitRepo, rev::String) = Oid(rev_parse(r, rev))
 
@@ -981,10 +970,7 @@ function cb_checkout_notify(why::Cint,
         reason = :unknown
     end
     try
-        callback(why, path, 
-                 DiffFile(baseline),
-                 DiffFile(target), 
-                 DiffFile(workdir))
+        callback(why, path, DiffFile(baseline), DiffFile(target), DiffFile(workdir))
         return GitErrorConst.GIT_OK
     catch
         return GitErrorConst.ERROR
@@ -1227,14 +1213,14 @@ end
 #------- Repo Clone -------
 abstract GitCredential
 
-type CredDefault <: GitCredential end
+immutable CredDefault <: GitCredential end
 
-type CredPlainText <: GitCredential
+immutable CredPlainText <: GitCredential
     username::String
     password::String
 end
 
-type CredSSHKey <: GitCredential
+immutable CredSSHKey <: GitCredential
     username::MaybeString
     publickey::MaybeString
     privatekey::String
