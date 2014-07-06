@@ -96,7 +96,7 @@ nchanges(p::GitPatch) = (s = stat(p); s.adds + s.dels)
 
 type DiffHunk
     patch::GitPatch
-    header::String 
+    header::UTF8String
     line_count::Int
     hunk_index::Int
     old_start::Int
@@ -106,15 +106,14 @@ type DiffHunk
 
     function DiffHunk(p::GitPatch, ptr::Ptr{DiffHunkStruct}, idx::Integer, lc::Integer)
         @assert ptr != C_NULL
-        h = unsafe_load(ptr)
+        h = unsafe_load(ptr)::DiffHunkStruct
         head_arr = zeros(Uint8, 128)
-        head = h.header
         #TODO: get rid of this ugly hack
         for i=1:128
-            head_arr[i] = getfield(head, symbol("c$i"))
+            head_arr[i] = getfield(h.header, symbol("c$i"))
         end
         return new(p,
-                   bytestring(convert(Ptr{Uint8}, head_arr)),
+                   utf8(bytestring(convert(Ptr{Uint8}, head_arr))),
                    lc,
                    idx,
                    h.old_start,
@@ -203,8 +202,8 @@ end
 #TODO: unsafe_pointer_to_objref for payload?
 function cb_patch_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
                         line_ptr::Ptr{DiffLineStruct}, payload::Ptr{Void})
-    l = unsafe_load(line_ptr)
-    s = unsafe_pointer_to_objref(payload)::Array{Uint8,1}
+    l = unsafe_load(line_ptr)::DiffLineStruct
+    s = unsafe_pointer_to_objref(payload)::Vector{Uint8}
     add_origin = false
     if l.origin == GitConst.DIFF_LINE_CONTEXT ||
        l.origin == GitConst.DIFF_LINE_ADDITION ||
