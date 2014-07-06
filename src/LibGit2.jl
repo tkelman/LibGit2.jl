@@ -1,7 +1,5 @@
 module LibGit2
 #=
-# libgit threads must be initialized before any library calls,
-# these functions are a no-op if libgit is built without thread support
 if isfile(joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl"))
     include("../deps/deps.jl")
 else
@@ -9,6 +7,10 @@ else
 end
 =#
 
+#=
+# libgit threads must be initialized before any library calls,
+# these functions are a no-op if libgit is built without thread support
+=#
 function __init__()
     err = ccall((:git_threads_init, :libgit2), Cint, ())
     if err != zero(Cint)
