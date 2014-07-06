@@ -2,7 +2,7 @@
 with_repo_access("test isconnected") do test_repo, path
     skip = false
     try
-        download("www.google.com")
+       getipaddr() 
     catch
         skip = true 
     end
