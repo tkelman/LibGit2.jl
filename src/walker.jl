@@ -96,7 +96,7 @@ end
 
 function walk(r::GitRepo, from::Oid, sort_mode::Symbol=:date, rev::Bool=false)
     walker = GitRevWalker(r)
-    sortby!(walker, sort_mode, rev)
+    sortby!(walker, sort_mode, rev=rev)
     push!(walker, from)
     return (@task for c in walker
         produce(c)
@@ -108,7 +108,7 @@ end
 # end
 function walk(f::Function, r::GitRepo, from::Oid, sort_mode::Symbol=:date, rev::Bool=false)
     walker = GitRevWalker(r)
-    sortby!(walker, sort_mode, rev)
+    sortby!(walker, sort_mode, rev=rev)
     push!(walker, from) 
     for c in walker
         f(c)
