@@ -1,7 +1,9 @@
 using Base.Test
 using LibGit2
 
-function has_ssh()
+context(f::Function, s::String) = (println(s); f())
+
+has_ssh() = begin
     keys = ["URL", "USER", "KEY", "PUBKEY", "PASSPHRASE"]
     for key in keys
         if !(haskey(ENV, "GITTEST_REMOTE_SSH_$key"))
@@ -11,16 +13,12 @@ function has_ssh()
     return true
 end
 
-function has_git()
-    return haskey(ENV, "GITTEST_REMOTE_GIT_URL")
-end
+has_git() = haskey(ENV, "GITTEST_REMOTE_GIT_URL")
 
-function ssh_key_credential()
-    return CredSSHKey(ENV["GITTEST_REMOTE_SSH_USER"],
-                      ENV["GITTEST_REMOTE_SSH_PUBKEY"],
-                      ENV["GITTEST_REMOTE_SSH_KEY"],
-                      ENV["GITTEST_REMOTE_SSH_PASSPHRASE"])
-end
+ssh_key_credential() = CredSSHKey(ENV["GITTEST_REMOTE_SSH_USER"],
+                                  ENV["GITTEST_REMOTE_SSH_PUBKEY"],
+                                  ENV["GITTEST_REMOTE_SSH_KEY"],
+                                  ENV["GITTEST_REMOTE_SSH_PASSPHRASE"])
 
 if !has_git()
     warn("Skipping remote clone => test clone over git")
@@ -30,7 +28,7 @@ else
         repo = repo_clone(ENV["GITTEST_REMOTE_GIT_URL"], dir)
         @test isa(repo, GitRepo)
     finally 
-        run(`rm -r -f $dir`)
+        run(`rm -rf $dir`)
     end
 end
 
@@ -43,7 +41,7 @@ else
                           {:credentials => ssh_key_credential()})
         @test isa(repo, GitRepo)
     finally
-        run(`rm -r -f $dir`)
+        run(`rm -rf $dir`)
     end
 end
 
@@ -56,12 +54,11 @@ else
                           {:credentials => (url, username, allowed_types) -> ssh_key_credential()})
         @test isa(repo, GitRepo)
     finally
-        run(`rm -r -f $dir`)
+        run(`rm -rf $dir`)
     end
 end
 
-# test_clone_callback_args_without_username
-begin
+context("test clone callback args without username") do 
     dir = mktempdir()
     gurl, gusername, gallowed_types = nothing, nothing, nothing
     #TODO: better error
@@ -78,8 +75,7 @@ begin
     end
 end
 
-# test_clone_callback_args_with_username
-begin
+context("test clone callback args with username") do
     dir = mktempdir()
     gurl, gusername, gallowed_types = nothing, nothing, nothing
     #TODO: better error
