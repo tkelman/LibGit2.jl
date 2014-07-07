@@ -138,13 +138,6 @@ Base.convert(::Type{Ptr{Void}}, o::OdbRead) = o.ptr
 Base.isreadable(io::OdbRead)  = true
 Base.iswriteable(io::OdbRead) = false
 
-#TODO: this is broken ...
-#Base.readbytes(io::OdbRead, nb=typemax(Int)) = begin
-#    b = (Uint8, min(nb, 65536))
-#    nr = readbytes!(s, b, nb)
-#    resize!(b, nr)
-#end
- 
 Base.readbytes!(io::OdbRead, buffer::Vector{Uint8}, nb=length(b)) = begin
     @assert io.ptr != C_NULL
     len = convert(Csize_t, length(b))
@@ -154,7 +147,4 @@ Base.readbytes!(io::OdbRead, buffer::Vector{Uint8}, nb=length(b)) = begin
     return len
 end
 
-Base.close(os::OdbRead) = begin
-    #no op
-    return nothing
-end
+Base.close(os::OdbRead) = return nothing # no op
