@@ -197,9 +197,7 @@ end
 Base.getindex(idx::GitIndex, path::String, stage::Integer=0) = begin
     entryptr = ccall((:git_index_get_bypath, :libgit2), Ptr{IndexEntryStruct},
                       (Ptr{Void}, Ptr{Uint8}, Cint), idx, path, stage) 
-    if entryptr == C_NULL
-        return nothing
-    end
+    entryptr == C_NULL && return nothing
     return GitIndexEntry(entryptr)
 end
 
@@ -246,16 +244,16 @@ function add_all!(idx::GitIndex, pathspec::String;
                  force::Bool=false,
                  disable_pathsepc_match::Bool=false,
                  check_pathspec::Bool=false)
-    return add_all!(idx, String[pathspec], 
+    return add_all!(idx, [pathspec], 
                     force=force, 
                     disable_pathsepc_match=disable_pathsepc_match,
                     check_pathspec=check_pathspec)
 end
 
-function add_all!(idx::GitIndex, pathspecs::Vector{String};
-                  force::Bool=false,
-                  disable_pathsepc_match::Bool=false,
-                  check_pathspec::Bool=false)
+function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
+                             force::Bool=false,
+                             disable_pathsepc_match::Bool=false,
+                             check_pathspec::Bool=false)
     flags = GitConst.INDEX_ADD_DEFAULT
     if force
         flags |= GitConst.INDEX_ADD_FORCE
@@ -266,46 +264,43 @@ function add_all!(idx::GitIndex, pathspecs::Vector{String};
     if check_pathspec
         flags |= GitConst.INDEX_ADD_CHECK_PATHSPEC
     end
-    exptr  = Cint[0]
-    strs   = [bytestring(s) for s in pathspecs]
-    ptrs   = [pointer(s) for s in strs]
-    strarr = StrArrayStruct(ptrs, length(ptrs))
+    sa = StrArrayStruct(pathspecs)
+    ex_ptr = Cint[0]
     @check ccall((:git_index_add_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Cuint, Ptr{Void}, Ptr{Cint}),
-                 idx, &strarr, flags, C_NULL, exptr)
-    if exptr[1] != GitErrorConst.GIT_OK
-        throw(LibGitError(exptr[1]))
+                 idx, &sa, flags, C_NULL, ex_ptr)
+    free!(sa)
+    if ex_ptr[1] != GitErrorConst.GIT_OK
+        throw(LibGitError(ex_ptr[1]))
     end
     return idx
 end
 
-function update_all!(idx::GitIndex, pathspecs::Vector{String})
-    exptr  = Cint[0]
-    strs   = [bytestring(s) for s in pathspecs]
-    ptrs   = [pointer(s) for s in strs]
-    strarr = StrArrayStruct(ptrs, length(ptrs))
+function update_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
+    sa = StrArrayStruct(pathspecs)
+    ex_ptr = Cint[0]
     @check ccall((:git_index_update_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
-                 idx, &strarr, C_NULL, exptr)
-    if exptr[1] != GitErrorConst.GIT_OK
-        throw(LibGitError(exptr[1]))
+                 idx, &sa, C_NULL, ex_ptr)
+    free!(sa)
+    if ex_ptr[1] != GitErrorConst.GIT_OK
+        throw(LibGitError(ex_ptr[1]))
     end
     return idx
 end
-update_all!(idx::GitIndex, pathspec::String) = update_all!(idx, String[pathspec])
-update_all!(idx::GitIndex) = update_all!(idx, String[""])
+update_all!(idx::GitIndex, pathspec::String) = update_all!(idx, [pathspec])
+update_all!(idx::GitIndex) = update_all!(idx, [""])
 
-function remove_all!(idx::GitIndex, pathspecs::Vector{String})
-    exptr  = Cint[0]
-    strs   = [bytestring(s) for s in pathspecs]
-    ptrs   = [pointer(s) for s in strs]
-    strarr = StrArrayStruct(ptrs, length(ptrs))
+function remove_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
+    sa = StrArrayStruct(pathspecs)
+    ex_ptr  = Cint[0]
     @check ccall((:git_index_remove_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
-                 idx, &strarr, C_NULL, exptr)
-    if exptr[1] != GitErrorConst.GIT_OK
-        throw(LibGitError(exptr[1]))
+                 idx, &sa, C_NULL, ex_ptr)
+    free!(sa)
+    if ex_ptr[1] != GitErrorConst.GIT_OK
+        throw(LibGitError(ex_ptr[1]))
     end
     return idx
 end
-remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, String[pathspec])
+remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, [pathspec])
