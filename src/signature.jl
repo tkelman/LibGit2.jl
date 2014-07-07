@@ -22,10 +22,16 @@ Signature(ptr::Ptr{SignatureStruct}) = begin
 end
 
 Base.show(io::IO, s::Signature) = begin
-    fmt = "%Y-%m-%d %H:%M:%S %Z"
-    time_str = strftime(fmt, s.time)
+    time_str = strftime("%Y-%m-%d %H:%M:%S %Z", s.time)
     print(io, "Signature(\"$(name(s))\",\"$(email(s))\",\"$time_str\")")
 end
+
+Base.(:(==))(sig1::Signature, sig2::Signature) = (sig1.name == sig2.name && 
+                                                  sig1.email == sig2.email && 
+                                                  sig1.time == sig2.time && 
+                                                  sig1.time_offset == sig2.time_offset)
+
+Base.isequal(sig1::Signature, sig2::Signature) = (sig1 == sig2)
 
 Base.convert(::Type{Ptr{SignatureStruct}}, sig::Signature) = begin
     sig_ptr = Ptr{SignatureStruct}[0]

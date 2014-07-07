@@ -2,10 +2,10 @@
 # Tests adapted from Git2Go Library
 # ------------------------------------
 context("test Signature constructor") do
-    const test_name   = "test test"
-    const test_email  = "test@test.com"
-    const test_time   = 0
-    const test_offset = 0
+    test_name   = "test test"
+    test_email  = "test@test.com"
+    test_time   = 0
+    test_offset = 0
 
     # throw on bad name
     @test_throws LibGitError{:Invalid,:Error} Signature("", "")
@@ -22,6 +22,14 @@ context("test Signature constructor") do
     end
 end
 
+context("test round-trip") do
+    sig1 = Signature("test1", "test1@test.com")
+    sig1_ptr = convert(Ptr{LibGit2.SignatureStruct}, sig1)
+    sig2 = Signature(sig1_ptr)
+    @test sig1 == sig2
+end
+
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
+
