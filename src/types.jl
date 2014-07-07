@@ -221,9 +221,39 @@ immutable CheckoutOptionsStruct
     their_label::Ptr{Uint8}
 end
 
+CheckoutOptionsStruct() = CheckoutOptionsStruct(one(Cuint), 
+                                                GitConst.CHECKOUT_SAFE_CREATE,
+                                                zero(Cint),
+                                                zero(Cuint),
+                                                zero(Cuint),
+                                                zero(Cint),
+                                                zero(Cuint),
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Void}),
+                                                StrArrayStruct(),
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Uint8}),
+                                                zero(Ptr{Uint8}),
+                                                zero(Ptr{Uint8}),
+                                                zero(Ptr{Uint8}))
 immutable RemoteCallbacksStruct 
+    version::Cuint
+    sideband_progress::Ptr{Void}
+    completion::Ptr{Void}
+    credentials::Ptr{Void}
+    transfer_progress::Ptr{Void}
+    update_tips::Ptr{Void}
+    payload::Ptr{Void}
 end
-
+RemoteCallbacksStruct() = RemoteCallbacksStruct(one(Cuint),
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Void}), 
+                                                zero(Ptr{Void}),
+                                                zero(Ptr{Void}))
 immutable CloneOptsStruct
     version::Cuint
     checkout_opts::CheckoutOptionsStruct
