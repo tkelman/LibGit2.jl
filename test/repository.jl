@@ -635,15 +635,14 @@ sandboxed_checkout_test("test checkout tree raises with bare repo") do test_repo
 end
 
 sandboxed_checkout_test("test checkout tree works with bare repo and target dir") do test_repo, test_clone, test_bare
-    d = tempdir()
+    d = tempname()
     try
         checkout_tree!(test_bare, "HEAD", 
                        {:strategy => :safe_create, :target_directory => d})
         @test isfile(joinpath(d, "README"))
         @test isfile(joinpath(d, "new.txt"))
     finally
-        # Operation not permitted error
-        #rm(d, recursive=true)
+        rm(d, recursive=true)
     end
 end
 
