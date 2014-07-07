@@ -188,9 +188,7 @@ Base.getindex(idx::GitIndex, i::Integer) = begin
     i <= 0 && throw(BoundsError())
     entryptr = ccall((:git_index_get_byindex, :libgit2), Ptr{IndexEntryStruct},
                      (Ptr{Void}, Csize_t), idx, i-1)
-    if entryptr == C_NULL
-        return nothing
-    end
+    entryptr == C_NULL && return nothing
     return GitIndexEntry(entryptr)
 end
 
@@ -264,12 +262,12 @@ function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
     if check_pathspec
         flags |= GitConst.INDEX_ADD_CHECK_PATHSPEC
     end
-    sa = StrArrayStruct(pathspecs)
+    sa_ptr = [StrArrayStruct(pathspecs)]
     ex_ptr = Cint[0]
     @check ccall((:git_index_add_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Cuint, Ptr{Void}, Ptr{Cint}),
-                 idx, &sa, flags, C_NULL, ex_ptr)
-    free!(sa)
+                 idx, sa_ptr, flags, C_NULL, ex_ptr)
+    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
     if ex_ptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(ex_ptr[1]))
     end
@@ -277,12 +275,12 @@ function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
 end
 
 function update_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
-    sa = StrArrayStruct(pathspecs)
+    sa_ptr = [StrArrayStruct(pathspecs)]
     ex_ptr = Cint[0]
     @check ccall((:git_index_update_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
-                 idx, &sa, C_NULL, ex_ptr)
-    free!(sa)
+                 idx, sa_ptr, C_NULL, ex_ptr)
+    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
     if ex_ptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(ex_ptr[1]))
     end
@@ -292,12 +290,12 @@ update_all!(idx::GitIndex, pathspec::String) = update_all!(idx, [pathspec])
 update_all!(idx::GitIndex) = update_all!(idx, [""])
 
 function remove_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
-    sa = StrArrayStruct(pathspecs)
-    ex_ptr  = Cint[0]
+    sa_ptr = [StrArrayStruct(pathspecs)]
+    ex_ptr = Cint[0]
     @check ccall((:git_index_remove_all, :libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
-                 idx, &sa, C_NULL, ex_ptr)
-    free!(sa)
+                 idx, sa_ptr, C_NULL, ex_ptr)
+    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
     if ex_ptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(ex_ptr[1]))
     end
