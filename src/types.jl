@@ -220,7 +220,6 @@ immutable CheckoutOptionsStruct
     our_label::Ptr{Uint8}
     their_label::Ptr{Uint8}
 end
-
 CheckoutOptionsStruct() = CheckoutOptionsStruct(one(Cuint), 
                                                 GitConst.CHECKOUT_SAFE_CREATE,
                                                 zero(Cint),

@@ -132,7 +132,7 @@ sandboxed_test("testrepo.git", "test find reference") do test_repo, path
 end
 
 sandboxed_test("testrepo.git", "test match all refs") do test_repo, path
-    refs = collect(iter_refs(test_repo, "refs/heads/*"))
+    refs = collect(foreach(GitReference, test_repo, "refs/heads/*"))
     @test length(refs) == 12
 end
 
@@ -662,8 +662,7 @@ sandboxed_checkout_test("test checkout with head") do test_repo, test_clone, tes
 end
 
 sandboxed_checkout_test("test checkout with commit detaches HEAD") do test_repo, test_clone, test_bare
-    checkout!(test_repo, rev_parse_oid(test_repo, "refs/heads/dir"), 
-              {:strategy => :force})
+    checkout!(test_repo, rev_parse_oid(test_repo, "refs/heads/dir"), {:strategy => :force})
     @test is_head_detached(test_repo)
     @test rev_parse_oid(test_repo, "refs/heads/dir") == target(head(test_repo))
 end

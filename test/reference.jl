@@ -102,18 +102,18 @@ with_repo_access() do test_repo, path
     # test can handle exceptions
 
     context("test list references") do 
-        tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo))
+        tmp = map((r) -> replace(name(r), "refs/", ""), foreach(GitReference, test_repo))
         @test join(sort(tmp), ":") == "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0"
     end
     
     context("test can filter refs with regex") do
-        tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo, "refs/tags/*"))
+        tmp = map((r) -> replace(name(r), "refs/", ""), foreach(GitReference, test_repo, "refs/tags/*"))
         refs = join(sort(tmp), ":")
         @test refs == "tags/v0.9:tags/v1.0"
     end
 
     context("test can filter refs with string") do 
-        tmp = map((r) -> replace(name(r), "refs/", ""), iter_refs(test_repo, "*0.9*"))
+        tmp = map((r) -> replace(name(r), "refs/", ""), foreach(GitReference, test_repo, "*0.9*"))
         refs = join(sort(tmp), ":")
         @test refs == "tags/v0.9"
     end
@@ -204,7 +204,7 @@ with_tmp_repo_access("test create ref with unicode") do test_repo, path
     create_ref(test_repo,
                "refs/heads/$UNICODE_REF_NAME",
                "refs/heads/master")
-    refs = map(r -> replace(name(r), "refs/", ""), iter_refs(test_repo))
+    refs = map(r -> replace(name(r), "refs/", ""), foreach(GitReference, test_repo))
     @test "heads/$UNICODE_REF_NAME" in refs
 end
 

@@ -198,8 +198,6 @@ function lines(h::DiffHunk)
     return ls
 end
 
-#TODO: memory leaks?
-#TODO: unsafe_pointer_to_objref for payload?
 function cb_patch_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
                         line_ptr::Ptr{DiffLineStruct}, payload::Ptr{Void})
     l = unsafe_load(line_ptr)::DiffLineStruct
