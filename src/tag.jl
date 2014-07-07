@@ -4,9 +4,7 @@ name(t::GitTag) = bytestring(ccall((:git_tag_name, :libgit2), Ptr{Uint8}, (Ptr{V
 
 function message(t::GitTag)
     msgptr = ccall((:git_tag_message, :libgit2), Ptr{Uint8}, (Ptr{Void},), t)
-    if msgptr == C_NULL
-        return nothing
-    end
+    msgptr == C_NULL && return nothing
     return bytestring(msgptr)
 end
 
@@ -25,9 +23,7 @@ end
 function tagger(t::GitTag)
     # returns a reference to an existing struct so don't free 
     sig_ptr = ccall((:git_tag_tagger, :libgit2), Ptr{SignatureStruct}, (Ptr{Void},), t)
-    if sig_ptr == C_NULL
-        return nothing
-    end
+    sig_ptr == C_NULL && return nothing
     return Signature(sig_ptr)
 end
 
