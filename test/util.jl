@@ -7,6 +7,12 @@ const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
 context(f::Function) = f()
 context(f::Function, s::String) = (println(s); context(f))
 
+cleanup_dir(p) = begin
+    if isdir(p)
+        rm(p, recursive=true) 
+    end
+end
+
 function remote_transport_test(f::Function) 
     local tmp_dir = joinpath(tempname(), "dir")
     mkpath(tmp_dir)
@@ -17,7 +23,7 @@ function remote_transport_test(f::Function)
         f(test_repo, test_remote)
     finally
         close(test_repo)
-        run(`rm -r -f $tmp_dir`)
+        rm(tmp_dir, recursive=true)
     end
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
@@ -35,7 +41,7 @@ with_test_index(f::Function, s::String) = (println(s); with_test_index(f))
 
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
-        run(`rm -f -r $test_path`)
+        rm(test_path, recursive=true)
     end
     repo = repo_init(test_path)
     fh = open(joinpath(test_path, "README"), "w")
@@ -75,9 +81,10 @@ end
 function setup(::Type{SandBoxedTest}, repo_name::String)
     tmpdir = mktempdir()
     repo_dir = joinpath(tmpdir, "LibGit2_jl_SandBoxTest")
-    run(`mkdir $repo_dir`)
+    mkdir(repo_dir)
     
     fixture_repo_path = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
+    #TODO: cp(fixture_repo_path, repo_dir)
     run(`cp -r $fixture_repo_path $repo_dir`)
     sandbox_repo_path = joinpath(repo_dir, repo_name)
     origdir = pwd()
@@ -85,17 +92,17 @@ function setup(::Type{SandBoxedTest}, repo_name::String)
     dirname = joinpath(sandbox_repo_path, ".gitted")
     if isdir(dirname)
         newdirname = joinpath(sandbox_repo_path, ".git")
-        run(`mv $dirname $newdirname`)
+        mv(dirname, newdirname)
     end 
     filename = joinpath(sandbox_repo_path, "gitattributes")
     if isfile(filename)
         newfilename = joinpath(sandbox_repo_path, ".gitattributes")
-        run(`mv $filename $newfilename`)
+        mv(filename, newfilename)
     end
     filename = joinpath(sandbox_repo_path, "gitignore")
     if isfile(filename)
         newfilename = joinpath(sandbox_repo_path, ".gitignore")
-        run(`mv $filename $newfilename`)
+        mv(filename, newfilename)
     end
     cd(origdir)
     repo = GitRepo(sandbox_repo_path)
@@ -107,7 +114,7 @@ end
 function teardown(sbt::SandBoxedTest)
     if !sbt.torndown
         try
-            run(`rm -r -f $(sbt.path)`)
+            rm(sbt.path, recursive=true)
         catch err
             rethrow(err)
         finally
@@ -201,8 +208,7 @@ teardown(ra::TmpRepoAccess) = begin
     if !ra.torndown
         try
             close(ra.repo)
-            Base.gc()
-            run(`rm -r -f $(ra.path)`)
+            rm(ra.path, recursive=true)
         catch err
             rethrow(err)
         finally

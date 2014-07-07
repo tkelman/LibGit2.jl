@@ -28,7 +28,7 @@ else
         repo = repo_clone(ENV["GITTEST_REMOTE_GIT_URL"], dir)
         @test isa(repo, GitRepo)
     finally 
-        run(`rm -rf $dir`)
+        rm(dir, recursive=true)
     end
 end
 
@@ -41,7 +41,7 @@ else
                           {:credentials => ssh_key_credential()})
         @test isa(repo, GitRepo)
     finally
-        run(`rm -rf $dir`)
+        rm(dir, recursive=true)
     end
 end
 
@@ -54,7 +54,7 @@ else
                           {:credentials => (url, username, allowed_types) -> ssh_key_credential()})
         @test isa(repo, GitRepo)
     finally
-        run(`rm -rf $dir`)
+        rm(dir, recursive=true)
     end
 end
 

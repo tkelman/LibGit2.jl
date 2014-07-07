@@ -1,7 +1,6 @@
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
-
 with_repo_access() do test_repo, path
     context("test read config file") do
         cfg = GitConfig(test_repo)

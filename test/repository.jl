@@ -4,7 +4,7 @@ test_repo_path = joinpath(pwd(), "TestLibGit2")
 function cleanup_repo(path)
     p = abspath(path)
     if isdir(p)
-        run(`rm -rf $p`)
+        rm(p, recursive=true)
     end
 end
 
@@ -330,7 +330,7 @@ end
 #---------------------------
 # Repo Discover Test
 #---------------------------
-teardown_dir(p::String) = run(`rm -r -f $p`)
+teardown_dir(p::String) = rm(p, recursive=true)
 
 function discover_test(f::Function)
     tmpdir = mktempdir()

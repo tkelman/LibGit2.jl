@@ -1,10 +1,3 @@
-# create a repo with a README file
-cleanup_dir(p) = begin
-    if isdir(p)
-        run(`rm -f -R $p`)
-    end
-end
-
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
