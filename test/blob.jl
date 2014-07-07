@@ -135,7 +135,7 @@ with_tmp_repo_access("test blob is binary") do test_repo, path
     @test isbinary(text_blob) == false
 end
 
-#=
+
 # test blob diff
 sandboxed_test("diff") do test_repo, path
     t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
@@ -171,7 +171,6 @@ sandboxed_test("diff") do test_repo, path
     @test :context == ls[5].line_origin
     @test "Git allows and encourages you to have multiple local branches that can be\n" == ls[5].content
 end
-=#
 
 sandboxed_test("diff", "test diff nothing") do test_repo, path 
     t1 = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
