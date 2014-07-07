@@ -28,6 +28,17 @@ function remote_transport_test(f::Function)
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
 
+function repo_clone_test(f::Function)
+    local tmp_dir = tempname()
+    mkdir(tmp_dir)
+    try
+        source = joinpath(TESTDIR, "fixtures", "testrepo.git")
+        f(source, tmp_dir)
+    finally
+        rm(tmp_dir, recursive=true)
+    end
+end 
+repo_clone_test(f::Function, s::String) = (println(s); repo_clone_test(f))
 
 function with_test_index(f::Function)
     try

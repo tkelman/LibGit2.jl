@@ -451,7 +451,7 @@ function remove_note!(obj::GitObject;
     end 
     tid = Oid(obj)
     err = ccall((:git_note_remove, :libgit2), Cint,
-                (Ptr{Void}, Ptr{Cchar}, 
+                (Ptr{Void}, Ptr{Uint8}, 
                  Ptr{SignatureStruct}, Ptr{SignatureStruct}, Ptr{Oid}),
                  repo_ptr, notes_ref, author_ptr, committer_ptr, &tid)
     if err == GitErrorConst.ENOTFOUND
@@ -951,7 +951,7 @@ function cb_checkout_progress(path_ptr::Ptr{Uint8},
                               total_steps::Csize_t,
                               payload::Ptr{Void})
     callback = unsafe_pointer_to_objref(payload)::Function
-    path = path_ptr != C_NULL ? bytestring(path_ptr) : nothing
+    path = path_ptr != C_NULL ? bytestring(path_ptr) : nothing 
     callback(path, completed_steps, total_steps)
     return
 end
@@ -1209,12 +1209,12 @@ function checkout!(r::GitRepo, target, opts={})
     end
 end
 
-#=
+
 #------- Repo Clone -------
-function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
+function cb_remote_transfer(stats_ptr::Ptr{TransferProgressStruct},
                             payload_ptr::Ptr{Void})
-    stats = unsafe_load(stats_ptr)
-    payload = unsafe_pointer_to_objref(payload_ptr)::Dict
+    stats = unsafe_load(stats_ptr)::TransferProgressStruct
+    payload  = unsafe_pointer_to_objref(payload_ptr)::Dict
     callback = payload[:callbacks][:transfer_progress]
     try
         callback(stats.total_objects,
@@ -1222,51 +1222,48 @@ function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress},
                  stats.received_objects,
                  stats.received_bytes)
         return GitErrorConst.GIT_OK
-    catch err
-        payload[:exception] = err
+    catch ex 
+        payload[:exception] = ex
         return GitErrorConst.ERROR
     end
 end
 
 const c_cb_remote_transfer = cfunction(cb_remote_transfer, Cint,
-                                       (Ptr{api.GitTransferProgress}, Ptr{Void}))
+                                       (Ptr{TransferProgressStruct}, Ptr{Void}))
 
 function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_types::Cuint)
-    if isa(cred, CredPlainText)
+    if isa(cred, PlainTextCred)
         if !bool(allowed_types & GitConst.CREDTYPE_USERPASS_PLAINTEXT)
             error("invalid credential type")
         end
         @check ccall((:git_cred_userpass_plaintext_new, :libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}),
-                       cred_ptr,
-                       bytestring(cred.username),
-                       bytestring(cred.password))
-    elseif isa(cred, CredSSHKey)
+                      (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}),
+                       cred_ptr, cred.username, cred.password)
+    elseif isa(cred, SSHKeyCred)
         if !bool(allowed_types & GitConst.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
         @check ccall((:git_cred_ssh_key_new, :libgit2), Cint,
-                     (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Cchar}, Ptr{Cchar}),
+                     (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}),
                      cred_ptr,
                      cred.username   != nothing ? cred.username   : C_NULL,
                      cred.publickey  != nothing ? cred.publickey  : C_NULL,
                      cred.privatekey != nothing ? cred.privatekey : C_NULL,
                      cred.passphrase != nothing ? cred.passphrase : C_NULL)
-    elseif (cred, CredDefault)
+    elseif (cred, DefaultCred)
         if !bool(allowed_types & GitConst.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
-        @check ccall((:git_cred_default_new, :libgit2), Cint,
-                     (Ptr{Ptr{Void}},), cred_ptr)
+        @check ccall((:git_cred_default_new, :libgit2), Cint, (Ptr{Ptr{Void}},), cred_ptr)
     else
         error("invalid credential type")
     end
-    return nothing
+    return 
 end
 
 function cb_default_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
-                                       url::Ptr{Cchar},
-                                       username_from_url::Ptr{Cchar},
+                                       url::Ptr{Uint8},
+                                       username_from_url::Ptr{Uint8},
                                        allowed_types::Cuint,
                                        payload_ptr::Ptr{Void})
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
@@ -1274,18 +1271,19 @@ function cb_default_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
     try
         extract_cred!(cred, cred_ptr, allowed_types)
         return GitErrorConst.GIT_OK
-    catch err
-        payload[:exception] = err
+    catch ex
+        payload[:exception] = ex
         return GitErrorConst.ERROR
     end
 end
 
-const c_cb_default_remote_credentials = cfunction(cb_default_remote_credentials, Cint,
-                                                  (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Cuint, Ptr{Void}))
+const c_cb_default_remote_credentials = 
+    cfunction(cb_default_remote_credentials, Cint, 
+             (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Cuint, Ptr{Void}))
 
 function cb_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
-                               url::Ptr{Cchar},
-                               username::Ptr{Cchar},
+                               url::Ptr{Uint8},
+                               username::Ptr{Uint8},
                                allowed_types::Cuint,
                                payload_ptr::Ptr{Void})
     payload = unsafe_pointer_to_objref(payload_ptr)::Dict
@@ -1303,11 +1301,8 @@ function cb_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
     try
         cred = cred_func(url != C_NULL ? bytestring(url) : nothing,
                          username != C_NULL ? bytestring(username) : nothing,
-                         types)
-        #TODO: better error msg
-        if !(isa(cred, GitCredential))
-            error("returned credential is not a git credential subtype")
-        end
+                         types) 
+        @assert cred <: GitCredential
         extract_cred!(cred, cred_ptr, allowed_types)
         return GitErrorConst.GIT_OK
     catch err
@@ -1317,28 +1312,29 @@ function cb_remote_credentials(cred_ptr::Ptr{Ptr{Void}},
 end
 
 const c_cb_remote_credential = cfunction(cb_remote_credentials, Cint,
-                                         (Ptr{Ptr{Void}}, Ptr{Cchar}, Ptr{Cchar}, Cuint, Ptr{Void}))
+                                         (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Cuint, Ptr{Void}))
 
-function parse_clone_options(opts, payload::Dict)
-    gopts = api.GitCloneOpts()
-    if opts == nothing || isempty(opts)
-        return gopts
-    end
+parse_clone_options(opts::Nothing, payload::Dict) = CloneOptionsStruct() 
+parse_clone_options(opts, payload::Dict) = begin
+    isempty(opts) && return CloneOptionsStruct()
+    local bare = zero(Cint)
     if haskey(opts, :bare)
-        gopts.bare = convert(Cint, opts[:bare] ? 1 : 0)
+        bare = convert(Cint, bool(opts[:bare]))
     end
+    local remote_credentials_cb = zero(Ptr{Void})
     if haskey(opts, :credentials)
         cred = opts[:credentials]
         if isa(cred, GitCredential)
             payload[:credentials] = cred
-            gopts.remote_credentials_cb = convert(Ptr{Void}, c_cb_default_remote_credentials)
+            remote_credentials_cb = convert(Ptr{Void}, c_cb_default_remote_credentials)
         elseif isa(cred, Function)
             payload[:credentials] = cred
-            gopts.remote_credentials_cb = convert(Ptr{Void}, c_cb_remote_credential)
+            remote_credentials_cb = convert(Ptr{Void}, c_cb_remote_credential)
         else
             throw(ArgumentError("clone option :credentials must be a GitCredential or Function type"))
         end
     end
+    local remote_transfer_progress_cb = zero(Ptr{Void})
     if haskey(opts, :callbacks)
         callbacks = opts[:callbacks]
         if haskey(callbacks, :transfer_progress)
@@ -1346,37 +1342,31 @@ function parse_clone_options(opts, payload::Dict)
                 throw(ArgumentError("clone callback :transfer_progress must be a Function"))
             end
             payload[:callbacks] = callbacks
-            gopts.remote_transfer_progress_cb = convert(Ptr{Void}, c_cb_remote_transfer)
+            remote_transfer_progress_cb = convert(Ptr{Void}, c_cb_remote_transfer)
         end
     end
-    gopts.remote_payload = convert(Ptr{Void}, pointer_from_objref(payload))
-    return gopts
+    remote_payload  = convert(Ptr{Void}, pointer_from_objref(payload))
+    checkout_stuct  = parse_checkout_options(opts)
+    remotecb_struct = RemoteCallbacksStruct(one(Cuint),
+                                            zero(Ptr{Void}),
+                                            zero(Ptr{Void}),
+                                            remote_credentials_cb,
+                                            remote_transfer_progress_cb,
+                                            zero(Ptr{Void}),
+                                            remote_payload)
+    return CloneOptionsStruct(one(Cuint),
+                              checkout_struct,
+                              remotecb_struct,
+                              bare,
+                              zero(Cint),
+                              zero(Cint),
+                              zero(Ptr{Uint8}),
+                              zero(Ptr{Uint8}),
+                              zero(Ptr{SignatureStruct}))
 end
 
-function repo_clone(url::String, path::String, opts=nothing)
-    # we initalize the payload here as pointer_from_objref
-    # hides the object from julia's gc.  A reference in this
-    # function's scope allows the object to be preserved
-    # for the lifetime of the function call.
-    gpayload = Dict() 
-    gopts    = parse_clone_options(opts, gpayload)
-    repo_ptr = Ptr{Void}[0]
-    err = ccall((:git_clone, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{api.GitCloneOpts}),
-                 repo_ptr, url, path, &gopts)
-    if err != GitErrorConst.GIT_OK
-        payload = unsafe_pointer_to_objref(gopts.remote_payload)::Dict
-        if haskey(payload, :exception)
-            throw(payload[:exception])
-        else
-            throw(LibGitError(err))
-        end
-    end
-    return GitRepo(repo_ptr[1])
-end
-
-function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress}, payload_ptr::Ptr{Void})
-    stats = unsafe_load(stats_ptr)
+function cb_remote_transfer(stats_ptr::Ptr{TransferProgressStruct}, payload_ptr::Ptr{Void})
+    stats = unsafe_load(stats_ptr)::TransferProgressStruct
     payload  = unsafe_pointer_to_objref(payload_ptr)::Dict
     callback = payload[:callbacks][:transfer_progress]
     try
@@ -1394,28 +1384,14 @@ function cb_remote_transfer(stats_ptr::Ptr{api.GitTransferProgress}, payload_ptr
     end
 end
 
-
-function progress_cb(str::Ptr{Uint8}, len::Cint, data::Ptr{RemoteCallbacksStruct})
-    payload = unsafe_pointer_to_objref(data)::Dict
-    callback = payload[:callbacks][:transfer_progress]
-    if payload.progress == 0
-        return 0
-    end
-end
-
-parse_clone_opts(opts::Nothing) = CloneOptionsStruct()
-parse_clone_opts(args...) = begin
-    return CloneOptionsStruct()
-end
-
-function clone(url::String, localpath::String, opts::MaybeDict=nothing)
+function repo_clone(url::String, localpath::String, opts::MaybeDict=nothing)
     check_valid_url(url)
     payload = Dict()
-    clone_opts = parse_clone_opts(opts, payload)::CloneOptionsStruct
+    opts_struct = parse_clone_options(opts, payload)::CloneOptionsStruct
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_clone, :libgit2), Cint, 
                 (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{CloneOptionsStruct}),
-                repo_ptr, url, localpath, opts_struct)
+                repo_ptr, url, localpath, &opts_struct)
     if haskey(payload, :exception)
         #TODO: clean up clone options struct
         throw(payload[:exception])
@@ -1426,7 +1402,6 @@ function clone(url::String, localpath::String, opts::MaybeDict=nothing)
     end
     return GitRepo(repo_ptr[1])
 end
-=#
 
 #-------- Reference Iterator --------
 #TODO: handle error's when iterating (see branch)

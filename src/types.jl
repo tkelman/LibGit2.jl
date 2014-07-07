@@ -4,7 +4,7 @@ export Signature, GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
 typealias GitOffT Int64
 typealias GitTimeT Int64
 
-typealias MaybeDict Union(Nothing, Dict)
+typealias MaybeDict Union(Nothing, Dict{Any,Any})
 typealias MaybeString Union(Nothing, String)
 
 # time in a signature
@@ -253,7 +253,7 @@ RemoteCallbacksStruct() = RemoteCallbacksStruct(one(Cuint),
                                                 zero(Ptr{Void}), 
                                                 zero(Ptr{Void}),
                                                 zero(Ptr{Void}))
-immutable CloneOptsStruct
+immutable CloneOptionsStruct
     version::Cuint
     checkout_opts::CheckoutOptionsStruct
     remote_callbacks::RemoteCallbacksStruct
@@ -265,6 +265,15 @@ immutable CloneOptsStruct
     signature::Ptr{SignatureStruct}
 end
 
+CloneOptionsStruct() = CloneOptionsStruct(one(Cuint),
+                                          CheckoutOptionsStruct(),
+                                          RemoteCallbacksStruct(),
+                                          zero(Cint),
+                                          zero(Cint),
+                                          zero(Cint),
+                                          zero(Ptr{Uint8}),
+                                          zero(Ptr{Uint8}),
+                                          zero(Ptr{SignatureStruct}))
 # --------------
 # Git Signature
 # --------------

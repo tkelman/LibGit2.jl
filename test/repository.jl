@@ -418,12 +418,12 @@ end
 #---------------------------
 # Repo Clone Test
 #---------------------------
-#=  TODO: fix clone once and for all 
-#:test_clone_repo
-@repo_clone_test begin
-    repo = repo_clone(source_path, tmppath)
-    gc()
+#=
+repo_clone_test("basic repo clone") do source, dest
+    @show source, dest
+    repo = repo_clone(source, dest)
     try
+      @test isa(repo, GitRepo) 
       #@test open(readline, joinpath(tmppath, "README")) |> chomp == "hey"
       @test (target(head(repo)) 
                 == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
