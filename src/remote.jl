@@ -170,9 +170,18 @@ function update_tips!(r::GitRemote,
     return r
 end
 
-function fetch(r:GitRemote, sig::MaybeSignature=nothing, logmsg::MaybeString=nothing)
+function fetch(r::GitRemote, sig::MaybeSignature=nothing, logmsg::MaybeString=nothing)
     @check ccall((:git_remote_fetch, :libgit2), Cint,
                  (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), 
                  r, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r 
 end
+
+function default_branch(r::GitRemote)
+    buf_ptr = [BufferStruct()]
+    @check ccall((:git_remote_default_branch, :libgit2), Cint,
+                 (Ptr{BufferStruct}, Ptr{Void}), buf_ptr, r)
+    name = utf8(bytestring(buf_ptr[1]))
+    ccall((:git_buf_free, :libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
+    return name
+end 
