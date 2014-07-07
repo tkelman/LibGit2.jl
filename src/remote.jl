@@ -169,3 +169,9 @@ function update_tips!(r::GitRemote,
                  r, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r
 end
+
+function fetch(r:GitRemote, sig::Signature, logmsg::MaybeString)
+    @check ccall((:git_remote_fetch, :libgit2), Cint,
+                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), r, sig, logmsg)
+    return r 
+end
