@@ -67,7 +67,8 @@ function remote_name(b::GitBranch)
     if isremote(b)
         ref_ptr[1] = b.ptr 
     else
-        err = ccall((:git_branch_upstream, :libgit2), Cint, (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, b)
+        err = ccall((:git_branch_upstream, :libgit2), Cint, 
+                    (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, b)
         if err == GitErrorConst.ENOTFOUND
             return nothing
         elseif err != GitErrorConst.GIT_OK
@@ -82,11 +83,14 @@ function remote_name(b::GitBranch)
     buf_ptr = [BufferStruct()]
     err = ccall((:git_branch_remote_name, :libgit2), Cint,
                 (Ptr{BufferStruct}, Ptr{Void}, Ptr{Uint8}), buf_ptr, repo_ptr, refname_ptr)
-    local str::UTF8String
+    buf = buf_ptr[1]
     if err == GitErrorConst.GIT_OK
-        str = utf8(bytestring(buf_ptr[1]))
+        str = utf8(bytestring(buf))
         ccall((:git_buf_free, :libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
     elseif err != GitErrorConst.GIT_OK
+        if buf.ptr != C_NULL
+            ccall((:git_buf_free, :libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
+        end
         throw(GitError(err))
     end
     return str
