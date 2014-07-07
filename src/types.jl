@@ -4,6 +4,7 @@ export Signature, GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
 typealias GitOffT Int64
 typealias GitTimeT Int64
 
+typealias MaybeDict Union(Nothing, Dict)
 typealias MaybeString Union(Nothing, String)
 
 # time in a signature
@@ -28,8 +29,8 @@ immutable BufferStruct
     asize::Csize_t
     size::Csize_t
 end
-
 BufferStruct() = BufferStruct(C_NULL, 0, 0)
+
 Base.bytestring(b::BufferStruct) = bytestring(b.ptr, b.size)
 
 immutable TransferProgressStruct
@@ -56,6 +57,35 @@ immutable StrArrayStruct
    count::Csize_t
 end
 StrArrayStruct() = StrArrayStruct(zero(Ptr{Uint8}), zero(Csize_t))
+
+StrArrayStruct{T<:String}(strs::Vector{T}) = begin
+    count = length(strs)
+    strings = convert(Ptr{Ptr{Uint8}}, Base.c_malloc(sizeof(Ptr{Uint8}) * count))
+    for i=1:count
+        len = length(strs[i])
+        in_ptr  = convert(Ptr{Uint8}, bytestring(strs[i]))
+        out_ptr = convert(Ptr{Uint8}, Base.c_malloc(sizeof(Uint8) * (len + 1)))
+        unsafe_copy!(out_ptr, in_ptr, len)
+        unsafe_store!(out_ptr, zero(Uint8), len + 1) # NULL byte
+        unsafe_store!(strings, out_ptr, i)
+    end
+    return StrArrayStruct(strings, count)
+end
+StrArrayStruct{T<:String}(str::T) = StrArrayStruct([str])
+
+Base.convert(::Type{Vector{UTF8String}}, sa::StrArrayStruct) = begin
+    arr = Array(UTF8String, sa.count)
+    for i=1:sa.count
+        arr[i] = utf8(bytestring(unsafe_load(sa.strings, i)))
+    end
+    return arr
+end
+
+free!(sa::StrArrayStruct) = begin
+    sa_ptr = [sa]
+    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
+    return sa_ptr[1]
+end
 
 # git config entry struct
 immutable ConfigEntryStruct
@@ -189,6 +219,21 @@ immutable CheckoutOptionsStruct
     ancestor_label::Ptr{Uint8}
     our_label::Ptr{Uint8}
     their_label::Ptr{Uint8}
+end
+
+immutable RemoteCallbacksStruct 
+end
+
+immutable CloneOptsStruct
+    version::Cuint
+    checkout_opts::CheckoutOptionsStruct
+    remote_callbacks::RemoteCallbacksStruct
+    bare::Cint
+    ignore_cert_errors::Cint
+    localclone::Cint # GitCloneLocalT
+    remote_name::Ptr{Uint8}
+    checkout_branch::Ptr{Uint8}
+    signature::Ptr{SignatureStruct}
 end
 
 # --------------
