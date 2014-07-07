@@ -282,6 +282,7 @@ Base.diff(repo::GitRepo, left::MaybeGitTree, right::MaybeGitTree, opts=nothing) 
                  left  != nothing ? left.ptr : C_NULL, 
                  right != nothing ? right.ptr : C_NULL,
                  &gopts)
+    free!(gopts.pathspec)
     return GitDiff(diff_ptr[1])
 end
 
@@ -303,6 +304,7 @@ Base.diff(repo::GitRepo, left::GitTree, right::GitIndex, opts=nothing) = begin
                   Ptr{Void},
                   Ptr{DiffOptionsStruct}),
                  diff_ptr, repo, left, right, &gopts)
+    free!(gopts.pathspec)
     return GitDiff(diff_ptr[1])
 end
 
@@ -319,6 +321,7 @@ Base.diff(repo::GitRepo, idx::GitIndex, other::Nothing, opts=nothing) = begin
                    Ptr{Void}, 
                    Ptr{DiffOptionsStruct}),
                   diff_ptr, repo, idx, &gopts)
+    free!(gopts.pathspec)
     return GitDiff(diff_ptr[1])
 end
 
@@ -336,7 +339,8 @@ Base.diff(repo::GitRepo, idx::GitIndex, other::GitTree, opts=nothing) = begin
                   Ptr{Void}, 
                   Ptr{DiffOptionsStruct}),
                   diff_ptr, repo, other, idx, &gopts)
-   return GitDiff(diff_ptr[1])
+    free!(gopts.pathspec)
+    return GitDiff(diff_ptr[1])
 end
 
 Base.merge!(d1::GitDiff, d2::GitDiff) = begin
@@ -361,6 +365,7 @@ function diff_workdir(repo::GitRepo, left::GitTree, opts=nothing)
                   Ptr{Void}, 
                   Ptr{DiffOptionsStruct}),
                  diff_ptr, repo, left, &gopts)
+    free!(gopts.pathspec)
     return GitDiff(diff_ptr[1])
 end
 
@@ -440,18 +445,14 @@ function parse_git_diff_options(opts::Dict)
     if get(opts, :recurse_ignored_dirs, false)
        flags |= GitConst.DIFF_RECURSE_IGNORED_DIRS
     end
-    pathspec = StrArrayStruct()
     if haskey(opts, :paths)
         paths = opts[:paths]
         if !(isa(paths, Vector{ASCIIString}) || isa(paths, Vector{UTF8String}))
-            throw(ArgumentError("opts[:paths] must be of type Array{ByteString}"))
+            throw(ArgumentError("opts[:paths] must be of type Vector{ByteString}"))
         end
-        str_ptrs = Array(Ptr{Uint8}, length(paths))
-        for i in 1:length(paths)
-            str_ptrs[i] = convert(Ptr{Uint8}, bytestring(paths[i]))
-        end
-        #XXX: this is just wrong 
-        pathspec = StrArrayStruct(str_ptrs, length(paths))
+        pathspec = StrArrayStruct(paths)
+    else
+        pathspec = StrArrayStruct()
     end
     #TODO: rest of the options
     return DiffOptionsStruct(GitConst.DIFF_OPTIONS_VERSION,
