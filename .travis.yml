@@ -13,7 +13,7 @@ before_install:
 
 script:
   - git submodule init
-  - git submoudle update
+  - git submodule update
   - julia -e 'Pkg.init(); 
               run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`);
               Pkg.pin("LibGit2");
