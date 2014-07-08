@@ -1,12 +1,12 @@
-export isbare, isempty, workdir, path,
-       repo_open, repo_init, head, set_head!, tags, tag!, commits, references,
-       repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
-       repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
+export isbare, isempty, workdir, path, repo_init, head, 
+       set_head!, tags, tag!, commits, references, lookup,
+       lookup_tree, lookup_commit, commit, ref_names,
+       revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, config,  GitTreeBuilder,
-       insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
+       insert!, write!, close, lookup, revparse, revparse_oid, remotes,
        ahead_behind, merge_base, merge_commits,  blob_at, isshallow, hash_data,
-       default_signature, repo_discover, isbare, isempty, namespace, set_namespace!,
-       notes, create_note!, remove_note!, each_note, note_default_ref,
+       default_signature, repo_discover, isempty, namespace, set_namespace!,
+       notes, create_note!, remove_note!, note_default_ref,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
        branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
@@ -209,7 +209,7 @@ function Oid(r::GitRepo, val::String)
             return Oid(val)
         end
     end
-    return Oid(rev_parse(r, val))
+    return revparse_oid(r, val)
 end
 
 function set_head!(r::GitRepo, ref::String; 
@@ -223,7 +223,7 @@ end
 
 #TODO: this needs to be implemented
 function commits(r::GitRepo)
-    return nothing 
+    return GitCommit[] 
 end
 
 function remotes(r::GitRepo)
@@ -357,7 +357,7 @@ function tags(r::GitRepo, glob::String="")
     @check ccall((:git_tag_list_match, :libgit2), Cint,
                  (Ptr{StrArrayStruct}, Ptr{Uint8}, Ptr{Void}), sa_ptr, glob, r)
     sa = sa_ptr[1]
-    sa.count == 0 && return nothing
+    sa.count == 0 && return GitTag[] 
     out = Array(UTF8String, sa.count)
     for i in 1:sa.count
         out[i] = utf8(bytestring(unsafe_load(sa.strings, i)))
@@ -595,10 +595,6 @@ function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)
     return id_ptr[1]
 end
 
-#TODO: implement
-function references(r::GitRepo)
-    return nothing
-end
 
 function repo_discover(pth::String="", acrossfs::Bool=true)
     isempty(pth) && (pth = pwd())
@@ -612,13 +608,13 @@ function repo_discover(pth::String="", acrossfs::Bool=true)
     return GitRepo(bstr)
 end
 
-function rev_parse(r::GitRepo, rev::String)
+function revparse(r::GitRepo, rev::String)
     obj_ptr = Ptr{Void}[0]
     @check ccall((:git_revparse_single, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, rev)
     return gitobj_from_ptr(obj_ptr[1])
 end
-rev_parse(r::GitRepo, rev::Oid) = rev_parse(r, string(rev))
+revparse(r::GitRepo, rev::Oid) = revparse(r, string(rev))
 
 function merge_base(r::GitRepo, args...)
     if length(args) < 2
@@ -637,8 +633,9 @@ function merge_base(r::GitRepo, args...)
     end
     return id_ptr[1]
 end
-rev_parse_oid(r::GitRepo, rev::Oid) = Oid(rev_parse(r, string(rev)))
-rev_parse_oid(r::GitRepo, rev::String) = Oid(rev_parse(r, rev))
+
+revparse_oid(r::GitRepo, rev::Oid) = Oid(revparse(r, string(rev)))
+revparse_oid(r::GitRepo, rev::String) = Oid(revparse(r, rev))
 
 Odb(r::GitRepo) = begin
     odb_ptr = Ptr{Void}[0]
@@ -686,6 +683,8 @@ lookup_tree(r::GitRepo, id)    = lookup(GitTree, r, id)
 lookup_blob(r::GitRepo, id)    = lookup(GitBlob, r, id)
 lookup_commit(r::GitRepo, id)  = lookup(GitCommit, r, id)
 
+references(r::GitRepo, glob::String="") = collect(GitReference, foreach(GitReference, r, glob)) 
+
 function lookup_ref(r::GitRepo, refname::String)
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_lookup, :libgit2), Cint,
@@ -727,13 +726,6 @@ function create_sym_ref(r::GitRepo, refname::String, target::String;
                  sig != nothing ? sig : C_NULL,
                  logmsg != nothing ? logmsg : C_NULL)
     return GitReference(ref_ptr[1])
-end
-
-function repo_revparse_single(r::GitRepo, spec::String)
-    obj_ptr = Ptr{Void}[0]
-    @check ccall((:git_revparse_single, :libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, spec)
-    return gitobj_from_ptr(obj_ptr[1])
 end
 
 function commit(r::GitRepo,
@@ -847,7 +839,7 @@ end
 
 function create_branch(r::GitRepo, n::String, target::String="HEAD"; 
                        force::Bool=false, sig=nothing, logmsg=nothing)
-    id = rev_parse_oid(r, target)
+    id = revparse_oid(r, target)
     return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
 end
 
@@ -1204,7 +1196,7 @@ end
 typealias Treeish Union(GitCommit, GitTag, GitTree)
 
 function checkout_tree!(r::GitRepo, tree::String, opts=nothing)
-    t = rev_parse(r, tree)
+    t = revparse(r, tree)
     return checkout_tree!(r, t, opts)
 end
 
@@ -1256,7 +1248,7 @@ function checkout!(r::GitRepo, target, opts={})
             create_ref(r, "HEAD", canonical_name(branch), force=true)
         end
     else
-        commit = lookup_commit(r, rev_parse_oid(r, target))
+        commit = lookup_commit(r, revparse_oid(r, target))
         create_ref(r, "HEAD", Oid(commit), force=true)
         checkout_tree!(r, commit, opts)
     end

@@ -27,11 +27,11 @@ context("test lookup git objects") do
         obj = lookup(repo, Oid(t))
         @test isa(obj, GitTree)
 
-        obj = repo_revparse_single(repo, "HEAD")
+        obj = revparse(repo, "HEAD")
         @test isa(obj, GitCommit)
         @test Oid(obj) == cid
         
-        obj = repo_revparse_single(repo, "HEAD^{tree}")
+        obj = revparse(repo, "HEAD^{tree}")
         @test isa(obj, GitTree)
         @test Oid(obj) == Oid(t)
     finally 
@@ -83,16 +83,16 @@ with_repo_access() do test_repo, path
    end
 
    context("test lookup by rev") do
-        obj = rev_parse(test_repo, "v1.0")
+        obj = revparse(test_repo, "v1.0")
         @test Oid(obj) == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
-        obj = rev_parse(test_repo, "v1.0^1")
+        obj = revparse(test_repo, "v1.0^1")
         @test Oid(obj) == Oid("8496071c1b46c854b31185ea97743be6a8774479")
    end 
    
    context("test lookup id by rev") do 
-       o = rev_parse_oid(test_repo, "v1.0")
+       o = revparse_oid(test_repo, "v1.0")
        @test o == Oid("0c37a5391bbff43c37f0d0371823a5509eed5b1d")
-       o = rev_parse_oid(test_repo, "v1.0^1")
+       o = revparse_oid(test_repo, "v1.0^1")
        @test o == Oid("8496071c1b46c854b31185ea97743be6a8774479")
    end
 end

@@ -217,6 +217,6 @@ remote_transport_test("test remote git fetch") do test_repo, test_remote
     connect(test_remote, :fetch) do r
         download(r) |> update_tips!
     end
-    @test Oid(rev_parse(test_repo, "origin/master")) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    @test Oid(revparse(test_repo, "origin/master")) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test test_repo["36060c5"] != nothing
 end

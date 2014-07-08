@@ -50,11 +50,11 @@ context("test creating repository") do
             # empty repo has no head
             @test head(repo) == nothing
             # empty repo has no tags
-            @test tags(repo) == nothing
+            @test isempty(tags(repo))
             # empty repo has no commits
-            @test commits(repo) == nothing
+            @test isempty(commits(repo))
             # empty repo has no references
-            @test references(repo) == nothing
+            @test isempty(references(repo)) 
             
             @test isa(GitConfig(repo), GitConfig)
             @test isa(GitTreeBuilder(repo), GitTreeBuilder)
@@ -309,7 +309,7 @@ with_tmp_repo_access("test shallow repo write") do test_repo, path
     end
 
     context("test no merge base between unrelated branches") do
-        info = rev_parse(test_repo, "HEAD")
+        info = revparse(test_repo, "HEAD")
         @test isa(info, GitCommit)
         sig = Signature("test", "test@test.com")
         #baseless = commit(test_repo, "null", sig, sig, "", 
@@ -661,13 +661,13 @@ sandboxed_checkout_test("test checkout with head") do test_repo, test_clone, tes
 end
 
 sandboxed_checkout_test("test checkout with commit detaches HEAD") do test_repo, test_clone, test_bare
-    checkout!(test_repo, rev_parse_oid(test_repo, "refs/heads/dir"), {:strategy => :force})
+    checkout!(test_repo, revparse_oid(test_repo, "refs/heads/dir"), {:strategy => :force})
     @test is_head_detached(test_repo)
-    @test rev_parse_oid(test_repo, "refs/heads/dir") == target(head(test_repo))
+    @test revparse_oid(test_repo, "refs/heads/dir") == target(head(test_repo))
 end
 
 sandboxed_checkout_test("test checkout with remote branch detaches HEAD") do test_repo, test_clone, test_bare
     checkout!(test_clone, "origin/dir", {:strategy => :force})
     @test is_head_detached(test_clone)
-    @test rev_parse_oid(test_clone, "refs/remotes/origin/dir") == target(head(test_clone))
+    @test revparse_oid(test_clone, "refs/remotes/origin/dir") == target(head(test_clone))
 end

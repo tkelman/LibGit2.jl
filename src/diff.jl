@@ -225,8 +225,8 @@ Base.diff(repo::GitRepo, left::Nothing, right::Nothing, opts=nothing) = nothing
 typealias MaybeString Union(Nothing, String)
 
 Base.diff(repo::GitRepo, left::MaybeString, right::MaybeString, opts=nothing) = begin
-    l = left  != nothing ? rev_parse(repo, left)  : nothing
-    r = right != nothing ? rev_parse(repo, right) : nothing
+    l = left  != nothing ? revparse(repo, left)  : nothing
+    r = right != nothing ? revparse(repo, right) : nothing
     if l != nothing
         return diff(repo, l, r, opts)
     elseif r != nothing
@@ -259,7 +259,7 @@ Base.diff(repo::GitRepo, c::GitCommit, opts=nothing) = begin
 end
 
 Base.diff(repo::GitRepo, left::GitTree, right::String, opts=nothing) = begin
-    return diff(repo, left, rev_parse(repo, right), opts)
+    return diff(repo, left, revparse(repo, right), opts)
 end
 
 Base.diff(repo::GitRepo, left::GitTree, right::GitCommit, opts=nothing) = begin
@@ -287,7 +287,7 @@ Base.diff(repo::GitRepo, left::MaybeGitTree, right::MaybeGitTree, opts=nothing) 
 end
 
 Base.diff(repo::GitRepo, left::String, right::GitIndex, opts=nothing) = begin
-    return diff(repo, rev_parse(repo, left), right, opts)
+    return diff(repo, revparse(repo, left), right, opts)
 end
 
 Base.diff(repo::GitRepo, left::GitCommit, right::GitIndex, opts=nothing) = begin
@@ -349,7 +349,7 @@ Base.merge!(d1::GitDiff, d2::GitDiff) = begin
 end
 
 function diff_workdir(repo::GitRepo, left::String, opts=nothing)
-    return diff_workdir(repo, rev_parse(repo, left), opts)
+    return diff_workdir(repo, revparse(repo, left), opts)
 end
 
 function diff_workdir(repo::GitRepo, left::GitCommit, opts=nothing)
