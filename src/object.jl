@@ -16,13 +16,13 @@ end
 
 function raw(o::GitObject)
     repo_ptr = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), o)
-    oid_ptr  = ccall((:git_object_id, :libgit2), Ptr{Uint8}, (Ptr{Void},), o)
+    oid_ptr  = ccall((:git_object_id, :libgit2), Ptr{Oid}, (Ptr{Void},), o)
     odb_ptr  = Ptr{Void}[0]
     @check ccall((:git_repository_odb, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}), odb_ptr, repo_ptr)
     obj_ptr  = Ptr{Void}[0]
     err = ccall((:git_odb_read, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, odb_ptr[1], oid_ptr)
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}), obj_ptr, odb_ptr[1], oid_ptr)
     ccall((:git_odb_free, :libgit2), Void, (Ptr{Void},), odb_ptr[1])
     if err != GitErrorConst.GIT_OK
         throw(GitError(err))
