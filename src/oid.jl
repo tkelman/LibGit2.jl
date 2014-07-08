@@ -22,8 +22,6 @@ Oid() = @eval begin
     $(Expr(:call, :Oid, [:(zero(Uint8)) for _=1:OID_RAWSZ]...))
 end
 
-_addrof{T}(obj::T) = ccall(:jl_value_ptr, Ptr{T}, (Ptr{Any},), &obj)
-
 Oid(ptr::Ptr{Oid}) = unsafe_load(ptr)::Oid
 
 Oid(ptr::Ptr{Uint8}) = begin
@@ -56,7 +54,7 @@ end
 Oid(id::Oid) = id
 
 Base.copy!(arr::Array{Uint8, 1}, id::Oid) = begin
-    unsafe_copy!(convert(Ptr{Uint8}, arr), convert(Ptr{Uint8}, _addrof(id)), OID_RAWSZ)
+    unsafe_copy!(convert(Ptr{Uint8}, arr), convert(Ptr{Uint8},  hex2bytes(hex(id))), OID_RAWSZ)
     return arr
 end
 
@@ -83,9 +81,9 @@ Base.isequal(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
 Base.isless(id1::Oid, id2::Oid)  = cmp(id1, id2) < 0
 
 iszero(id::Oid) = begin
-    idptr = convert(Ptr{Uint8}, _addrof(id))
+    bytes = raw(id) 
     for i=1:OID_RAWSZ
-        if unsafe_load(idptr, i) != zero(Uint8)
+        if bytes[i] != zero(Uint8)
             return false
         end
     end
