@@ -13,7 +13,7 @@ end
 
 free!(d::GitDiff) = begin
     if d.ptr != C_NULL
-        ccall((:git_diff_free, :libgit2), Void, (Ptr{Void},), d.ptr)
+        ccall((:git_diff_free, libgit2), Void, (Ptr{Void},), d.ptr)
         d.ptr = C_NULL
     end
 end
@@ -62,7 +62,7 @@ const c_cb_diff_line_stats = cfunction(cb_diff_line_stats, Cint,
                                        (Ptr{Void}, Ptr{Void}, Ptr{DiffLineStruct}, Ptr{Void}))
 Base.stat(d::GitDiff) = begin
     stats = DiffStats()
-    ccall((:git_diff_foreach, :libgit2), Void,
+    ccall((:git_diff_foreach, libgit2), Void,
           (Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Any),
           d, c_cb_diff_file_stats, C_NULL, c_cb_diff_line_stats, &stats)
     return stats
@@ -127,7 +127,7 @@ type DiffDelta
     end
 end
 
-Base.length(d::GitDiff) = int(ccall((:git_diff_num_deltas, :libgit2), Csize_t, (Ptr{Void},), d))
+Base.length(d::GitDiff) = int(ccall((:git_diff_num_deltas, libgit2), Csize_t, (Ptr{Void},), d))
 
 function deltas(d::GitDiff)
     ndelta = length(d) 
@@ -136,7 +136,7 @@ function deltas(d::GitDiff)
     end
     ds = Array(DiffDelta, ndelta)
     for i in 1:ndelta
-        delta_ptr = ccall((:git_diff_get_delta, :libgit2), Ptr{DiffDeltaStruct}, 
+        delta_ptr = ccall((:git_diff_get_delta, libgit2), Ptr{DiffDeltaStruct}, 
                           (Ptr{Void}, Csize_t), d, i-1) 
         ds[i] = DiffDelta(delta_ptr)
     end
@@ -152,7 +152,7 @@ function patches(d::GitDiff)
     patch_ptr = Ptr{Void}[0]
     err = zero(Cint) 
     for i in 1:ndelta
-        err = ccall((:git_patch_from_diff, :libgit2), Cint,
+        err = ccall((:git_patch_from_diff, libgit2), Cint,
                     (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t), patch_ptr, d, i-1) 
         if err != GitErrorConst.GIT_OK
             break
@@ -212,7 +212,7 @@ function patch(d::GitDiff; format::Symbol=:patch)
         throw(ArgumentError(("Unknown diff output format ($format)")))
     end
     s = Uint8[]
-    ccall((:git_diff_print, :libgit2), Cint,
+    ccall((:git_diff_print, libgit2), Cint,
            (Ptr{Void}, Cint, Ptr{Void}, Any), d, cformat, c_cb_diff_print, &s)
     return UTF8String(s)
 end
@@ -271,7 +271,7 @@ typealias MaybeGitTree Union(Nothing, GitTree)
 Base.diff(repo::GitRepo, left::MaybeGitTree, right::MaybeGitTree, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
-    @check ccall((:git_diff_tree_to_tree, :libgit2), Cint,
+    @check ccall((:git_diff_tree_to_tree, libgit2), Cint,
                  (Ptr{Ptr{Void}}, 
                   Ptr{Void}, 
                   Ptr{Void}, 
@@ -297,7 +297,7 @@ end
 Base.diff(repo::GitRepo, left::GitTree, right::GitIndex, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
-    @check ccall((:git_diff_tree_to_index, :libgit2), Cint,
+    @check ccall((:git_diff_tree_to_index, libgit2), Cint,
                  (Ptr{Ptr{Void}},
                   Ptr{Void},
                   Ptr{Void}, 
@@ -315,7 +315,7 @@ end
 Base.diff(repo::GitRepo, idx::GitIndex, other::Nothing, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
-    @check ccall((:git_diff_index_to_workdir, :libgit2), Cint,
+    @check ccall((:git_diff_index_to_workdir, libgit2), Cint,
                   (Ptr{Ptr{Void}}, 
                    Ptr{Void}, 
                    Ptr{Void}, 
@@ -332,7 +332,7 @@ end
 Base.diff(repo::GitRepo, idx::GitIndex, other::GitTree, opts=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
-    @check ccall((:git_diff_tree_to_index, :libgit2), Cint,
+    @check ccall((:git_diff_tree_to_index, libgit2), Cint,
                  (Ptr{Ptr{Void}},
                   Ptr{Void},
                   Ptr{Void}, 
@@ -344,7 +344,7 @@ Base.diff(repo::GitRepo, idx::GitIndex, other::GitTree, opts=nothing) = begin
 end
 
 Base.merge!(d1::GitDiff, d2::GitDiff) = begin
-    @check ccall((:git_diff_merge, :libgit2), Cint, (Ptr{Void}, Ptr{Void}), d1, d2)
+    @check ccall((:git_diff_merge, libgit2), Cint, (Ptr{Void}, Ptr{Void}), d1, d2)
     return d1
 end
 
@@ -359,7 +359,7 @@ end
 function diff_workdir(repo::GitRepo, left::GitTree, opts=nothing)
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
-    @check ccall((:git_diff_tree_to_workdir, :libgit2), Cint,
+    @check ccall((:git_diff_tree_to_workdir, libgit2), Cint,
                  (Ptr{Ptr{Void}},
                   Ptr{Void}, 
                   Ptr{Void}, 

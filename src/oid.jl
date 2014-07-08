@@ -31,7 +31,7 @@ Oid(ptr::Ptr{Uint8}) = begin
         throw(ArgumentError("NULL pointer passed to Oid() constructor"))
     end
     id = Oid()
-    ccall((:git_oid_fromraw, :libgit2), Void, (Ptr{Oid}, Ptr{Uint8}), &id, ptr)
+    ccall((:git_oid_fromraw, libgit2), Void, (Ptr{Oid}, Ptr{Uint8}), &id, ptr)
     return id 
 end
 
@@ -48,7 +48,7 @@ Oid(id::String) = begin
         throw(ArgumentError("invalid hex size"))
     end
     oid = Oid()
-    @check ccall((:git_oid_fromstrp, :libgit2), Cint,
+    @check ccall((:git_oid_fromstrp, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Cchar}), &oid, bstr)
     return oid
 end
@@ -64,7 +64,7 @@ raw(id::Oid) = copy!(Array(Uint8, OID_RAWSZ), id)
 
 const _hexstr = Array(Uint8, OID_HEXSZ)
 Base.hex(id::Oid) = begin
-    ccall((:git_oid_nfmt, :libgit2), Void,
+    ccall((:git_oid_nfmt, libgit2), Void,
           (Ptr{Uint8}, Csize_t, Ptr{Oid}), _hexstr, OID_HEXSZ, &id)
     return bytestring(convert(Ptr{Uint8}, _hexstr), OID_HEXSZ)
 end
@@ -75,7 +75,7 @@ Base.show(io::IO, id::Oid) = print(io, "Oid($(string(id)))")
 
 Base.hash(id::Oid) = hash(hex(id))
 
-Base.cmp(id1::Oid, id2::Oid) = int(ccall((:git_oid_cmp, :libgit2), Cint, 
+Base.cmp(id1::Oid, id2::Oid) = int(ccall((:git_oid_cmp, libgit2), Cint, 
                                          (Ptr{Oid}, Ptr{Oid}), &id1, &id2))
 
 Base.(:(==))(id1::Oid, id2::Oid) = cmp(id1, id2) == 0

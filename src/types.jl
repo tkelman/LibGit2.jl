@@ -83,7 +83,7 @@ end
 
 free!(sa::StrArrayStruct) = begin
     sa_ptr = [sa]
-    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
+    ccall((:git_strarray_free, libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
     return sa_ptr[1]
 end
 
@@ -304,7 +304,7 @@ free!(r::GitRepo) = begin
         try 
             close(r)
         finally
-            ccall((:git_repository_free, :libgit2), Void, (Ptr{Void},), r.ptr)
+            ccall((:git_repository_free, libgit2), Void, (Ptr{Void},), r.ptr)
             r.ptr = C_NULL
         end
     end
@@ -319,7 +319,7 @@ abstract GitObject
 
 free!(o::GitObject) = begin
     if o.ptr != C_NULL
-        ccall((:git_object_free, :libgit2), Void, (Ptr{Void},), o.ptr)
+        ccall((:git_object_free, libgit2), Void, (Ptr{Void},), o.ptr)
         o.ptr = C_NULL
     end
 end
@@ -328,7 +328,7 @@ type GitAnyObject <: GitObject end
 
 GitAnyObject(ptr::Ptr{Void}) = begin
     @assert ptr != C_NULL
-    typ = ccall((:git_object_type, :libgit2), Cint, (Ptr{Void},), ptr)
+    typ = ccall((:git_object_type, libgit2), Cint, (Ptr{Void},), ptr)
     T = gitobj_const_type(typ)
     return T(ptr)
 end
@@ -405,7 +405,7 @@ end
 
 free!(r::GitReference) = begin
     if r.ptr != C_NULL
-        ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), r.ptr)
+        ccall((:git_reference_free, libgit2), Void, (Ptr{Void},), r.ptr)
         r.ptr = C_NULL
     end
 end
@@ -428,7 +428,7 @@ Base.convert(::Type{Ptr{Void}}, o::GitBranch) = o.ptr
 
 free!(b::GitBranch) = begin
     if b.ptr != C_NULL
-        ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), b.ptr)
+        ccall((:git_reference_free, libgit2), Void, (Ptr{Void},), b.ptr)
         b.ptr = C_NULL
     end
 end
@@ -451,7 +451,7 @@ end
 
 free!(r::GitRemote) = begin
     if r.ptr != C_NULL
-        ccall((:git_remote_free, :libgit2), Void, (Ptr{Void},), r.ptr)
+        ccall((:git_remote_free, libgit2), Void, (Ptr{Void},), r.ptr)
         r.ptr = C_NULL
     end
 end

@@ -15,7 +15,7 @@ end
 
 free!(idx::GitIndex) = begin
     if idx.ptr != C_NULL
-        ccall((:git_index_free, :libgit2), Void, (Ptr{Void},), idx.ptr)
+        ccall((:git_index_free, libgit2), Void, (Ptr{Void},), idx.ptr)
         idx.ptr = C_NULL
     end
 end
@@ -24,55 +24,55 @@ Base.convert(::Type{Ptr{Void}}, idx::GitIndex) = idx.ptr
 
 GitIndex(path::String) = begin
     idxptr = Ptr{Void}[0]
-    @check ccall((:git_index_open, :libgit2), Cint, 
+    @check ccall((:git_index_open, libgit2), Cint, 
                  (Ptr{Ptr{Void}}, Ptr{Uint8}), idxptr, path)
     return GitIndex(idxptr[1])
 end
 
 GitIndex(r::GitRepo) = begin
     idxptr = Ptr{Void}[0]
-    @check ccall((:git_repository_index, :libgit2), Cint,
+    @check ccall((:git_repository_index, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}), idxptr, r)
     return GitIndex(idxptr[1])
 end
 
 function has_conflicts(idx::GitIndex)
-    return bool(ccall((:git_index_has_conflicts, :libgit2), Cint, (Ptr{Void},), idx))
+    return bool(ccall((:git_index_has_conflicts, libgit2), Cint, (Ptr{Void},), idx))
 end
 
 function clear!(idx::GitIndex)
-    ccall((:git_index_clear, :libgit2), Void, (Ptr{Void},), idx)
+    ccall((:git_index_clear, libgit2), Void, (Ptr{Void},), idx)
     return idx
 end
 
 function reload!(idx::GitIndex)
-    @check ccall((:git_index_read, :libgit2), Cint, (Ptr{Void}, Cint), idx, zero(Cint)) 
+    @check ccall((:git_index_read, libgit2), Cint, (Ptr{Void}, Cint), idx, zero(Cint)) 
     return idx
 end
 
 function write!(idx::GitIndex)
-    @check ccall((:git_index_write, :libgit2), Cint, (Ptr{Void},), idx) 
+    @check ccall((:git_index_write, libgit2), Cint, (Ptr{Void},), idx) 
     return idx
 end 
 
 function remove!(idx::GitIndex, path::String, stage::Integer=0)
-    @check ccall((:git_index_remove, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
+    @check ccall((:git_index_remove, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
                  idx, path, stage)
     return idx
 end
 
 function removedir!(idx::GitIndex, path::String, stage::Integer=0)
-    @check ccall((:git_index_remove_directory, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
+    @check ccall((:git_index_remove_directory, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
                   idx, path, stage)
     return idx
 end
 
-Base.length(idx::GitIndex) = int(ccall((:git_index_entrycount, :libgit2), Cint, 
+Base.length(idx::GitIndex) = int(ccall((:git_index_entrycount, libgit2), Cint, 
                                        (Ptr{Void},), idx))
 
 function write_tree!(idx::GitIndex)
     id_ptr = [Oid()]
-    @check ccall((:git_index_write_tree, :libgit2), Cint, 
+    @check ccall((:git_index_write_tree, libgit2), Cint, 
                  (Ptr{Oid}, Ptr{Void}), id_ptr, idx)
     return id_ptr[1]
 end
@@ -172,28 +172,28 @@ end
 
 Base.add!(idx::GitIndex, entry::GitIndexEntry) = begin
     estruct = IndexEntryStruct(entry)
-    @check ccall((:git_index_add, :libgit2), Cint,
+    @check ccall((:git_index_add, libgit2), Cint,
                  (Ptr{Void}, Ptr{IndexEntryStruct}),
                  idx, &estruct)
     return idx
 end
 
 Base.add!(idx::GitIndex, path::String) = begin
-    @check ccall((:git_index_add_bypath, :libgit2), Cint,
+    @check ccall((:git_index_add_bypath, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}), idx, path)
     return idx
 end
 
 Base.getindex(idx::GitIndex, i::Integer) = begin
     i <= 0 && throw(BoundsError())
-    entryptr = ccall((:git_index_get_byindex, :libgit2), Ptr{IndexEntryStruct},
+    entryptr = ccall((:git_index_get_byindex, libgit2), Ptr{IndexEntryStruct},
                      (Ptr{Void}, Csize_t), idx, i-1)
     entryptr == C_NULL && return nothing
     return GitIndexEntry(entryptr)
 end
 
 Base.getindex(idx::GitIndex, path::String, stage::Integer=0) = begin
-    entryptr = ccall((:git_index_get_bypath, :libgit2), Ptr{IndexEntryStruct},
+    entryptr = ccall((:git_index_get_bypath, libgit2), Ptr{IndexEntryStruct},
                       (Ptr{Void}, Ptr{Uint8}, Cint), idx, path, stage) 
     entryptr == C_NULL && return nothing
     return GitIndexEntry(entryptr)
@@ -233,7 +233,7 @@ Base.next(idx::GitIndex, state) = begin
 end
 
 function read_tree!(idx::GitIndex, tree::GitTree)
-    @check ccall((:git_index_read_tree, :libgit2), Cint,
+    @check ccall((:git_index_read_tree, libgit2), Cint,
                  (Ptr{Void}, Ptr{Void}), idx, tree)
     return idx
 end
@@ -264,10 +264,10 @@ function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
     end
     sa_ptr = [StrArrayStruct(pathspecs)]
     ex_ptr = Cint[0]
-    @check ccall((:git_index_add_all, :libgit2), Cint,
+    @check ccall((:git_index_add_all, libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Cuint, Ptr{Void}, Ptr{Cint}),
                  idx, sa_ptr, flags, C_NULL, ex_ptr)
-    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
+    ccall((:git_strarray_free, libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
     if ex_ptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(ex_ptr[1]))
     end
@@ -277,10 +277,10 @@ end
 function update_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
     sa_ptr = [StrArrayStruct(pathspecs)]
     ex_ptr = Cint[0]
-    @check ccall((:git_index_update_all, :libgit2), Cint,
+    @check ccall((:git_index_update_all, libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
                  idx, sa_ptr, C_NULL, ex_ptr)
-    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
+    ccall((:git_strarray_free, libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
     if ex_ptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(ex_ptr[1]))
     end
@@ -292,10 +292,10 @@ update_all!(idx::GitIndex) = update_all!(idx, [""])
 function remove_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
     sa_ptr = [StrArrayStruct(pathspecs)]
     ex_ptr = Cint[0]
-    @check ccall((:git_index_remove_all, :libgit2), Cint,
+    @check ccall((:git_index_remove_all, libgit2), Cint,
                  (Ptr{Void}, Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Cint}),
                  idx, sa_ptr, C_NULL, ex_ptr)
-    ccall((:git_strarray_free, :libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
+    ccall((:git_strarray_free, libgit2), Void, (Ptr{StrArrayStruct},), sa_ptr)
     if ex_ptr[1] != GitErrorConst.GIT_OK
         throw(LibGitError(ex_ptr[1]))
     end

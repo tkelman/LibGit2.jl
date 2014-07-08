@@ -1,18 +1,17 @@
 module LibGit2
-#=
+
 if isfile(joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl"))
     include("../deps/deps.jl")
 else
     error("LibGit2 not properly installed. Please run Pkg.build(\"LibGit2\")")
 end
-=#
 
 #=
 # libgit threads must be initialized before any library calls,
 # these functions are a no-op if libgit is built without thread support
 =#
 function __init__()
-    err = ccall((:git_threads_init, :libgit2), Cint, ())
+    err = ccall((:git_threads_init, libgit2), Cint, ())
     if err != zero(Cint)
         error("error initializing LibGit2 module")
     end
@@ -23,7 +22,7 @@ type LibGitHandle
     LibGitHandle() = begin
         handle = new()
         finalizer(handle, h -> begin
-            err = ccall((:git_threads_shutdown, :libgit2), Cint, ())
+            err = ccall((:git_threads_shutdown, libgit2), Cint, ())
             if err != zero(Cint)
                 error("error uninitalizing LibGit2 module")
             end

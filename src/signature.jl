@@ -5,10 +5,10 @@ typealias MaybeSignature Union(Nothing, Signature)
 #TODO: better date / time integration when this becomes available in Base
 Signature(name::String, email::String) = begin
     sig_ptr = Ptr{SignatureStruct}[0]
-    @check ccall((:git_signature_now, :libgit2), Cint,
+    @check ccall((:git_signature_now, libgit2), Cint,
                  (Ptr{Ptr{SignatureStruct}}, Ptr{Uint8}, Ptr{Uint8}), sig_ptr, name, email)
     s = Signature(sig_ptr[1])
-    ccall((:git_signature_free, :libgit2), Void, (Ptr{SignatureStruct},), sig_ptr[1])
+    ccall((:git_signature_free, libgit2), Void, (Ptr{SignatureStruct},), sig_ptr[1])
     return s
 end
 
@@ -35,7 +35,7 @@ Base.isequal(sig1::Signature, sig2::Signature) = (sig1 == sig2)
 
 Base.convert(::Type{Ptr{SignatureStruct}}, sig::Signature) = begin
     sig_ptr = Ptr{SignatureStruct}[0]
-    @check ccall((:git_signature_new, :libgit2), Cint,
+    @check ccall((:git_signature_new, libgit2), Cint,
                  (Ptr{Ptr{SignatureStruct}}, Ptr{Uint8}, Ptr{Uint8}, Cint, Cint),
                  sig_ptr, sig.name, sig.email, sig.time, sig.time_offset)
     return sig_ptr[1]::Ptr{SignatureStruct}

@@ -16,7 +16,7 @@ PlainTextCred(;username::MaybeString=nothing,
                password::MaybeString=nothing) = begin
     is(username, nothing) && throw(ArgumentError("username must be defined"))
     cred_ptr = Ptr{Void}[0]
-    @check ccall((:git_cred_userpass_plaintext_new, :libgit2), Cint,
+    @check ccall((:git_cred_userpass_plaintext_new, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}),
                  cred_ptr, username, password != nothing ? password : C_NULL)
     return PlainTextCred(cred_ptr[1])
@@ -39,7 +39,7 @@ SSHKeyCred(;username::MaybeString=nothing,
     is(username, nothing) && throw(ArgumentError("username must be defined"))
     is(privatekey, nothing) && throw(ArgumentError("privatekey must be defined"))
     cred_ptr = Ptr{Void}[0]
-    @check ccall((:git_cred_ssh_key_new, :libgit2), Cint,
+    @check ccall((:git_cred_ssh_key_new, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}),
                  cred,
                  username, 
@@ -59,7 +59,7 @@ end
 
 SSHAgentCred(username::String) = begin
     cred_ptr = Ptr{Void}[0]
-    @check ccall((:git_cred_ssh_key_from_agent, :libgit2), Cint,
+    @check ccall((:git_cred_ssh_key_from_agent, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}), cred_ptr, username)
     return SSHAgentCred(cred_ptr[1])
 end
@@ -76,6 +76,6 @@ end
 
 DefaultCred() = begin
     cred_ptr = Ptr{Void}[0]
-    @check ccall((:git_cred_default_new, :libgit2), Cint, (Ptr{Ptr{Void}},), cred_ptr)
+    @check ccall((:git_cred_default_new, libgit2), Cint, (Ptr{Ptr{Void}},), cred_ptr)
     return DefaultCred(cred_ptr[1])
 end

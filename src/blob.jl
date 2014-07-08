@@ -1,13 +1,13 @@
 export rawcontent, sloc, text, isbinary, lookup_blob, 
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream  
 
-Base.sizeof(b::GitBlob) = int(ccall((:git_blob_rawsize, :libgit2), Coff_t, (Ptr{Void},), b))
+Base.sizeof(b::GitBlob) = int(ccall((:git_blob_rawsize, libgit2), Coff_t, (Ptr{Void},), b))
 
 # TODO: it would be better to implement julia's file api's to work with blobs
 
 function rawcontent(b::GitBlob, max_bytes=-1)
-    data_ptr  = ccall((:git_blob_rawcontent, :libgit2), Ptr{Uint8}, (Ptr{Void},), b) 
-    data_size = ccall((:git_blob_rawsize, :libgit2), Coff_t, (Ptr{Void},), b) 
+    data_ptr  = ccall((:git_blob_rawcontent, libgit2), Ptr{Uint8}, (Ptr{Void},), b) 
+    data_size = ccall((:git_blob_rawsize, libgit2), Coff_t, (Ptr{Void},), b) 
     if data_ptr == C_NULL || max_bytes == 0
         return Array(Uint8, 0)
     end
@@ -26,8 +26,8 @@ end
 Base.bytestring(b::GitBlob) = bytestring(rawcontent(b))
 
 function sloc(b::GitBlob)
-    data_ptr  = ccall((:git_blob_rawcontent, :libgit2), Ptr{Uint8}, (Ptr{Void},), b)
-    data_size = ccall((:git_blob_rawsize, :libgit2), Coff_t, (Ptr{Void},), b) 
+    data_ptr  = ccall((:git_blob_rawcontent, libgit2), Ptr{Uint8}, (Ptr{Void},), b)
+    data_size = ccall((:git_blob_rawsize, libgit2), Coff_t, (Ptr{Void},), b) 
     data_end = data_ptr + data_size 
     if data_ptr == data_end
         return 0
@@ -50,14 +50,14 @@ function sloc(b::GitBlob)
 end
 
 function text(b::GitBlob, max_lines=-1)
-    data_ptr = ccall((:git_blob_rawcontent, :libgit2), Ptr{Uint8}, (Ptr{Void},), b)
+    data_ptr = ccall((:git_blob_rawcontent, libgit2), Ptr{Uint8}, (Ptr{Void},), b)
     if data_ptr == C_NULL || max_lines == 0
         return UTF8String(Uint8[])
     elseif max_lines < 0
         return bytestring(data_ptr)
     end
     lines, i = 0, 1
-    data_size = ccall((:git_blob_rawsize, :libgit2), Coff_t, (Ptr{Void},), b) 
+    data_size = ccall((:git_blob_rawsize, libgit2), Coff_t, (Ptr{Void},), b) 
     while i <= data_size && lines < max_lines
         if unsafe_load(data_ptr, i) == uint8('\n') 
             lines += 1
@@ -70,11 +70,11 @@ function text(b::GitBlob, max_lines=-1)
     return UTF8String(data_copy) 
 end
 
-isbinary(b::GitBlob) = bool(ccall((:git_blob_is_binary, :libgit2), Cint, (Ptr{Void},), b))
+isbinary(b::GitBlob) = bool(ccall((:git_blob_is_binary, libgit2), Cint, (Ptr{Void},), b))
 
 function blob_from_buffer(r::GitRepo, bufptr::Ptr{Uint8}, len::Int)
     id_ptr = [Oid()]
-    @check ccall((:git_blob_create_frombuffer, :libgit2), Cint,
+    @check ccall((:git_blob_create_frombuffer, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Csize_t),
                  id_ptr, r, bufptr, len)
     return id_ptr[1]
@@ -86,7 +86,7 @@ blob_from_buffer(r::GitRepo, buf::IOBuffer)      = blob_from_buffer(r::GitRepo, 
 
 function blob_from_workdir(r::GitRepo, path::String)
     id_ptr = [Oid()]
-    @check ccall((:git_blob_create_fromworkdir, :libgit2), Cint,
+    @check ccall((:git_blob_create_fromworkdir, libgit2), Cint,
                   (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}), 
                   id_ptr, r, bytestring(path))
     return id_ptr[1]
@@ -94,7 +94,7 @@ end
 
 function blob_from_disk(r::GitRepo, path::String)
     id_ptr = [Oid()]
-    @check ccall((:git_blob_create_fromdisk, :libgit2), Cint,
+    @check ccall((:git_blob_create_fromdisk, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}), id_ptr, r, path)
     return id_ptr[1]
 end
@@ -121,7 +121,7 @@ const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
 function blob_from_stream(r::GitRepo, io::IO, hintpath::ByteString="")
     id_ptr = [Oid()]
     payload = {io, nothing}
-    err = ccall((:git_blob_create_fromchunks, :libgit2), Cint,
+    err = ccall((:git_blob_create_fromchunks, libgit2), Cint,
                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Any),
                 id_ptr, r, !isempty(hintpath) ? hintpath : C_NULL, 
                 c_cb_blob_get_chunk, &payload)

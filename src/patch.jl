@@ -13,7 +13,7 @@ end
 
 function free!(p::GitPatch)
     if p.ptr != C_NULL
-        ccall((:git_patch_free, :libgit2), Void, (Ptr{Void},), p.ptr)
+        ccall((:git_patch_free, libgit2), Void, (Ptr{Void},), p.ptr)
         p.ptr = C_NULL
     end
 end
@@ -33,7 +33,7 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
-    @check ccall((:git_patch_from_blobs, :libgit2), Cint,
+    @check ccall((:git_patch_from_blobs, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, C_NULL, new_path_ptr, &gopts)
     return GitPatch(patch_ptr[1])
@@ -52,7 +52,7 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts=nothing) = begin
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
-    @check ccall((:git_patch_from_blobs, :libgit2), Cint,
+    @check ccall((:git_patch_from_blobs, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, other, new_path_ptr, &gopts)
     return GitPatch(patch_ptr[1])
@@ -71,7 +71,7 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::String, opts= nothing) = begin
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
-    @check ccall((:git_patch_from_blob_and_buffer, :libgit2), Cint,
+    @check ccall((:git_patch_from_blob_and_buffer, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
                   Ptr{Cchar}, Csize_t, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, buffer, length(buffer), new_path_ptr, &gopts)
@@ -86,7 +86,7 @@ end
 Base.stat(p::GitPatch) = begin
     adds = Csize_t[0]
     dels = Csize_t[0]
-    @check ccall((:git_patch_line_stats, :libgit2), Cint,
+    @check ccall((:git_patch_line_stats, libgit2), Cint,
                  (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}),
                  C_NULL, adds, dels, p)
     return GitPatchStat(int(adds[1]), int(dels[1]))
@@ -124,7 +124,7 @@ type DiffHunk
 end 
 
 function hunks(p::GitPatch)
-    nhunks = ccall((:git_patch_num_hunks, :libgit2), Csize_t, (Ptr{Void},), p)
+    nhunks = ccall((:git_patch_num_hunks, libgit2), Csize_t, (Ptr{Void},), p)
     if nhunks == 0
         return nothing
     end
@@ -133,7 +133,7 @@ function hunks(p::GitPatch)
     lines_ptr = Csize_t[0]
     hs = DiffHunk[]
     for i in 1:nhunks
-        err = ccall((:git_patch_get_hunk, :libgit2), Cint,
+        err = ccall((:git_patch_get_hunk, libgit2), Cint,
                     (Ptr{Ptr{DiffHunkStruct}}, Ptr{Csize_t}, Ptr{Void}, Csize_t),
                     hunk_ptr, lines_ptr, p, i-1)
         err == GitErrorConst.GIT_OK || break
@@ -186,7 +186,7 @@ function lines(h::DiffHunk)
     hi = h.hunk_index
     line_ptr = Ptr{DiffLineStruct}[0]
     for i in 1:lc
-        err = ccall((:git_patch_get_line_in_hunk, :libgit2), Cint,
+        err = ccall((:git_patch_get_line_in_hunk, libgit2), Cint,
                     (Ptr{Ptr{DiffLineStruct}}, Ptr{Void}, Csize_t, Csize_t),
                     line_ptr, h.patch, hi-1, i-1)
         err == GitErrorConst.GIT_OK || break
@@ -229,15 +229,15 @@ const c_cb_patch_print = cfunction(cb_patch_print, Cint,
 
 Base.string(p::GitPatch) = begin
     s = Uint8[]
-    @check ccall((:git_patch_print, :libgit2), Cint,
+    @check ccall((:git_patch_print, libgit2), Cint,
                  (Ptr{Void}, Ptr{Void}, Any), p, c_cb_patch_print, &s)
     return utf8(bytestring(convert(Ptr{Uint8}, s)))
 end
 
-nhunks(p::GitPatch) = int(ccall((:git_patch_num_hunks, :libgit2), Cint, (Ptr{Void},), p))
+nhunks(p::GitPatch) = int(ccall((:git_patch_num_hunks, libgit2), Cint, (Ptr{Void},), p))
 
 function delta(p::GitPatch)
-    delta_ptr = ccall((:git_patch_get_delta, :libgit2), Ptr{DiffDeltaStruct}, (Ptr{Void},), p)
+    delta_ptr = ccall((:git_patch_get_delta, libgit2), Ptr{DiffDeltaStruct}, (Ptr{Void},), p)
     return DiffDelta(delta_ptr)
 end
 
@@ -245,7 +245,7 @@ function line_stats(p::GitPatch)
     lines = Csize_t[0]
     additions = Csize_t[0]
     deletions = Csize_t[0]
-    @check ccall((:git_patch_line_stats, :libgit2), Cint,
+    @check ccall((:git_patch_line_stats, libgit2), Cint,
                  (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}),
                  lines, additions, deletions, p)
     return (int(lines[1]), int(additions[1]), int(deletions[1]))

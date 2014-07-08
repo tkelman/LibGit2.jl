@@ -82,7 +82,7 @@ immutable LibGitError{Class, Code}
 end
 
 function last_error()
-    err = ccall((:giterr_last, :libgit2), Ptr{ErrorStruct}, ())
+    err = ccall((:giterr_last, libgit2), Ptr{ErrorStruct}, ())
     err_obj   = unsafe_load(err)
     err_class = git_error_class[int(err_obj.class)] 
     err_msg   = bytestring(err_obj.message)
