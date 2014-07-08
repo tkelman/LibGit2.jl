@@ -26,5 +26,3 @@ function tagger(t::GitTag)
     sig_ptr == C_NULL && return nothing
     return Signature(sig_ptr)
 end
-
-#TODO: tag iteration foreach(tag)...

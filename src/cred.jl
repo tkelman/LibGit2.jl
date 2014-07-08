@@ -64,7 +64,6 @@ SSHAgentCred(username::String) = begin
     return SSHAgentCred(cred_ptr[1])
 end
 
-
 type DefaultCred <: GitCredential
     ptr::Ptr{Void}
 
@@ -80,4 +79,3 @@ DefaultCred() = begin
     @check ccall((:git_cred_default_new, :libgit2), Cint, (Ptr{Ptr{Void}},), cred_ptr)
     return DefaultCred(cred_ptr[1])
 end
-

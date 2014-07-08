@@ -42,11 +42,11 @@ function move(b::GitBranch, newname::String;
     if sig != nothing
         @check ccall((:git_branch_move, :libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
-                       branch_ptr, b, newname, force? 1:0, sig, logmsg != nothing ? logmsg : C_NULL)
+                       branch_ptr, b, newname, force, sig, logmsg != nothing ? logmsg : C_NULL)
     else
         @check ccall((:git_branch_move, :libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
-                       branch_ptr, b, newname, force? 1:0, C_NULL, logmsg != nothing ? logmsg : C_NULL)
+                       branch_ptr, b, newname, force, C_NULL, logmsg != nothing ? logmsg : C_NULL)
     end
     return GitBranch(branch_ptr[1])
 end
