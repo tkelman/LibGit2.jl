@@ -26,7 +26,7 @@ provides(SimpleBuild,
             `cmake . -DCMAKE_INSTALL_PREFIX=$prefix 
                      -DCMAKE_BUILD_TYPE=Release 
                      -DTHREADSAFE=ON
-                     -DBUID_CLAR=OFF`
+                     -DBUILD_CLAR=OFF`
             `make install`
         end
     end), libgit2, os = :Unix)
