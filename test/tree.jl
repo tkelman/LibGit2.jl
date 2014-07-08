@@ -51,35 +51,35 @@ with_repo_access() do test_repo, path
         str = join([name(te) for te in tes], ":")
         @test str == "README:subdir:new.txt"
     end
-
+    
     context("test tree walk only trees") do
-        walk_trees(test_tree, :postorder) do res
+        walk(GitTree, test_tree, :postorder) do res
             root, entry = res
             @assert isa(entry, GitTreeEntry{GitTree})
         end
     end
 
     context("test tree walk only blob") do 
-        walk_blobs(test_tree, :postorder) do res
+        walk(GitBlob, test_tree, :postorder) do res
             root, entry = res
             @test isa(entry, GitTreeEntry{GitBlob})
         end
     end
-
+    
     context("test iterate subtrees") do
-        for t in each_tree(test_tree)
+        for t in foreach(GitTree, test_tree)
             @test isa(t, GitTreeEntry{GitTree})
         end
     end
 
     context("test iterate subtree blobs") do
-        for b in each_blob(test_tree)
+        for b in foreach(GitBlob, test_tree)
             @test isa(b, GitTreeEntry{GitBlob})
         end
     end
 end
 
-#TODO: treebuilder api is akward
+#TODO: more tree builder tests
 with_tmp_repo_access("test tree builder") do test_repo, path
   builder = GitTreeBuilder(test_repo)
   insert!(builder, "README.txt", 

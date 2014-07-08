@@ -1,7 +1,5 @@
 export GitTreeEntry, 
-       entry_byname, entry_bypath,
-       each_tree, each_blob,
-       walk_trees, walk_blobs
+       entry_byname, entry_bypath, walk
 
 type GitTreeEntry{T<:GitObject}
     name::ByteString
@@ -100,13 +98,13 @@ Base.next(t::GitTree, state) = begin
     (state[2], (nidx, entry_byindex(t, nidx)))
 end
 
-function each_blob(t::GitTree)
+function foreach(::Type{GitBlob}, t::GitTree)
     @task for te in t
         isa(te, GitTreeEntry{GitBlob}) && produce(te)
     end
 end
 
-function each_tree(t::GitTree)
+function foreach(::Type{GitTree}, t::GitTree)
     @task for te in t
         isa(te, GitTreeEntry{GitTree}) && produce(te)
     end
@@ -125,40 +123,35 @@ const c_cb_treewalk = cfunction(cb_treewalk, Cint,
                                 (Ptr{Uint8}, Ptr{Void}, Ptr{Void}))
  
 function walk(t::GitTree, order=:postorder)
-    local mode::Cint
-    if order == :postorder
-        mode = GitConst.TREEWALK_POST
-    elseif order == :preorder
-        mode = GitConst.TREEWALK_PRE
-    else
-        throw(ArgumentError("walk order can be :preorder or :postorder, got :$order"))
-    end
+    mode = order == :postorder ? GitConst.TREEWALK_POST :
+           order == :preorder  ? GitConst.TREEWALK_PRE  :
+           throw(ArgumentError("walk order can be :preorder or :postorder, got :$order"))
     @task ccall((:git_tree_walk, libgit2), Cint,
                 (Ptr{Void}, Cint, Ptr{Void}, Ptr{Void}), 
                 t, mode, c_cb_treewalk, C_NULL)
 end
 
-function walk_blobs(t::GitTree, order::Symbol=:postorder)
+function walk(::Type{GitBlob}, t::GitTree, order::Symbol=:postorder)
     @task for res in walk(t, order)
         isa(res[2], GitTreeEntry{GitBlob}) && produce(res)
     end
 end
 
-function walk_blobs(f::Function, t::GitTree, order::Symbol=:postorder)
-    for res in walk_blobs(t, order) 
+function walk(f::Function, ::Type{GitBlob}, t::GitTree, order::Symbol=:postorder)
+    for res in walk(GitBlob, t, order) 
         f(res)
     end
 end
 
-function walk_trees(t::GitTree, order::Symbol=:postorder)
+function walk(::Type{GitTree}, t::GitTree, order::Symbol=:postorder)
     @task for res in walk(t, order)
         isa(res[2], GitTreeEntry{GitTree}) && produce(res)
     end
 end
 
-function walk_trees(f::Function, t::GitTree, order::Symbol=:postorder)
-    for te in walk_trees(t, order)
-        f(te)
+function walk(f::Function, ::Type{GitTree}, t::GitTree, order::Symbol=:postorder)
+    for res in walk(GitTree, t, order)
+        f(res)
     end
 end
 
