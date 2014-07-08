@@ -1,4 +1,7 @@
+/deps/deps.jl
 /deps/usr
+/deps/downloads
+/deps/src
 
 *.exe
 *.dll
@@ -7,4 +10,5 @@
 *.dylib
 *.dSYM
 
-BAD.txt
+*.swp
+
