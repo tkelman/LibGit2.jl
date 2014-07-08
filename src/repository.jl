@@ -2,7 +2,7 @@ export isbare, isempty, workdir, path, repo_init, head,
        set_head!, tags, tag!, commits, references, lookup,
        lookup_tree, lookup_commit, commit, ref_names,
        revparse_single, create_ref, create_sym_ref, lookup_ref,
-       repo_odb, config,  GitTreeBuilder,
+       repo_odb, config,  GitTreeBuilder, set_workdir!, 
        insert!, write!, close, lookup, revparse, revparse_oid, remotes,
        ahead_behind, merge_base, merge_commits,  blob_at, isshallow, hash_data,
        default_signature, repo_discover, isempty, namespace, set_namespace!,
@@ -748,8 +748,10 @@ function commit(r::GitRepo,
     return id_ptr[1]
 end
 
-#TODO: implement
-function set_workdir(r::GitRepo, dir::String, update::Bool)
+function set_workdir!(r::GitRepo, dir::String, update::Bool)
+    @check ccall((:git_repository_set_workdir, :libgit2), Cint, 
+                 (Ptr{Void}, Ptr{Uint8}, Cint), r, dir, update)
+    return r
 end
 
 # filter can be :all, :local, :remote
