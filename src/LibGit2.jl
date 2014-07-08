@@ -73,7 +73,7 @@ function set_trace(level::Symbol)
         level === :debug ? 5 :
         level === :trace ? 6 :
         throw(ArgumentError("unknown trace level :$level"))
-    @check ccall((:git_trace_set, :libgit2), Cint, (Cint, Ptr{Void}), l, c_cb_trace)
+    @check ccall((:git_trace_set, libgit2), Cint, (Cint, Ptr{Void}), l, c_cb_trace)
     return
 end
 

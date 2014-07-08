@@ -19,11 +19,11 @@ typealias MaybeSignature Union(Nothing, Signature)
 
 GitRepo(path::String; alternates={}) = begin
     repo_ptr = Ptr{Void}[0]
-    err = ccall((:git_repository_open, :libgit2), Cint,
+    err = ccall((:git_repository_open, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}), repo_ptr, path)
     if err != GitErrorConst.GIT_OK
         if repo_ptr[1] != C_NULL
-            ccall((:git_repository_free, :libgit2), Void, (Ptr{Void},), repo_ptr[1])
+            ccall((:git_repository_free, libgit2), Void, (Ptr{Void},), repo_ptr[1])
         end
         throw(LibGitError(err))
     end
@@ -34,7 +34,7 @@ GitRepo(path::String; alternates={}) = begin
             if !isdir(pth)
                 throw(ArgumentError("alternate $path is not a valid directory"))
             end
-            @check ccall((:git_odb_add_disk_alternate, :libgit2), Cint,
+            @check ccall((:git_odb_add_disk_alternate, libgit2), Cint,
                          (Ptr{Void}, Ptr{Uint8}), odb, pth)
         end
     end
@@ -43,7 +43,7 @@ end
 
 Base.close(r::GitRepo) = begin
     if r.ptr != C_NULL
-        ccall((:git_repository__cleanup, :libgit2), Void, (Ptr{Void},), r.ptr)
+        ccall((:git_repository__cleanup, libgit2), Void, (Ptr{Void},), r.ptr)
     end
 end
 
@@ -63,7 +63,7 @@ const c_cb_iter_oids = cfunction(cb_iter_oids, Cint, (Ptr{Uint8}, Ptr{Void}))
 #TODO: better error handling
 Base.start(r::GitRepo) = begin
     odb = Odb(r)
-    t = @task ccall((:git_odb_foreach, :libgit2), Cint,
+    t = @task ccall((:git_odb_foreach, libgit2), Cint,
                     (Ptr{Void}, Ptr{Void}, Ptr{Cint}), odb, c_cb_iter_oids, C_NULL)
     return (consume(t), t)
 end
@@ -78,18 +78,18 @@ end
 Base.read(r::GitRepo, id::Oid) = begin
     odb = Odb(r)
     obj_ptr = Ptr{Void}[0]
-    @check ccall((:git_odb_read, :libgit2), Cint,
+    @check ccall((:git_odb_read, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}), obj_ptr, odb, &id)
     return OdbObject(obj_ptr[1])
 end
 
 Base.delete!(r::GitRepo, ref::GitReference) = begin
-    @check ccall((:git_reference_delete, :libgit2), Cint, (Ptr{Void}, Ptr{Void}), r, ref)
+    @check ccall((:git_reference_delete, libgit2), Cint, (Ptr{Void}, Ptr{Void}), r, ref)
     return r
 end
 
 Base.delete!(r::GitRepo, t::GitTag) = begin
-    @check ccall((:git_tag_delete, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, name(t))
+    @check ccall((:git_tag_delete, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, name(t))
     return r
 end
 
@@ -99,9 +99,9 @@ read_header(r::GitRepo, id::Oid) = read_header(Odb(r), id)
 
 exists(r::GitRepo, ref::String) = begin
     ref_ptr = Ptr{Void}[0]
-    err = ccall((:git_reference_lookup, :libgit2), Cint,
+    err = ccall((:git_reference_lookup, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, ref)
-    ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), ref_ptr[1])
+    ccall((:git_reference_free, libgit2), Void, (Ptr{Void},), ref_ptr[1])
     if err == GitErrorConst.ENOTFOUND
         return false
     elseif err != GitErrorConst.GIT_OK
@@ -112,26 +112,26 @@ end
 exists(r::GitRepo, id::Oid) = id in r 
 
 function isbare(r::GitRepo)
-    return bool(ccall((:git_repository_is_bare, :libgit2), Cint, (Ptr{Void},), r))
+    return bool(ccall((:git_repository_is_bare, libgit2), Cint, (Ptr{Void},), r))
 end
 
 Base.isempty(r::GitRepo) = begin
-    return bool(ccall((:git_repository_is_empty, :libgit2), Cint, (Ptr{Void},), r))
+    return bool(ccall((:git_repository_is_empty, libgit2), Cint, (Ptr{Void},), r))
 end
 
 function isshallow(r::GitRepo)
-    return bool(ccall((:git_repository_is_shallow, :libgit2), Cint, (Ptr{Void},), r))
+    return bool(ccall((:git_repository_is_shallow, libgit2), Cint, (Ptr{Void},), r))
 end
 
 function workdir(r::GitRepo)
-    dir = ccall((:git_repository_workdir, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    dir = ccall((:git_repository_workdir, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     dir == C_NULL && return nothing
     # remove trailing slash
     return bytestring(dir)[1:end-1]
 end
 
 function path(r::GitRepo)
-    cpath = ccall((:git_repository_path, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    cpath = ccall((:git_repository_path, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     cpath == C_NULL && return nothing
     # remove trailing slash
     return bytestring(cpath)[1:end-1]
@@ -139,7 +139,7 @@ end
 
 function hash_data{T<:GitObject}(::Type{T}, content::String)
     id_ptr = [Oid()]
-    @check ccall((:git_odb_hash, :libgit2), Cint,
+    @check ccall((:git_odb_hash, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Uint8}, Csize_t, Cint),
                  id_ptr, content, length(content), git_otype(T))
     return id_ptr[1]
@@ -147,24 +147,24 @@ end
 
 function default_signature(r::GitRepo)
     sig_ptr = Ptr{SignatureStruct}[0]
-    @check ccall((:git_signature_default, :libgit2), Cint,
+    @check ccall((:git_signature_default, libgit2), Cint,
                  (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, r)
     sig = Signature(sig_ptr[1])
-    ccall((:git_signature_free, :libgit2), Void, (Ptr{SignatureStruct},), sig_ptr[1])
+    ccall((:git_signature_free, libgit2), Void, (Ptr{SignatureStruct},), sig_ptr[1])
     return sig
 end
 
 function is_head_detached(r::GitRepo)
-    return bool(ccall((:git_repository_head_detached, :libgit2), Cint, (Ptr{Void},), r))
+    return bool(ccall((:git_repository_head_detached, libgit2), Cint, (Ptr{Void},), r))
 end
 
 function repo_init(path::String; bare::Bool=false)
     repo_ptr = Ptr{Void}[0]
-    err = ccall((:git_repository_init, :libgit2), Cint,
+    err = ccall((:git_repository_init, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}, Cint), repo_ptr, path, bare)
     if err != GitErrorConst.GIT_OK
         if repo_ptr[1] != C_NULL
-            ccall((:git_repository_free, :libgit2), Void, (Ptr{Void},), repo_ptr[1])
+            ccall((:git_repository_free, libgit2), Void, (Ptr{Void},), repo_ptr[1])
         end
         throw(LibGitError(err))
     end
@@ -173,24 +173,24 @@ end
 
 function set_namespace!(r::GitRepo, ns)
     if ns == nothing || isempty(ns)
-        @check ccall((:git_repository_set_namespace, :libgit2), Cint,
+        @check ccall((:git_repository_set_namespace, libgit2), Cint,
                      (Ptr{Void}, Ptr{Uint8}), r, C_NULL)
     else
-        @check ccall((:git_repository_set_namespace, :libgit2), Cint,
+        @check ccall((:git_repository_set_namespace, libgit2), Cint,
                      (Ptr{Void}, Ptr{Uint8}), r, ns)
     end
     return r
 end
 
 function namespace(r::GitRepo)
-    ns_ptr = ccall((:git_repository_get_namespace, :libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    ns_ptr = ccall((:git_repository_get_namespace, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     ns_ptr == C_NULL && return nothing
     return bytestring(ns_ptr)
 end
 
 function head(r::GitRepo)
     head_ptr = Ptr{Void}[0]
-    err = ccall((:git_repository_head, :libgit2), Cint,
+    err = ccall((:git_repository_head, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), head_ptr, r)
     if err == GitErrorConst.ENOTFOUND || err == GitErrorConst.EUNBORNBRANCH
         return nothing
@@ -215,7 +215,7 @@ end
 function set_head!(r::GitRepo, ref::String; 
                    sig::MaybeSignature=nothing, 
                    logmsg::MaybeString=nothing)
-    @check ccall((:git_repository_set_head, :libgit2), Cint,
+    @check ccall((:git_repository_set_head, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Ptr{SignatureStruct}, Ptr{Uint8}),
                  r, ref, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r
@@ -228,7 +228,7 @@ end
 
 function remotes(r::GitRepo)
     sa_ptr = [StrArrayStruct()]
-    @check ccall((:git_remote_list, :libgit2), Cint,
+    @check ccall((:git_remote_list, libgit2), Cint,
                  (Ptr{StrArrayStruct}, Ptr{Void}), sa_ptr, r)
     sa = sa_ptr[1]
     sa.count == 0 && return nothing 
@@ -236,7 +236,7 @@ function remotes(r::GitRepo)
     out = Array(GitRemote, sa.count)
     for i in 1:sa.count 
         rstr_ptr = unsafe_load(sa.strings, i)
-        @check ccall((:git_remote_load, :libgit2), Cint,
+        @check ccall((:git_remote_load, libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, rstr_ptr)
         out[i] = GitRemote(remote_ptr[1])
     end
@@ -246,7 +246,7 @@ end
 
 function remote_names(r::GitRepo)
     sa_ptr = [StrArrayStruct()]
-    @check ccall((:git_remote_list, :libgit2), Cint,
+    @check ccall((:git_remote_list, libgit2), Cint,
                   (Ptr{StrArrayStruct}, Ptr{Void}), sa_ptr, r)
     sa = sa_ptr[1]
     ns = Array(UTF8String, sa.count)
@@ -260,7 +260,7 @@ end
 function remote_add!(r::GitRepo, name::String, url::String)
     check_valid_url(url)
     remote_ptr = Ptr{Void}[0]
-    @check ccall((:git_remote_create, :libgit2), Cint,
+    @check ccall((:git_remote_create, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}), remote_ptr, r, name, url)
     return GitRemote(remote_ptr[1])
 end
@@ -280,48 +280,48 @@ const c_cb_push_status = cfunction(cb_push_status, Cint,
 #TODO: better error messages
 Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
     push_ptr = Ptr{Void}[0]
-    err = ccall((:git_push_new, :libgit2), Cint,
+    err = ccall((:git_push_new, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), push_ptr, remote)
     p = push_ptr[1]
     if err != GitErrorConst.GIT_OK
         if p != C_NULL
-            ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
+            ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         end
         throw(LibGitError(err))
     end
     @assert p != C_NULL
     for ref in refs
-        err = ccall((:git_push_add_refspec, :libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), p, ref)
+        err = ccall((:git_push_add_refspec, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), p, ref)
     end
     if err != GitErrorConst.GIT_OK
-        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
+        ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
-    err = ccall((:git_push_finish, :libgit2), Cint, (Ptr{Void},), p)
+    err = ccall((:git_push_finish, libgit2), Cint, (Ptr{Void},), p)
     if err != GitErrorConst.GIT_OK
-        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
+        ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         if err == GitErrorConst.ENONFASTFORWARD
             error("non-fast-forward upate rejected")
         elseif err == GitErrorConst.EBAREREPO
             error("could not push to repo (check for non-bare repo)")
         end
     end
-    err = ccall((:git_push_unpack_ok, :libgit2), Cint, (Ptr{Void},), p)
+    err = ccall((:git_push_unpack_ok, libgit2), Cint, (Ptr{Void},), p)
     if err == GitErrorConst.GIT_OK
-        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
+        ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         error("remote side did not unpack successfully")
     end
     result = Dict{UTF8String, UTF8String}()
-    err = ccall((:git_push_status_foreach, :libgit2), Cint,
+    err = ccall((:git_push_status_foreach, libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Any), p, c_cb_push_status, &result)
     if err != GitErrorConst.GIT_OK
-        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
+        ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
-    err = ccall((:git_push_update_tips, :libgit2), Cint,
+    err = ccall((:git_push_update_tips, libgit2), Cint,
                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), p, C_NULL, C_NULL)
     if err != GitErrorConst.GIT_OK
-        ccall((:git_push_free, :libgit2), Void, (Ptr{Void},), p)
+        ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
     end
     return result
@@ -329,20 +329,20 @@ end
 
 Base.push!{T<:String}(r::GitRepo, remote::String, refs::Vector{T}) = begin
     remote_ptr = Ptr{Void}[0]
-    @check ccall((:git_remote_load, :libgit2), Cint,
+    @check ccall((:git_remote_load, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote)
     return push!(r, GitRemote(remote_ptr[1]), refs)
 end
 
 function lookup(::Type{GitRemote}, r::GitRepo, remote_name::String)
     remote_ptr = Ptr{Void}[0]
-    err = ccall((:git_remote_load, :libgit2), Cint,
+    err = ccall((:git_remote_load, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote_name)
     if err == GitErrorConst.ENOTFOUND
         return nothing
     elseif err != GitErrorConst.GIT_OK
         if remote_ptr[1] != C_NULL
-            ccall((:git_remote_free, :libgit2), Void, (Ptr{Void},), remote_ptr[1])
+            ccall((:git_remote_free, libgit2), Void, (Ptr{Void},), remote_ptr[1])
         end
         throw(LibGitError(err))
     end
@@ -354,7 +354,7 @@ lookup_tag(r::GitRepo, id::Oid) = lookup(GitTag, r, id)
 
 function tags(r::GitRepo, glob::String="")
     sa_ptr = [StrArrayStruct()]
-    @check ccall((:git_tag_list_match, :libgit2), Cint,
+    @check ccall((:git_tag_list_match, libgit2), Cint,
                  (Ptr{StrArrayStruct}, Ptr{Uint8}, Ptr{Void}), sa_ptr, glob, r)
     sa = sa_ptr[1]
     sa.count == 0 && return GitTag[] 
@@ -376,12 +376,12 @@ function tag!(r::GitRepo;
    target != nothing && (obj = lookup(r, target))
    if !isempty(message)
        sig = tagger != nothing ? tagger : default_signature(r)
-       @check ccall((:git_tag_create, :libgit2), Cint,
+       @check ccall((:git_tag_create, libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
                      Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}, Cint),
                     id_ptr, r, name, obj, sig, message, force)
    else
-       @check ccall((:git_tag_create_lightweight, :libgit2), Cint,
+       @check ccall((:git_tag_create_lightweight, libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Cint),
                     id_ptr, r, name, obj, force)
    end
@@ -394,7 +394,7 @@ function create_note!(
                author::MaybeSignature=nothing,
                ref::MaybeString=nothing,
                force::Bool=false)
-    repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
+    repo_ptr  = ccall((:git_object_owner, libgit2), Ptr{Void}, (Ptr{Void},), obj)
     bref = ref != nothing ? bytestring(ref) : convert(Ptr{Uint8}, C_NULL)
     #TODO: we can avoid having to lookup the default signature twice
     local committer_ptr::Ptr{SignatureStruct}
@@ -402,7 +402,7 @@ function create_note!(
         committer_ptr = convert(Ptr{SignatureStruct}, committer)
     else
         sig_ptr = Ptr{SignatureStruct}[0]
-        @check ccall((:git_signature_default, :libgit2), Cint,
+        @check ccall((:git_signature_default, libgit2), Cint,
                      (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         committer_ptr = sig_ptr[1]
  
@@ -412,13 +412,13 @@ function create_note!(
         author_ptr = convert(Ptr{SignatureStruct}, author)
     else
         sig_ptr = Ptr{SignatureStruct}[0]
-        @check ccall((:git_signature_default, :libgit2), Cint,
+        @check ccall((:git_signature_default, libgit2), Cint,
                      (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end
     tid = Oid(obj)
     nid_ptr = [Oid()]
-    @check ccall((:git_note_create, :libgit2), Cint,
+    @check ccall((:git_note_create, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{SignatureStruct},
                   Ptr{SignatureStruct}, Ptr{Uint8}, Ptr{Oid}, Ptr{Uint8}, Cint),
                   nid_ptr, repo_ptr, committer_ptr, author_ptr, bref, &tid, msg, force)
@@ -429,14 +429,14 @@ function remove_note!(obj::GitObject;
                       committer::MaybeSignature=nothing,
                       author::MaybeSignature=nothing,
                       ref::MaybeString=nothing)
-    repo_ptr  = ccall((:git_object_owner, :libgit2), Ptr{Void}, (Ptr{Void},), obj)
+    repo_ptr  = ccall((:git_object_owner, libgit2), Ptr{Void}, (Ptr{Void},), obj)
     notes_ref = ref != nothing ? bytestring(ref) : bytestring("refs/notes/commits")
     local committer_ptr::Ptr{SignatureStruct}
     if committer != nothing
         committer_ptr = convert(Ptr{SignatureStruct}, committer)
     else
         sig_ptr = Ptr{SignatureStruct}[0]
-        @check ccall((:git_signature_default, :libgit2), Cint,
+        @check ccall((:git_signature_default, libgit2), Cint,
                      (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         committer_ptr = sig_ptr[1]
     end
@@ -445,12 +445,12 @@ function remove_note!(obj::GitObject;
         author_ptr = convert(Ptr{SignatureStruct}, committer)
     else
         sig_ptr = Ptr{SignatureStruct}[0]
-        @check ccall((:git_signature_default, :libgit2), Cint,
+        @check ccall((:git_signature_default, libgit2), Cint,
                      (Ptr{Ptr{SignatureStruct}}, Ptr{Void}), sig_ptr, repo_ptr)
         author_ptr = sig_ptr[1]
     end 
     tid = Oid(obj)
-    err = ccall((:git_note_remove, :libgit2), Cint,
+    err = ccall((:git_note_remove, libgit2), Cint,
                 (Ptr{Void}, Ptr{Uint8}, 
                  Ptr{SignatureStruct}, Ptr{SignatureStruct}, Ptr{Oid}),
                  repo_ptr, notes_ref, author_ptr, committer_ptr, &tid)
@@ -464,7 +464,7 @@ end
 
 function note_default_ref(r::GitRepo)
     refname_ptr = Ptr{Uint8}[0]
-    @check ccall((:git_note_default_ref, :libgit2), Cint, 
+    @check ccall((:git_note_default_ref, libgit2), Cint, 
                  (Ptr{Ptr{Uint8}}, Ptr{Void}), refname_ptr, r)
     return utf8(bytestring(refname_ptr[1]))
 end
@@ -484,7 +484,7 @@ end
 
 free!(it::NoteIterator) = begin
     if it.ptr != C_NULL
-        ccall((:git_note_iterator_free, :libgit2), Void, (Ptr{Void},), it.ptr)
+        ccall((:git_note_iterator_free, libgit2), Void, (Ptr{Void},), it.ptr)
         it.ptr = C_NULL
     end
 end
@@ -493,14 +493,14 @@ Base.convert(::Type{Ptr{Void}}, it::NoteIterator) = it.ptr
 
 function foreach(::Type{GitNote}, r::GitRepo, notes_ref::MaybeString=nothing)
     iter_ptr = Ptr{Void}[0]
-    @check ccall((:git_note_iterator_new, :libgit2), Cint,
+    @check ccall((:git_note_iterator_new, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), iter_ptr, r, notes_ref)
     return NoteIterator(r, iter_ptr[1], notes_ref)
 end
 
 Base.start(it::NoteIterator) = begin
     note_id_ptr, ann_id_ptr = [Oid()], [Oid()]
-    err = ccall((:git_note_next, :libgit2), Cint,
+    err = ccall((:git_note_next, libgit2), Cint,
                 (Ptr{Oid}, Ptr{Oid}, Ptr{Void}), note_id_ptr, ann_id_ptr, it)
     if err == GitErrorConst.ITEROVER
         return nothing
@@ -508,17 +508,17 @@ Base.start(it::NoteIterator) = begin
         throw(LibGitError(err))
     end
     note_ptr = Ptr{Void}[0]
-    err = ccall((:git_note_read, :libgit2), Cint,
+    err = ccall((:git_note_read, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}),
                  note_ptr, it.repo, it.notes_ref, ann_id_ptr)
     if err != GitErrorConst.GIT_OK
         if note_ptr[1] != C_NULL
-            ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+            ccall((:git_note_free, libgit2), Void, (Ptr{Void},), note_ptr[1])
         end
         throw(LibGitError(err))
     end
     n = GitNote(note_ptr[1])
-    ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+    ccall((:git_note_free, libgit2), Void, (Ptr{Void},), note_ptr[1])
     return (n, ann_id_ptr[1])
 end
 
@@ -526,7 +526,7 @@ Base.done(it::NoteIterator, state) = is(state, nothing)
 
 Base.next(it::NoteIterator, state) = begin
     note_id_ptr, ann_id_ptr = [Oid()], [Oid()]
-    err = ccall((:git_note_next, :libgit2), Cint,
+    err = ccall((:git_note_next, libgit2), Cint,
                 (Ptr{Oid}, Ptr{Oid}, Ptr{Void}), note_id_ptr, ann_id_ptr, it)
     if err == GitErrorConst.ITEROVER
         return (state, nothing)
@@ -534,17 +534,17 @@ Base.next(it::NoteIterator, state) = begin
         throw(LibGitError(err))
     end
     note_ptr = Ptr{Void}[0]
-    err = ccall((:git_note_read, :libgit2), Cint,
+    err = ccall((:git_note_read, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}),
                  note_ptr, it.repo, C_NULL, note_id_ptr)
     if err != GitErrorConst.GIT_OK
         if note_ptr[1] != C_NULL
-            ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+            ccall((:git_note_free, libgit2), Void, (Ptr{Void},), note_ptr[1])
         end
         throw(LibGitError(err))
     end
     n = GitNote(note_ptr[1])
-    ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+    ccall((:git_note_free, libgit2), Void, (Ptr{Void},), note_ptr[1])
     return (state, (n, ann_id_ptr[1]))
 end
 
@@ -554,7 +554,7 @@ end
 
 function ahead_behind(r::GitRepo, lid::Oid, uid::Oid)
     ahead, behind = Csize_t[0], Csize_t[0]
-    @check ccall((:git_graph_ahead_behind, :libgit2), Cint,
+    @check ccall((:git_graph_ahead_behind, libgit2), Cint,
                  (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}, Ptr{Oid}, Ptr{Oid}),
                  ahead, behind, r, &lid, &uid)
     return (int(ahead[1]), int(behind[1]))
@@ -577,18 +577,18 @@ end
 function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)
     odb = Odb(r)
     stream_ptr = Ptr{Void}[0]
-    @check ccall((:git_odb_open_wstream, :libgit2), Cint,
+    @check ccall((:git_odb_open_wstream, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t, Cint),
                  stream_ptr, odb, length(buf), git_otype(T))
     @assert stream_ptr[1] != C_NULL
-    err = ccall((:git_odb_stream_write, :libgit2), Cint,
+    err = ccall((:git_odb_stream_write, libgit2), Cint,
                 (Ptr{Void}, Ptr{Uint8}, Csize_t), stream_ptr[1], buf, length(buf))
     id_ptr = [Oid()]
     if err == GitErrorConst.GIT_OK
-        err = ccall((:git_odb_stream_finalize_write, :libgit2), Cint,
+        err = ccall((:git_odb_stream_finalize_write, libgit2), Cint,
                     (Ptr{Oid}, Ptr{Void}), id_ptr, stream_ptr[1])
     end
-    ccall((:git_odb_stream_free, :libgit2), Void, (Ptr{Void},), stream_ptr[1])
+    ccall((:git_odb_stream_free, libgit2), Void, (Ptr{Void},), stream_ptr[1])
     if err != GitErrorConst.GIT_OK
         throw(LibGitError(err))
     end
@@ -600,17 +600,17 @@ function repo_discover(pth::String="", acrossfs::Bool=true)
     isempty(pth) && (pth = pwd())
     brepo = zeros(Uint8, GitConst.GIT_PATH_MAX)
     buf_ptr = [BufferStruct()]
-    @check ccall((:git_repository_discover, :libgit2), Cint,
+    @check ccall((:git_repository_discover, libgit2), Cint,
                  (Ptr{BufferStruct}, Ptr{Uint8}, Cint, Ptr{Uint8}), 
                  buf_ptr, pth, acrossfs, C_NULL)
     bstr = bytestring(buf_ptr[1])
-    ccall((:git_buf_free, :libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
+    ccall((:git_buf_free, libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
     return GitRepo(bstr)
 end
 
 function revparse(r::GitRepo, rev::String)
     obj_ptr = Ptr{Void}[0]
-    @check ccall((:git_revparse_single, :libgit2), Cint,
+    @check ccall((:git_revparse_single, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, rev)
     return gitobj_from_ptr(obj_ptr[1])
 end
@@ -624,7 +624,7 @@ function merge_base(r::GitRepo, args...)
     @assert length(arg_oids) == length(args) * OID_RAWSZ
     len = convert(Csize_t, length(args))
     id_ptr = [Oid()]
-    err = ccall((:git_merge_base_many, :libgit2), Cint, 
+    err = ccall((:git_merge_base_many, libgit2), Cint, 
                 (Ptr{Oid}, Ptr{Void}, Csize_t, Ptr{Uint8}), id_ptr, r, len, arg_oids)
     if err == GitErrorConst.ENOTFOUND
         return nothing
@@ -639,21 +639,14 @@ revparse_oid(r::GitRepo, rev::String) = Oid(revparse(r, rev))
 
 Odb(r::GitRepo) = begin
     odb_ptr = Ptr{Void}[0]
-    @check ccall((:git_repository_odb, :libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}), odb_ptr, r)
-    return Odb(odb_ptr[1])
-end
-
-GitIndex(r::GitRepo) = begin
-    idx_ptr = Ptr{Void}[0]
-    @check ccall((:git_repository_index, :libgit2), Cint,
+    @check ccall((:git_repository_odb, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}), idx_ptr, r)
     return GitIndex(idx_ptr[1])
 end
 
 function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::Oid)
     obj_ptr = Ptr{Void}[0]
-    @check ccall((:git_object_lookup, :libgit2), Cint,
+    @check ccall((:git_object_lookup, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
                  obj_ptr, r, &id, git_otype(T))
     return T(obj_ptr[1])
@@ -663,14 +656,14 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
     len = length(oid)
     id_ptr  = [Oid()]
     obj_ptr = Ptr{Void}[0]
-    @check ccall((:git_oid_fromstrn, :libgit2), Cint,
+    @check ccall((:git_oid_fromstrn, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Uint8}, Csize_t), id_ptr, oid, len) 
     if len < OID_HEXSZ
-        @check ccall((:git_object_lookup_prefix, :libgit2), Cint,
+        @check ccall((:git_object_lookup_prefix, libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Csize_t, Cint),
                      obj_ptr, r, id_ptr, len, git_otype(T))
     else
-        @check ccall((:git_object_lookup, :libgit2), Cint,
+        @check ccall((:git_object_lookup, libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
                      obj_ptr, r, id_ptr, git_otype(T)) 
     end
@@ -687,7 +680,7 @@ references(r::GitRepo, glob::String="") = collect(GitReference, foreach(GitRefer
 
 function lookup_ref(r::GitRepo, refname::String)
     ref_ptr = Ptr{Void}[0]
-    err = ccall((:git_reference_lookup, :libgit2), Cint,
+    err = ccall((:git_reference_lookup, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, refname)
     if err == GitErrorConst.ENOTFOUND
         return nothing
@@ -702,7 +695,7 @@ function create_ref(r::GitRepo, refname::String, id::Oid;
                     sig::Union(Nothing,Signature)=nothing, 
                     logmsg::Union(Nothing,String)=nothing)
     ref_ptr = Ptr{Void}[0]
-    @check ccall((:git_reference_create, :libgit2), Cint,
+    @check ccall((:git_reference_create, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid},
                   Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
                  ref_ptr, r, refname, &id, force,
@@ -719,7 +712,7 @@ end
 function create_sym_ref(r::GitRepo, refname::String, target::String; 
                         force::Bool=false, sig=sig, logmsg=logmsg)
     ref_ptr = Ptr{Void}[0]
-    @check ccall((:git_reference_symbolic_create, :libgit2), Cint,
+    @check ccall((:git_reference_symbolic_create, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Uint8},
                  Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
                  ref_ptr, r, refname, target, force, 
@@ -738,7 +731,7 @@ function commit(r::GitRepo,
     id_ptr = [Oid()]
     nparents = length(parents)
     parentptrs = Ptr{Void}[c.ptr for c in parents]
-    @check ccall((:git_commit_create, :libgit2), Cint,
+    @check ccall((:git_commit_create, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8},
                   Ptr{SignatureStruct}, Ptr{SignatureStruct}, 
                   Ptr{Uint8}, Ptr{Uint8}, Ptr{Void},
@@ -749,7 +742,7 @@ function commit(r::GitRepo,
 end
 
 function set_workdir!(r::GitRepo, dir::String, update::Bool)
-    @check ccall((:git_repository_set_workdir, :libgit2), Cint, 
+    @check ccall((:git_repository_set_workdir, libgit2), Cint, 
                  (Ptr{Void}, Ptr{Uint8}, Cint), r, dir, update)
     return r
 end
@@ -761,27 +754,27 @@ function branch_names(r::GitRepo, filter::Symbol=:all)
                  filter === :remote ? GitConst.BRANCH_REMOTE :
                  throw(ArgumentError("filter can be :all, :local, or :remote"))
     iter_ptr = Ptr{Void}[0]
-    @check ccall((:git_branch_iterator_new, :libgit2), Cint,
+    @check ccall((:git_branch_iterator_new, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
     branch_ptr, branch_type = Ptr{Void}[0], Cint[0]
     names = UTF8String[]
     while true
-        err = ccall((:git_branch_next, :libgit2), Cint,
+        err = ccall((:git_branch_next, libgit2), Cint,
                     (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}),
                     branch_ptr, branch_type, iter_ptr[1])
         err == GitErrorConst.ITEROVER && break
         if err != GitErrorConst.GIT_OK
             if iter_ptr[1] != C_NULL
-                ccall((:git_branch_iterator_free, :libgit2), Void,
+                ccall((:git_branch_iterator_free, libgit2), Void,
                       (Ptr{Void},), iter_ptr[1])
             end
             throw(LibGitError(err))
         end
-        name_ptr = ccall((:git_reference_shorthand, :libgit2), Ptr{Uint8}, 
+        name_ptr = ccall((:git_reference_shorthand, libgit2), Ptr{Uint8}, 
                          (Ptr{Void},), branch_ptr[1])
         push!(names, utf8(bytestring(name_ptr)))
     end
-    ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), iter_ptr[1])
+    ccall((:git_branch_iterator_free, libgit2), Void, (Ptr{Void},), iter_ptr[1])
     return names
 end
 
@@ -791,7 +784,7 @@ function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type:
                       branch_type == :remote ? GitConst.BRANCH_REMOTE :
                       throw(ArgumentError("branch_type can be :local or :remote"))
     branch_ptr = Ptr{Void}[0]
-    err = ccall((:git_branch_lookup, :libgit2), Cint,
+    err = ccall((:git_branch_lookup, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint),
                 branch_ptr, r, branch_name, git_branch_type)
     if err == GitErrorConst.GIT_OK
@@ -816,7 +809,7 @@ function create_branch(r::GitRepo, bname::String, target::Oid;
                        logmsg::Union(Nothing,String)=nothing)
     commit = lookup_commit(r, target)
     branch_ptr = Ptr{Void}[0]
-    @check ccall((:git_branch_create, :libgit2), Cint,
+    @check ccall((:git_branch_create, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void},
                  Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
                  branch_ptr, r, bname, commit, force,
@@ -851,7 +844,7 @@ end
 
 free!(it::BranchIterator) = begin
     if it.ptr != C_NULL
-        ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), it.ptr)
+        ccall((:git_branch_iterator_free, libgit2), Void, (Ptr{Void},), it.ptr)
         it.ptr = C_NULL
     end
 end
@@ -864,20 +857,20 @@ function foreach(::Type{GitBranch}, r::GitRepo, filter::Symbol=:all)
                  filter == :remote ? GitConst.BRANCH_REMOTE : 
                  throw(ArgumentError("filter can be :all, :local, or :remote"))
     iter_ptr = Ptr{Void}[0]
-    @check ccall((:git_branch_iterator_new, :libgit2), Cint,
+    @check ccall((:git_branch_iterator_new, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
     return BranchIterator(r, iter_ptr[1])
 end
 
 Base.start(b::BranchIterator) = begin
     branch_ptr, branch_type = Ptr{Void}[0], Cint[0]
-    err = ccall((:git_branch_next, :libgit2), Cint,
+    err = ccall((:git_branch_next, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
     if err == GitErrorConst.ITEROVER
         return nothing
     elseif err != GitErrorConst.GIT_OK
         if branch_ptr[1] != C_NULL
-            ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), branch_ptr[1])
+            ccall((:git_reference_free, libgit2), Void, (Ptr{Void},), branch_ptr[1])
         end
         throw(LibGitError(err))
     end
@@ -888,13 +881,13 @@ Base.done(it::BranchIterator, state) = is(state, nothing)
 
 Base.next(it::BranchIterator, state) = begin
     branch_ptr, branch_type = Ptr{Void}[0], Cint[0]
-    err = ccall((:git_branch_next, :libgit2), Cint,
+    err = ccall((:git_branch_next, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, it)
     if err == GitErrorConst.ITEROVER
         return (state, nothing)
     elseif err != GitErrorConst.GIT_OK
         if branch_ptr[1] != C_NULL
-            ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), branch_ptr[1])
+            ccall((:git_reference_free, libgit2), Void, (Ptr{Void},), branch_ptr[1])
         end
         throw(LibGitError(err))
     end
@@ -942,7 +935,7 @@ end
 Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, opts=nothing) = begin
     gopts = parse_merge_options(opts)
     idx_ptr = Ptr{Void}[0]
-    @check ccall((:git_merge_trees, :libgit2), Cint,
+    @check ccall((:git_merge_trees, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{MergeTreeOptsStruct}),
                  idx_ptr, r, C_NULL, t1, t2, &gopts)
     return GitIndex(idx_ptr[1])
@@ -951,7 +944,7 @@ end
 Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothing) = begin
     gopts = parse_merge_options(opts)
     idx_ptr = Ptr{Void}[0]
-    @check ccall((:git_merge_trees, :libgit2), Cint,
+    @check ccall((:git_merge_trees, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{MergeTreeOptsStruct}),
                  idx_ptr, r, ancestor.ptr, t1, t2, &gopts)
     return GitIndex(idx_ptr[1])
@@ -966,7 +959,7 @@ function merge_commits(r::GitRepo,
     isa(ours,   Oid) && (ours   = lookup_commit(r, ours))
     isa(theirs, Oid) && (theirs = lookup_commit(r, theirs)) 
     index_ptr = Ptr{Void}[0] 
-    @check ccall((:git_merge_commits, :libgit2), Cint,
+    @check ccall((:git_merge_commits, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void},
                   Ptr{Void}, Ptr{MergeTreeOptsStruct}),
                  index_ptr, r, ours, theirs, &gopts)
@@ -1202,7 +1195,7 @@ end
 
 function checkout_tree!(r::GitRepo, tree::Treeish, opts=nothing)
     gopts = parse_checkout_options(opts)
-    err = ccall((:git_checkout_tree, :libgit2), Cint,
+    err = ccall((:git_checkout_tree, libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Ptr{CheckoutOptionsStruct}),
                 r, tree, &gopts)
     if err != GitErrorConst.GIT_OK
@@ -1214,7 +1207,7 @@ end
 
 function checkout_head!(r::GitRepo, opts=nothing)
     gopts = parse_checkout_options(opts)
-    err = ccall((:git_checkout_head, :libgit2), Cint,
+    err = ccall((:git_checkout_head, libgit2), Cint,
                 (Ptr{Void}, Ptr{CheckoutOptionsStruct}),r, &gopts)
     if err != GitErrorConst.GIT_OK
         free!(gopts.paths)
@@ -1276,14 +1269,14 @@ function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_ty
         if !bool(allowed_types & GitConst.CREDTYPE_USERPASS_PLAINTEXT)
             error("invalid credential type")
         end
-        @check ccall((:git_cred_userpass_plaintext_new, :libgit2), Cint,
+        @check ccall((:git_cred_userpass_plaintext_new, libgit2), Cint,
                       (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}),
                        cred_ptr, cred.username, cred.password)
     elseif isa(cred, SSHKeyCred)
         if !bool(allowed_types & GitConst.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
-        @check ccall((:git_cred_ssh_key_new, :libgit2), Cint,
+        @check ccall((:git_cred_ssh_key_new, libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}),
                      cred_ptr,
                      cred.username   != nothing ? cred.username   : C_NULL,
@@ -1294,7 +1287,7 @@ function extract_cred!(cred::GitCredential, cred_ptr::Ptr{Ptr{Void}}, allowed_ty
         if !bool(allowed_types & GitConst.CREDTYPE_SSH_KEY)
             error("invalid credential type")
         end
-        @check ccall((:git_cred_default_new, :libgit2), Cint, (Ptr{Ptr{Void}},), cred_ptr)
+        @check ccall((:git_cred_default_new, libgit2), Cint, (Ptr{Ptr{Void}},), cred_ptr)
     else
         error("invalid credential type")
     end
@@ -1429,7 +1422,7 @@ function repo_clone(url::String, localpath::String, opts::MaybeDict=nothing)
     payload = Dict()
     opts_struct = parse_clone_options(opts, payload)::CloneOptionsStruct
     repo_ptr = Ptr{Void}[0]
-    err = ccall((:git_clone, :libgit2), Cint, 
+    err = ccall((:git_clone, libgit2), Cint, 
                 (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{CloneOptionsStruct}),
                 repo_ptr, url, localpath, &opts_struct)
     if haskey(payload, :exception)
@@ -1459,7 +1452,7 @@ end
 
 free!(it::ReferenceIterator) = begin
     if it.ptr != C_NULL
-        ccall((:git_reference_iterator_free, :libgit2), Void, (Ptr{Void},), it.ptr)
+        ccall((:git_reference_iterator_free, libgit2), Void, (Ptr{Void},), it.ptr)
         it.ptr = C_NULL
     end
 end
@@ -1469,10 +1462,10 @@ Base.convert(::Type{Ptr{Void}}, it::ReferenceIterator) = it.ptr
 function foreach(::Type{GitReference}, r::GitRepo, glob::String="")
     iter_ptr = Ptr{Void}[0]
     if isempty(glob)
-        @check ccall((:git_reference_iterator_new, :libgit2), Cint,
+        @check ccall((:git_reference_iterator_new, libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}), iter_ptr, r)
     else
-        @check ccall((:git_reference_iterator_glob_new, :libgit2), Cint,
+        @check ccall((:git_reference_iterator_glob_new, libgit2), Cint,
                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), iter_ptr, r, glob)
     end
     return ReferenceIterator(r, iter_ptr[1])
@@ -1480,13 +1473,13 @@ end
 
 Base.start(it::ReferenceIterator) = begin
     ref_ptr = Ptr{Void}[0]
-    err = ccall((:git_reference_next, :libgit2), Cint,
+    err = ccall((:git_reference_next, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, it)
     if err == GitErrorConst.ITEROVER
         return nothing
     elseif err != GitErrorConst.GIT_OK
         if ref_ptr[1] != C_NULL
-            ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), ref_ptr[1])
+            ccall((:git_reference_free, libgit2), Void, (Ptr{Void},), ref_ptr[1])
         end
         throw(LibGitError(err))
     end
@@ -1497,13 +1490,13 @@ Base.done(it::ReferenceIterator, state) = is(state, nothing)
 
 Base.next(it::ReferenceIterator, state) = begin
     ref_ptr = Ptr{Void}[0]
-    err = ccall((:git_reference_next, :libgit2), Cint,
+    err = ccall((:git_reference_next, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, it)
     if err == GitErrorConst.ITEROVER
         return (state, nothing)
     elseif err != GitErrorConst.GIT_OK
         if ref_ptr[1] != C_NULL
-            ccall((:git_reference_free, :libgit2), Void, (Ptr{Void},), ref_ptr[1])
+            ccall((:git_reference_free, libgit2), Void, (Ptr{Void},), ref_ptr[1])
         end
         throw(LibGitError(err))
     end
