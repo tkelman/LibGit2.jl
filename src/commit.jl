@@ -1,5 +1,5 @@
 export git_otype, message, tree, tree_id,
-       author, committer, parent, parent_id, parent_count, parents
+       author, committer, parent_id, parent_count, parents
 
 function message(c::GitCommit, raw::Bool=false)
     local msg_ptr::Ptr{Uint8}

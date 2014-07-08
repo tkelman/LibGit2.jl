@@ -1,5 +1,5 @@
 export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
-       remove!, removedir!, add!, read_tree!, add_all!, update_all!,
+       remove!, removedir!, read_tree!, add_all!, update_all!,
        remove_all!, has_conflicts
 
 type GitIndex
