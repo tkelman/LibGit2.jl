@@ -28,14 +28,17 @@ with_repo_access() do test_repo, path
     end
 
     context("test iterate over notes") do 
-        for (note_blob, ann_obj) in iter_notes(test_repo, "refs/notes/commits")
-            @test content(note_blob) == "note text\n"
-            @test Oid(ann_obj) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+        n = 0
+        for (note, oid) in foreach(GitNote, test_repo, "refs/notes/commits")
+            n += 1
+            @test message(note) == "note text\n"
+            @test oid == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
         end
+        @test n == 1
     end
 
     context("test each note iterable") do
-        @test isa(iter_notes(test_repo, "refs/notes/commits"), Task)
+        @test isa(foreach(GitNote, test_repo, "refs/notes/commits"), LibGit2.NoteIterator)
     end
 
     context("test default ref") do 

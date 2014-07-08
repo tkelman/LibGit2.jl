@@ -2,11 +2,11 @@ export isbare, isempty, workdir, path,
        repo_open, repo_init, head, set_head!, tags, tag!, commits, references,
        repo_lookup, lookup_tree, lookup_commit, commit, ref_names,
        repo_revparse_single, create_ref, create_sym_ref, lookup_ref,
-       repo_odb, iter_refs, config,  GitTreeBuilder,
+       repo_odb, config,  GitTreeBuilder,
        insert!, write!, close, lookup, rev_parse, rev_parse_oid, remotes,
        ahead_behind, merge_base, merge_commits,  blob_at, isshallow, hash_data,
        default_signature, repo_discover, isbare, isempty, namespace, set_namespace!,
-       notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
+       notes, create_note!, remove_note!, each_note, note_default_ref,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
        branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
@@ -469,29 +469,83 @@ function note_default_ref(r::GitRepo)
     return utf8(bytestring(refname_ptr[1]))
 end
 
-function cb_iter_notes(blob_id::Ptr{Oid}, ann_obj_id::Ptr{Oid}, repo_ptr::Ptr{Void})
-    blob_ptr    = Ptr{Void}[0]
-    ann_obj_ptr = Ptr{Void}[0]
-    err = ccall((:git_object_lookup, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                ann_obj_ptr, repo_ptr, ann_obj_id, GitConst.OBJ_BLOB)
-    err |= ccall((:git_object_lookup, :libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Cint),
-                 blob_ptr, repo_ptr, blob_id, GitConst.OBJ_BLOB)
-    if err == GitErrorConst.GIT_OK
-        res = (gitobj_from_ptr(ann_obj_id[1]), gitobj_from_ptr(blob_ptr[1]))
-        produce(res)
+type NoteIterator 
+    repo::GitRepo
+    ptr::Ptr{Void}
+    notes_ref::MaybeString
+
+    function NoteIterator(r::GitRepo, ptr::Ptr{Void}, notes_ref::MaybeString=nothing) 
+        @assert ptr != C_NULL
+        it = new(r, ptr, notes_ref)
+        finalizer(it, free!)
+        return it
     end
-    return err
 end
 
-const c_cb_iter_notes = cfunction(cb_iter_notes, Cint, (Ptr{Oid}, Ptr{Oid}, Ptr{Void}))
+free!(it::NoteIterator) = begin
+    if it.ptr != C_NULL
+        ccall((:git_note_iterator_free, :libgit2), Void, (Ptr{Void},), it.ptr)
+        it.ptr = C_NULL
+    end
+end
 
-function iter_notes(r::GitRepo, notes_ref::MaybeString=nothing)
-    bnotes_ref = ref != nothing ? bytestring(notes_ref) : C_NULL
-    return @task ccall((:git_note_foreach, :libgit2), Cint, 
-                       (Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Void}),
-                       r, notes_ref, c_cb_iter_notes, r)
+Base.convert(::Type{Ptr{Void}}, it::NoteIterator) = it.ptr 
+
+function foreach(::Type{GitNote}, r::GitRepo, notes_ref::MaybeString=nothing)
+    iter_ptr = Ptr{Void}[0]
+    @check ccall((:git_note_iterator_new, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), iter_ptr, r, notes_ref)
+    return NoteIterator(r, iter_ptr[1], notes_ref)
+end
+
+Base.start(it::NoteIterator) = begin
+    note_id_ptr, ann_id_ptr = [Oid()], [Oid()]
+    err = ccall((:git_note_next, :libgit2), Cint,
+                (Ptr{Oid}, Ptr{Oid}, Ptr{Void}), note_id_ptr, ann_id_ptr, it)
+    if err == GitErrorConst.ITEROVER
+        return nothing
+    elseif err != GitErrorConst.GIT_OK
+        throw(LibGitError(err))
+    end
+    note_ptr = Ptr{Void}[0]
+    err = ccall((:git_note_read, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}),
+                 note_ptr, it.repo, it.notes_ref, ann_id_ptr)
+    if err != GitErrorConst.GIT_OK
+        if note_ptr[1] != C_NULL
+            ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+        end
+        throw(LibGitError(err))
+    end
+    n = GitNote(note_ptr[1])
+    ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+    return (n, ann_id_ptr[1])
+end
+
+Base.done(it::NoteIterator, state) = is(state, nothing)
+
+Base.next(it::NoteIterator, state) = begin
+    note_id_ptr, ann_id_ptr = [Oid()], [Oid()]
+    err = ccall((:git_note_next, :libgit2), Cint,
+                (Ptr{Oid}, Ptr{Oid}, Ptr{Void}), note_id_ptr, ann_id_ptr, it)
+    if err == GitErrorConst.ITEROVER
+        return (state, nothing)
+    elseif err != GitErrorConst.GIT_OK
+        throw(LibGitError(err))
+    end
+    note_ptr = Ptr{Void}[0]
+    err = ccall((:git_note_read, :libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}),
+                 note_ptr, it.repo, C_NULL, note_id_ptr)
+    if err != GitErrorConst.GIT_OK
+        if note_ptr[1] != C_NULL
+            ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+        end
+        throw(LibGitError(err))
+    end
+    n = GitNote(note_ptr[1])
+    ccall((:git_note_free, :libgit2), Void, (Ptr{Void},), note_ptr[1])
+    return (state, (n, ann_id_ptr[1]))
 end
 
 function ahead_behind(r::GitRepo, lcommit::GitCommit, ucommit::GitCommit)
@@ -809,16 +863,16 @@ type BranchIterator
 
     function BranchIterator(r::GitRepo, ptr::Ptr{Void}) 
         @assert ptr != C_NULL
-        bi = new(r, ptr)
-        finalizer(bi, free!)
-        return bi
+        it = new(r, ptr)
+        finalizer(it, free!)
+        return it
     end
 end
 
-free!(b::BranchIterator) = begin
-    if b.ptr != C_NULL
-        ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), b.ptr)
-        b.ptr = C_NULL
+free!(it::BranchIterator) = begin
+    if it.ptr != C_NULL
+        ccall((:git_branch_iterator_free, :libgit2), Void, (Ptr{Void},), it.ptr)
+        it.ptr = C_NULL
     end
 end
 
@@ -857,13 +911,13 @@ Base.start(b::BranchIterator) = begin
     return GitBranch(branch_ptr[1])
 end
 
-Base.done(b::BranchIterator, state) = state == nothing
+Base.done(it::BranchIterator, state) = is(state, nothing)
 
-Base.next(b::BranchIterator, state) = begin
+Base.next(it::BranchIterator, state) = begin
     branch_ptr  = Ptr{Void}[0]
     branch_type = Cint[0] 
     err = ccall((:git_branch_next, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
+                (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, it)
     if err == GitErrorConst.ITEROVER
         return (state, nothing)
     elseif err != GitErrorConst.GIT_OK
@@ -1410,28 +1464,20 @@ type ReferenceIterator
 
     function ReferenceIterator(r::GitRepo, ptr::Ptr{Void})
         @assert ptr != C_NULL
-        ri = new(r, ptr)
-        finalizer(ri, free!)
-        return ri
+        it = new(r, ptr)
+        finalizer(it, free!)
+        return it
     end
 end
 
-free!(r::ReferenceIterator) = begin
-    if r.ptr != C_NULL
-        ccall((:git_reference_iterator_free, :libgit2), Void, (Ptr{Void},), r.ptr)
-        r.ptr = C_NULL
+free!(it::ReferenceIterator) = begin
+    if it.ptr != C_NULL
+        ccall((:git_reference_iterator_free, :libgit2), Void, (Ptr{Void},), it.ptr)
+        it.ptr = C_NULL
     end
 end
 
-Base.convert(::Type{Ptr{Void}}, r::ReferenceIterator) = r.ptr
-
-function ref_names(r::GitRepo, glob::String="")
-    rnames = UTF8String[]
-    for r in foreach(GitReference, r, glob)
-        push!(rnames, name(r))
-    end
-    return rnames
-end
+Base.convert(::Type{Ptr{Void}}, it::ReferenceIterator) = it.ptr
 
 function foreach(::Type{GitReference}, r::GitRepo, glob::String="")
     iter_ptr = Ptr{Void}[0]
@@ -1445,10 +1491,10 @@ function foreach(::Type{GitReference}, r::GitRepo, glob::String="")
     return ReferenceIterator(r, iter_ptr[1])
 end
 
-Base.start(r::ReferenceIterator) = begin
+Base.start(it::ReferenceIterator) = begin
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_next, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
+                (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, it)
     if err == GitErrorConst.ITEROVER
         return nothing
     elseif err != GitErrorConst.GIT_OK
@@ -1460,12 +1506,12 @@ Base.start(r::ReferenceIterator) = begin
     return GitReference(ref_ptr[1])
 end
 
-Base.done(r::ReferenceIterator, state) = is(state, nothing)
+Base.done(it::ReferenceIterator, state) = is(state, nothing)
 
-Base.next(r::ReferenceIterator, state) = begin
+Base.next(it::ReferenceIterator, state) = begin
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_next, :libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, r)
+                (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, it)
     if err == GitErrorConst.ITEROVER
         return (state, nothing)
     elseif err != GitErrorConst.GIT_OK
@@ -1476,3 +1522,5 @@ Base.next(r::ReferenceIterator, state) = begin
     end
     return (state, GitReference(ref_ptr[1]))
 end
+
+ref_names(r::GitRepo, glob::String="") = map(name, foreach(GitReference, r, glob))
