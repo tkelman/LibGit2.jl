@@ -67,8 +67,8 @@ function removedir!(idx::GitIndex, path::String, stage::Integer=0)
     return idx
 end
 
-Base.length(idx::GitIndex) = int(ccall((:git_index_entrycount, libgit2), Cint, 
-                                       (Ptr{Void},), idx))
+Base.length(idx::GitIndex) = 
+    int(ccall((:git_index_entrycount, libgit2), Cint, (Ptr{Void},), idx))
 
 function write_tree!(idx::GitIndex)
     id_ptr = [Oid()]
@@ -165,16 +165,15 @@ function GitIndexEntry(ptr::Ptr{IndexEntryStruct})
     valid = bool(entry.flags & GitConst.IDXENTRY_VALID)
     stage = int((entry.flags & GitConst.IDXENTRY_STAGEMASK) >> GitConst.IDXENTRY_STAGESHIFT)
     file_size = int(entry.file_size)
-    id = entry.id
+    id = Oid(hex(entry.id))
     return GitIndexEntry(path, id, ctime, mtime, file_size,
-                      dev, ino, mode, uid, gid, valid, stage)
+                         dev, ino, mode, uid, gid, valid, stage)
 end
 
 Base.add!(idx::GitIndex, entry::GitIndexEntry) = begin
     estruct = IndexEntryStruct(entry)
     @check ccall((:git_index_add, libgit2), Cint,
-                 (Ptr{Void}, Ptr{IndexEntryStruct}),
-                 idx, &estruct)
+                 (Ptr{Void}, Ptr{IndexEntryStruct}), idx, &estruct)
     return idx
 end
 
