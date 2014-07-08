@@ -11,28 +11,18 @@ before_install:
   - sudo apt-get -qq install gdb cmake libssh2-1-dev openssh-client openssh-server
   - sudo apt-get install libpcre3-dev julia
 
-#install:
-#  - cd ${TRAVIS_BUILD_DIR}
-#  - mkdir -p deps
-#  - cd deps
-#  - git clone --depth 1 --single-branch https://github.com/libgit2/libgit2.git
-#  - cd libgit2
-#  - mkdir build && cd build
-#  - cmake -DCMAKE_BUILD_TYPE=Release -DTHREADSAFE=ON -DBUILD_CLAR=OFF ..
-#  - cmake --build .
-#  - sudo cmake --build . --target install
-#  - cd ${TRAVIS_BUILD_DIR}
-#  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-
 script:
-  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`); Pkg.pin("LibGit2"); Pkg.resolve()'
+  - git submodule init
+  - git submoudle update
+  - julia -e 'Pkg.init(); 
+              run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`);
+              Pkg.pin("LibGit2");
+              Pkg.resolve();'
   - julia -e 'Pkg.build("LibGit2")'
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
-  - git submodule init
   - cd test/
   - git config --global user.name "testfirst testlast" 
-# - cat script.gdb | sudo gdb --args julia runtests.jl all
   - julia --code-coverage runtests.jl all
-#  - sh run_remote_clone.sh
+# - sh run_remote_clone.sh
   - cd ../
   - julia -e 'Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
