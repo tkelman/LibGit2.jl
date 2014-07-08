@@ -8,7 +8,7 @@ export isbare, isempty, workdir, path,
        default_signature, repo_discover, isbare, isempty, namespace, set_namespace!,
        notes, create_note!, remove_note!, each_note, note_default_ref, iter_notes,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
-       branch_names, lookup_branch, create_branch, lookup_remote, iter_branches,
+       branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
        repo_clone, foreach
@@ -824,7 +824,7 @@ end
 
 Base.convert(::Type{Ptr{Void}}, b::BranchIterator) = b.ptr 
 
-function iter_branches(r::GitRepo, filter::Symbol=:all)
+function foreach(::Type{GitBranch}, r::GitRepo, filter::Symbol=:all)
     local git_filter::Cint
     if filter == :all
         git_filter = GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE
@@ -841,7 +841,6 @@ function iter_branches(r::GitRepo, filter::Symbol=:all)
     return BranchIterator(r, iter_ptr[1])
 end
 
-#TODO: branch type?
 Base.start(b::BranchIterator) = begin
     branch_ptr  = Ptr{Void}[0]
     branch_type = Cint[0]

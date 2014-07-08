@@ -95,7 +95,7 @@ with_tmp_repo_access("test create new branch") do test_repo, path
 
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644") 
-    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
+    @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create unicode branch") do test_repo, path
@@ -110,7 +110,7 @@ with_tmp_repo_access("test create unicode branch") do test_repo, path
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
 
-    @test any(b -> name(b) == branch_name, iter_branches(test_repo))
+    @test any(b -> name(b) == branch_name, foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch short sha") do test_repo, path
@@ -123,7 +123,7 @@ with_tmp_repo_access("test create branch short sha") do test_repo, path
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
-    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
+    @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch from tag") do test_repo, path
@@ -136,7 +136,7 @@ with_tmp_repo_access("test create branch from tag") do test_repo, path
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
-    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
+    @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch from head") do test_repo, path
@@ -149,7 +149,7 @@ with_tmp_repo_access("test create branch from head") do test_repo, path
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     
-    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
+    @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch explicit head") do test_repo, path
@@ -162,7 +162,7 @@ with_tmp_repo_access("test create branch explicit head") do test_repo, path
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     
-    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
+    @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch from commit") do test_repo, path
@@ -176,7 +176,7 @@ with_tmp_repo_access("test create branch from commit") do test_repo, path
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     
-    @test any(b -> name(b) == "test_branch", iter_branches(test_repo))
+    @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch from unknown ref fails") do test_repo, path
