@@ -749,34 +749,25 @@ function commit(r::GitRepo,
 end
 
 #TODO: implement
-function repo_set_workdir(r::GitRepo, dir::String, update::Bool)
+function set_workdir(r::GitRepo, dir::String, update::Bool)
 end
 
 # filter can be :all, :local, :remote
 function branch_names(r::GitRepo, filter::Symbol=:all)
-    local git_filter::Cint 
-    if filter == :all
-        git_filter = GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE
-    elseif filter == :local
-        git_filter = GitConst.BRANCH_LOCAL
-    elseif filter == :remote
-        git_filter = GitConst.BRANCH_REMOTE
-    else
-        throw(ArgumentError("filter can be :all, :local, or :remote"))
-    end
+    git_filter = filter === :all ? (GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE) :
+                 filter === :local ? GitConst.BRANCH_LOCAL :
+                 filter === :remote ? GitConst.BRANCH_REMOTE :
+                 throw(ArgumentError("filter can be :all, :local, or :remote"))
     iter_ptr = Ptr{Void}[0]
     @check ccall((:git_branch_iterator_new, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
-    branch_ptr = Ptr{Void}[0]
-    branch_type = Cint[0] 
+    branch_ptr, branch_type = Ptr{Void}[0], Cint[0]
     names = UTF8String[]
     while true
         err = ccall((:git_branch_next, :libgit2), Cint,
                     (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}),
                     branch_ptr, branch_type, iter_ptr[1])
-        if err == GitErrorConst.ITEROVER
-            break
-        end
+        err == GitErrorConst.ITEROVER && break
         if err != GitErrorConst.GIT_OK
             if iter_ptr[1] != C_NULL
                 ccall((:git_branch_iterator_free, :libgit2), Void,
@@ -794,14 +785,9 @@ end
 
 # branch type can be :local or :remote
 function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type::Symbol=:local)
-    local git_branch_type::Cint
-    if branch_type == :local
-        git_branch_type = GitConst.BRANCH_LOCAL
-    elseif branch_type == :remote 
-        git_branch_type = GitConst.BRANCH_REMOTE
-    else
-        throw(ArgumentError("branch_type can be :local or :remote"))
-    end
+    git_branch_type = branch_type == :local  ? GitConst.BRANCH_LOCAL :
+                      branch_type == :remote ? GitConst.BRANCH_REMOTE :
+                      throw(ArgumentError("branch_type can be :local or :remote"))
     branch_ptr = Ptr{Void}[0]
     err = ccall((:git_branch_lookup, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint),
@@ -871,16 +857,10 @@ end
 Base.convert(::Type{Ptr{Void}}, b::BranchIterator) = b.ptr 
 
 function foreach(::Type{GitBranch}, r::GitRepo, filter::Symbol=:all)
-    local git_filter::Cint
-    if filter == :all
-        git_filter = GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE
-    elseif filter == :local
-        git_filter = GitConst.BRANCH_LOCAL
-    elseif filter == :remote
-        git_filter == GitConst.BRANCH_REMOTE
-    else
-        throw(ArgumentError("filter can be :all, :local, or :remote"))
-    end 
+    git_filter = filter === :all ? (GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE) :
+                 filter == :local ? GitConst.BRANCH_LOCAL :
+                 filter == :remote ? GitConst.BRANCH_REMOTE : 
+                 throw(ArgumentError("filter can be :all, :local, or :remote"))
     iter_ptr = Ptr{Void}[0]
     @check ccall((:git_branch_iterator_new, :libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
@@ -888,8 +868,7 @@ function foreach(::Type{GitBranch}, r::GitRepo, filter::Symbol=:all)
 end
 
 Base.start(b::BranchIterator) = begin
-    branch_ptr  = Ptr{Void}[0]
-    branch_type = Cint[0]
+    branch_ptr, branch_type = Ptr{Void}[0], Cint[0]
     err = ccall((:git_branch_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, b)
     if err == GitErrorConst.ITEROVER
@@ -906,8 +885,7 @@ end
 Base.done(it::BranchIterator, state) = is(state, nothing)
 
 Base.next(it::BranchIterator, state) = begin
-    branch_ptr  = Ptr{Void}[0]
-    branch_type = Cint[0] 
+    branch_ptr, branch_type = Ptr{Void}[0], Cint[0]
     err = ccall((:git_branch_next, :libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}), branch_ptr, branch_type, it)
     if err == GitErrorConst.ITEROVER
@@ -978,7 +956,10 @@ Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothin
 end
 
 #------- Merge Commits -----
-function merge_commits(r::GitRepo, ours::Union(GitCommit, Oid), theirs::Union(GitCommit, Oid), opts=nothing)
+function merge_commits(r::GitRepo, 
+                       ours::Union(GitCommit, Oid), 
+                       theirs::Union(GitCommit, Oid), 
+                       opts::MaybeDict=nothing)
     gopts = parse_merge_options(opts)
     isa(ours,   Oid) && (ours   = lookup_commit(r, ours))
     isa(theirs, Oid) && (theirs = lookup_commit(r, theirs)) 
@@ -1044,9 +1025,7 @@ const c_cb_checkout_notify = cfunction(cb_checkout_notify, Cint,
 
 parse_checkout_options(opts::Nothing) = CheckoutOptionsStruct()
 parse_checkout_options(opts::Dict) = begin
-    if isempty(opts)
-        return CheckoutOptionsStruct() 
-    end
+    isempty(opts) && return CheckoutOptionsStruct() 
     progress_cb = convert(Ptr{Void}, C_NULL)
     progress_payload = convert(Ptr{Void}, C_NULL)
     if haskey(opts, :progress)
@@ -1171,8 +1150,27 @@ parse_checkout_options(opts::Dict) = begin
     if haskey(opts, :paths)
         paths = StrArrayStruct(opts[:paths])
     end
-    #TODO:
-    ancestor_label, our_label, their_label = C_NULL, C_NULL, C_NULL
+    ancestor_label = zero(Ptr{Uint8})
+    if haskey(opts, :ancestor_label)
+        if !isa(opts[:ancestor_label], String)
+            throw(ArgumentError("checkout options :ancestor_label must be a String"))
+        end
+        ancestor_label = convert(Ptr{Uint8}, opts[:ancestor_label])
+    end
+    our_label = zero(Ptr{Uint8})
+    if haskey(opts, :our_label)
+        if !isa(opts[:ancestor_label], String)
+            throw(ArgumentError("checkout options :our_label must be a String"))
+        end
+        our_label = convert(Ptr{Uint8}, opts[:our_label])
+    end
+    their_label = zero(Ptr{Uint8})
+    if haskey(opts, :their_label)
+        if !isa(opts[:ancestor_label], String)
+            throw(ArgumentError("checkout options :their_label must be a String"))
+        end
+        their_label = convert(Ptr{Uint8}, opts[:their_label])
+    end
     return CheckoutOptionsStruct(
                           one(Cuint),
                           checkout_strategy,
@@ -1224,10 +1222,8 @@ function checkout_head!(r::GitRepo, opts=nothing)
 end
 
 function checkout!(r::GitRepo, target, opts={})
-    if !haskey(opts, :strategy)
-        opts[:strategy] = :safe
-    end
     delete!(opts, :paths)
+    !haskey(opts, :strategy) && (opts[:strategy] = :safe)
     if target == "HEAD"
         return checkout_head!(r, opts)
     end
@@ -1242,11 +1238,8 @@ function checkout!(r::GitRepo, target, opts={})
     end
     if branch != nothing
         checkout_tree!(r, tip(branch), opts)
-        if isremote(branch)
-            create_ref(r, "HEAD", Oid(tip(branch)), force=true)
-        else
-            create_ref(r, "HEAD", canonical_name(branch), force=true)
-        end
+        isremote(branch) ? create_ref(r, "HEAD", Oid(tip(branch)), force=true) :
+                           create_ref(r, "HEAD", canonical_name(branch), force=true)
     else
         commit = lookup_commit(r, revparse_oid(r, target))
         create_ref(r, "HEAD", Oid(commit), force=true)
