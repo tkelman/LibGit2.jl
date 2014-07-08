@@ -11,18 +11,18 @@ before_install:
   - sudo apt-get -qq install gdb cmake libssh2-1-dev openssh-client openssh-server
   - sudo apt-get install libpcre3-dev julia
 
-install:
-  - cd ${TRAVIS_BUILD_DIR}
-  - mkdir -p deps
-  - cd deps
-  - git clone --depth 1 --single-branch https://github.com/libgit2/libgit2.git
-  - cd libgit2
-  - mkdir build && cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release -DTHREADSAFE=ON -DBUILD_CLAR=OFF ..
-  - cmake --build .
-  - sudo cmake --build . --target install
-  - cd ${TRAVIS_BUILD_DIR}
-  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+#install:
+#  - cd ${TRAVIS_BUILD_DIR}
+#  - mkdir -p deps
+#  - cd deps
+#  - git clone --depth 1 --single-branch https://github.com/libgit2/libgit2.git
+#  - cd libgit2
+#  - mkdir build && cd build
+#  - cmake -DCMAKE_BUILD_TYPE=Release -DTHREADSAFE=ON -DBUILD_CLAR=OFF ..
+#  - cmake --build .
+#  - sudo cmake --build . --target install
+#  - cd ${TRAVIS_BUILD_DIR}
+#  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 script:
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`); Pkg.pin("LibGit2"); Pkg.resolve()'
