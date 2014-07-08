@@ -1,4 +1,4 @@
-export isbare, isempty, workdir, path, repo_init, head, 
+export isbare, isempty, workdir, path, repo_init, head, exists,
        set_head!, tags, tag!, commits, references, lookup,
        lookup_tree, lookup_commit, commit, ref_names,
        revparse_single, create_ref, create_sym_ref, lookup_ref,
@@ -47,7 +47,7 @@ Base.close(r::GitRepo) = begin
     end
 end
 
-Base.in(id::Oid, r::GitRepo) = exists(Odb(r), id)::Bool
+Base.in(id::Oid, r::GitRepo) = exists(Odb(r), id)
 
 function cb_iter_oids(idptr::Ptr{Uint8}, o::Ptr{Void})
     try
@@ -640,8 +640,8 @@ revparse_oid(r::GitRepo, rev::String) = Oid(revparse(r, rev))
 Odb(r::GitRepo) = begin
     odb_ptr = Ptr{Void}[0]
     @check ccall((:git_repository_odb, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}), idx_ptr, r)
-    return GitIndex(idx_ptr[1])
+                 (Ptr{Ptr{Void}}, Ptr{Void}), odb_ptr, r)
+    return Odb(odb_ptr[1])
 end
 
 function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::Oid)
