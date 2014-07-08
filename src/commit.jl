@@ -40,10 +40,7 @@ Base.parent(c::GitCommit, n::Integer) = begin
 end
 
 parent_count(c::GitCommit) = int(ccall((:git_commit_parentcount, libgit2), Csize_t, (Ptr{Void},), c))
-function parents(c::GitCommit)
-    n = parent_count(c)
-    return GitCommit[parent(c, i) for i=1:n]
-end
+parents(c::GitCommit) = (n = parent_count(c); GitCommit[parent(c, i) for i=1:n])
 
 function parent_id(c::GitCommit, n::Integer)
     n >= 1 || throw(ArgumentError("n must be greater than or equal to 1"))

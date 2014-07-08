@@ -1,7 +1,5 @@
 export GitConfig, lookup, set!, global_config
 
-#TODO: make sure returning git config entries is not leaking memory
-
 type GitConfig 
     ptr::Ptr{Void}
 
@@ -72,7 +70,6 @@ const c_cb_each_key    = cfunction(cb_each_key,  Cint, (Ptr{ConfigEntryStruct}, 
 const c_cb_each_val    = cfunction(cb_each_val,  Cint, (Ptr{ConfigEntryStruct}, Ptr{Void}))
 const c_cb_each_kvpair = cfunction(cb_each_pair, Cint, (Ptr{ConfigEntryStruct}, Ptr{Void}))
 
-#! tasks need special attention
 Base.keys(c::GitConfig) = begin
     @task ccall((:git_config_foreach, libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Ptr{Void}), c, c_cb_each_key, C_NULL)

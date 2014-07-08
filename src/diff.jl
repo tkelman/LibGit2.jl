@@ -107,15 +107,13 @@ type DiffDelta
     function DiffDelta(ptr::Ptr{DiffDeltaStruct})
         @assert ptr != C_NULL
         d = unsafe_load(ptr)::DiffDeltaStruct
-        #! todo copy contents from offset here
-        old_file_id = d.old_file.id::Oid
+        old_file_id = Oid(hex(d.old_file.id))
         fold = DiffFile(old_file_id,
                         d.old_file.path != C_NULL ? bytestring(d.old_file.path) : "",
                         int(d.old_file.size),
                         int(d.old_file.flags),
                         int(d.old_file.mode))
-        #! todo copy contents from offset here
-        new_file_id = d.new_file.id::Oid 
+        new_file_id = Oid(hex(d.new_file.id))
         fnew = DiffFile(new_file_id,
                         d.new_file.path != C_NULL ? bytestring(d.new_file.path) : "",
                         int(d.new_file.size),
@@ -371,7 +369,6 @@ end
 
 parse_git_diff_options(o::Nothing) = DiffOptionsStruct()
 
-#! we are doing bad things with memory here 
 function parse_git_diff_options(opts::Dict)
     max_size = zero(Coff_t)
     if haskey(opts, :max_size)

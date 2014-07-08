@@ -29,7 +29,6 @@ function name(b::GitBranch)
     return utf8(bytestring(name_ptr[1]))
 end
 
-#! this is redundant with git_reference
 ishead(b::GitBranch)   = bool(ccall((:git_branch_is_head, libgit2), Cint, (Ptr{Void},), b))
 isremote(b::GitBranch) = bool(ccall((:git_reference_is_remote, libgit2), Cint, (Ptr{Void},), b))
 canonical_name(b::GitBranch) = utf8(bytestring(ccall((:git_reference_name, libgit2), Ptr{Uint8}, (Ptr{Void},), b)))
