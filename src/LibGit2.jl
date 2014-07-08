@@ -59,7 +59,7 @@ include("walker.jl")
 
 # debug tracing / this needs libgit to be built with tracing support
 function cb_trace(level::Cint, msg::Ptr{Uint8})
-    info(bytestring(msg))
+    println("LibGit2.jl Trace [$level] => $(bytestring(msg))")
     return 
 end
 
