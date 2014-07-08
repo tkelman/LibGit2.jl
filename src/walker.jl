@@ -1,8 +1,5 @@
 export GitRevWalker, hide!, reset!, walk
 
-abstract GitSortType
-type SortDate <: GitSortType end 
-
 type GitRevWalker
     repo::GitRepo
     ptr::Ptr{Void}
