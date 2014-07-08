@@ -37,7 +37,7 @@ let
         t == GitConst.OBJ_COMMIT && return GitCommit
         t == GitConst.OBJ_TAG    && return GitTag
         t == GitConst.OBJ_TREE   && return GitTree
-        error("unknown git_type $(t)")
+        throw(ArgumentError("Unknown tree_entry_type constant $(t)"))
     end
 
     function tree_entry_filemode(ptr::Ptr{Void})
@@ -191,13 +191,50 @@ end
 
 Base.convert(::Type{Ptr{Void}}, tb::GitTreeBuilder) = tb.ptr
 
+# the number of entries in a tree builder
+Base.length(tb::GitTreeBuilder) = begin
+    return int(ccall((:git_treebuilder_entrycount, libgit2), Cuint, (Ptr{Void},), tb))
+end 
+
+# add / update an entry to the builder
 Base.insert!(tb::GitTreeBuilder, filename::String, id::Oid, filemode::Int) = begin
+    if !(id in tb.repo)
+        throw(ArgumentError("OID $id does not exist in the Object Database"))
+    end
     @check ccall((:git_treebuilder_insert, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}, Cint),
                  C_NULL, tb, filename, &id, filemode)
     return tb
 end
 
+# get an entry from the builder from its filename
+Base.getindex(tb::GitTreeBuilder, filename::String) = begin
+    entry_ptr = ccall((:git_treebuilder_get, libgit2), Ptr{Void}, 
+                      (Ptr{Void}, Ptr{Uint8}), tb, filename)
+    return GitTreeEntry(ptr)
+end
+
+function cb_tbfilter(te_ptr::Ptr{Void}, payload::Ptr{Void})
+    te = GitTreeEntry(te_ptr)
+    func = unsafe_pointer_to_objref(payload)::Vector{Any}
+    return bool(func(te)) ? one(Cint) : zero(Cint)
+end
+
+const c_cb_tbfilter = cfunction(cb_tbfilter, Cint, (Ptr{Void}, Ptr{Void}))
+
+# selectively remote entries in the tree
+Base.filter!(f::Function, tb::GitTreeBuilder) = begin
+    f_ptr = pointer_from_objref(f)
+    ccall((:git_treebuilder_filter, libgit2), Void, 
+          (Ptr{Void}, Ptr{Void}, Ptr{Void}), tb, c_cb_tbfilter, f_ptr)
+    return tb
+end
+
+# clear all entries in the builder
+clear!(tb::GitTreeBuilder) = 
+    ccall((:git_treebuilder_clear, libgit2), Void, (Ptr{Void},), tb)
+
+# write the contents of the tree builder as a tree object
 function write!(tb::GitTreeBuilder)
     id_ptr = [Oid()]
     @check ccall((:git_treebuilder_write, libgit2), Cint,
