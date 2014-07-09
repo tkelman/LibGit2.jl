@@ -8,17 +8,28 @@ Adapted from the Ruby's Rugged libgit bindings
 [![Build status](https://ci.appveyor.com/api/projects/status/t2pfbamvrps6v53t)](https://ci.appveyor.com/project/jakebolewski/libgit2-jl)
 [![Coverage Status](https://img.shields.io/coveralls/jakebolewski/LibGit2.jl.svg)](https://coveralls.io/r/jakebolewski/LibGit2.jl)
 
-## Testing
-LibGit2.jl is tested against the latest development branch of
-libgit2.  To build libgit2 from source you need CMake.  See the
-specific build instruction on libgit2's [README](https://github.com/libgit2/libgit2#building-libgit2---using-cmake).
+## Installation / Testing
+LibGit2.jl is tested against the latest release version of
+libgit2 (v0.21.0).  To build libgit2 from source you need CMake.  See the
+specific build instructions in libgit2's [README](https://github.com/libgit2/libgit2#building-libgit2---using-cmake).
 
-To run the tests you must first update the libgit2 submodule:
+To install and build the package, simply clone the latest master snapshot of the package:
 
+```julia
+Pkg.clone("LibGit2")
+Pkg.build("LibGit2")
 ```
-submodule init
-submodule update
 
-cd test/
-julia runtests.jl all
+To run the tests you must first update the libgit2 submodule in the LibGit2 package directory.
+
+```julia
+cd(Pkg.dir("LibGit2"))
+run(`git submodule init`)
+run(`git submodule update`)
+```
+
+The test suite can then be run with:
+
+```julia
+Pkg.test("LibGit2")
 ```
