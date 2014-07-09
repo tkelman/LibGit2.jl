@@ -27,6 +27,26 @@ function remote_transport_test(f::Function)
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
 
+copy_recur(path::String, dest::String) = begin
+    apath = abspath(path)
+    adest = abspath(dest)
+    if isfile(apath)
+        cp(apath, adest)
+        return
+    end
+    contents = readdir(path)
+    for c in contents
+        pc = joinpath(apath, c)
+        dc = joinpath(adest, c)
+        if isfile(pc)
+            cp(pc, dc)
+        elseif isdir(pc)
+            isdir(dc) || mkdir(dc)
+            copy_recur(pc, dc)
+        end 
+    end 
+end 
+
 function repo_clone_test(f::Function)
     tmp_dir = mktempdir()
     source = joinpath(TESTDIR, "fixtures", "testrepo.git")
@@ -82,8 +102,7 @@ function setup_sandbox(repo_name::String)
     tmp_dir = mktempdir()
     fixture_dir = joinpath(LIBGIT2_FIXTURE_DIR, repo_name, ".")
     
-    #TODO: cp(fixture_repo_path, repo_dir)
-    run(`cp -r $fixture_dir $tmp_dir`)
+    copy_recur(fixture_dir, tmp_dir)
     
     dirname = joinpath(tmp_dir, ".gitted")
     if isdir(dirname)
