@@ -1,9 +1,13 @@
 with_repo_access("test isconnected") do test_repo, path
-    skip = false
+    skip, dlfile = false, tempname()
     try
-       download("https://github.com") 
+       download("https://github.com", dlfile) 
     catch
         skip = true 
+    finally
+        if isfile(dlfile)
+            rm(dlfile)
+        end
     end
     if !skip
         remote = GitRemote(test_repo, "git://github.com/libgit2/libgit2.git")
@@ -115,7 +119,7 @@ with_repo_access("test remote lookup invalid") do test_repo, path
 end
 
 with_tmp_repo_access("test remote add") do test_repo, path
-   remote_add!(test_repo, "upstream", "git://github.com/libgit2/libgit2.git")
+    remote_add!(test_repo, "upstream", "git://github.com/libgit2/libgit2.git")
     remote = lookup_remote(test_repo, "upstream")
     @test name(remote) == "upstream"
     @test url(remote)  == "git://github.com/libgit2/libgit2.git"

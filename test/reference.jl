@@ -207,15 +207,15 @@ with_tmp_repo_access("test lookup non-existant ref") do test_repo, path
 end
 
 with_tmp_repo_access("test name ref") do test_repo, path
-   @test realpath(workdir(test_repo)) == realpath(path)
+    @test realpath(workdir(test_repo)) == realpath(path)
    
-   o = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-   ref = create_ref(test_repo, "refs/heads/unit_test", o)
+    o = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
+    ref = create_ref(test_repo, "refs/heads/unit_test", o)
    
-   @test o == target(ref)
-   @test isa(ref, GitReference{Oid})
-   @test name(ref) == "refs/heads/unit_test"
-   #delete!(test_repo, ref)
+    @test o == target(ref)
+    @test isa(ref, GitReference{Oid})
+    @test name(ref) == "refs/heads/unit_test"
+    #delete!(test_repo, ref)
 end
 
 with_tmp_repo_access("test rename ref") do test_repo, path

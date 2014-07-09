@@ -287,11 +287,10 @@ end
 # Shallow Repo Test
 #---------------------------
 sandboxed_test("testrepo.git", "test shallow repo") do test_repo, path
-    shallow_sbt = setup(SandBoxedTest, "shallow.git")
-    shallow = shallow_sbt.repo
-    @test isshallow(test_repo) == false
-    @test isshallow(shallow) == true
-    teardown(shallow_sbt)
+    sandboxed_test("shallow.git") do shallow_repo, shallow_path
+        @test !isshallow(test_repo)
+        @test isshallow(shallow_repo)
+    end
 end
 
 with_tmp_repo_access("test shallow repo write") do test_repo, path

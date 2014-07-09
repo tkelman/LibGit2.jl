@@ -1,7 +1,7 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-context() do
+context("test lookup tree") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
     try
@@ -127,20 +127,25 @@ end
 
 with_test_index("test can write index") do test_index, path
     tmp_path, tmp_io = mktemp()
-    write(tmp_io, readall(path))
-    close(tmp_io)
-    test_index1 = GitIndex(tmp_path)
+    try
+        write(tmp_io, readall(path))
+        close(tmp_io)
+        test_index1 = GitIndex(tmp_path)
 
-    entry = new_idx_entry()
-    add!(test_index1, entry)
-    entry.path = "else.txt"
-    add!(test_index1, entry)
-    write!(test_index1)
+        entry = new_idx_entry()
+        add!(test_index1, entry)
+        entry.path = "else.txt"
+        add!(test_index1, entry)
+        write!(test_index1)
 
-    test_index2 = GitIndex(tmp_path)
-    c = sort(collect(test_index2), by=x->Oid(x))
-    @test join(map(x -> x.path, c), ":") == "README:else.txt:new_path:new.txt"
-    @test length(test_index2) == 4
+        test_index2 = GitIndex(tmp_path)
+        c = sort(collect(test_index2), by=x->Oid(x))
+        @test join(map(x -> x.path, c), ":") == "README:else.txt:new_path:new.txt"
+        @test length(test_index2) == 4
+    finally
+        close(tmp_io)
+        rm(tmp_path)
+    end
 end
 
 context("test adding a path") do

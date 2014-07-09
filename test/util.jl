@@ -14,8 +14,7 @@ cleanup_dir(p) = begin
 end
 
 function remote_transport_test(f::Function) 
-    local tmp_dir = joinpath(tempname(), "dir")
-    mkpath(tmp_dir)
+    tmp_dir = mktempdir()
     test_repo = repo_init(tmp_dir, bare=false)
     test_repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
     try
@@ -29,10 +28,9 @@ end
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
 
 function repo_clone_test(f::Function)
-    local tmp_dir = tempname()
-    mkdir(tmp_dir)
+    tmp_dir = mktempdir()
+    source = joinpath(TESTDIR, "fixtures", "testrepo.git")
     try
-        source = joinpath(TESTDIR, "fixtures", "testrepo.git")
         f(source, tmp_dir)
     finally
         rm(tmp_dir, recursive=true)
@@ -55,9 +53,9 @@ function create_test_repo(test_path)
         rm(test_path, recursive=true)
     end
     repo = repo_init(test_path)
-    fh = open(joinpath(test_path, "README"), "w")
-    write(fh, "foo\n")
-    close(fh)
+    open(joinpath(test_path, "README"), "w") do fh
+        write(fh, "foo\n")
+    end
     return repo
 end
 
@@ -73,167 +71,105 @@ function seed_test_repo(repo)
     return commit_id, tree_id
 end
 
-# Reuse the Rugged (Ruby Libgit2) Testing framework
-
-type SandBoxedTest
-    path::String
-    repo::GitRepo
-    torndown::Bool
+function clone_sandbox(repo_path::String)
+        tmp_dir  = mktempdir()
+        repo_path = abspath(repo_path)
+        run(`git clone --quiet -- $repo_path $tmp_dir`)
+        return GitRepo(tmp_dir), tmp_dir
 end
 
-function clone(sbt::SandBoxedTest, repo_path, new_path)
-        orig_dir = pwd()
-        cd(sbt.path)
-        run(`git clone --quiet  -- $repo_path $new_path`)
-        cd(orig_dir)
-        return GitRepo(joinpath(sbt.path, new_path))
-end
-
-function setup(::Type{SandBoxedTest}, repo_name::String)
-    tmpdir = mktempdir()
-    repo_dir = joinpath(tmpdir, "LibGit2_jl_SandBoxTest")
-    mkdir(repo_dir)
+function setup_sandbox(repo_name::String)
+    tmp_dir = mktempdir()
+    fixture_dir = joinpath(LIBGIT2_FIXTURE_DIR, repo_name, ".")
     
-    fixture_repo_path = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
     #TODO: cp(fixture_repo_path, repo_dir)
-    run(`cp -r $fixture_repo_path $repo_dir`)
-    sandbox_repo_path = joinpath(repo_dir, repo_name)
-    origdir = pwd()
-    cd(sandbox_repo_path)
-    dirname = joinpath(sandbox_repo_path, ".gitted")
+    run(`cp -r $fixture_dir $tmp_dir`)
+    
+    dirname = joinpath(tmp_dir, ".gitted")
     if isdir(dirname)
-        newdirname = joinpath(sandbox_repo_path, ".git")
+        newdirname = joinpath(tmp_dir, ".git")
         mv(dirname, newdirname)
     end 
-    filename = joinpath(sandbox_repo_path, "gitattributes")
+    filename = joinpath(tmp_dir, "gitattributes")
     if isfile(filename)
-        newfilename = joinpath(sandbox_repo_path, ".gitattributes")
+        newfilename = joinpath(tmp_dir, ".gitattributes")
         mv(filename, newfilename)
     end
-    filename = joinpath(sandbox_repo_path, "gitignore")
+    filename = joinpath(tmp_dir, "gitignore")
     if isfile(filename)
-        newfilename = joinpath(sandbox_repo_path, ".gitignore")
+        newfilename = joinpath(tmp_dir, ".gitignore")
         mv(filename, newfilename)
     end
-    cd(origdir)
-    repo = GitRepo(sandbox_repo_path)
-    sbt = SandBoxedTest(repo_dir, repo, false)
-    finalizer(sbt, teardown)
-    return sbt
-end
-
-function teardown(sbt::SandBoxedTest)
-    if !sbt.torndown
-        try
-            rm(sbt.path, recursive=true)
-        catch err
-            rethrow(err)
-        finally
-            sbt.torndown = true
-        end
-    end
+    return GitRepo(tmp_dir), tmp_dir
 end
 
 function sandboxed_test(f::Function, reponame::String)
-    sbt = setup(SandBoxedTest, reponame)
+    repo, tmp_dir = setup_sandbox(reponame)
     try
-        f(sbt.repo, sbt.path)
+        f(repo, tmp_dir)
     finally
-        close(sbt.repo)
-        teardown(sbt)
+        close(repo)
+        rm(tmp_dir, recursive=true)
     end
 end
 sandboxed_test(f::Function, reponame::String, s::String) = (println(s); 
                                                             sandboxed_test(f, reponame))
+
 function sandboxed_clone_test(f::Function, reponame::String)
-    sbt = setup(SandBoxedTest, reponame)
-    remote = sbt.repo
+    remote, tmp_dir1 = setup_sandbox(reponame)
     GitConfig(remote)["core.bare"] = true
-    repo = clone(sbt, reponame, splitext(reponame)[1]) 
+    repo, tmp_dir2 = clone_sandbox(tmp_dir1)
     try
-        f(repo, remote, sbt.path)
+        f(repo, remote, tmp_dir1)
     finally
         close(repo)
         close(remote)
-        teardown(sbt)
+        rm(tmp_dir1, recursive=true)
+        rm(tmp_dir2, recursive=true)
     end
 end 
 sandboxed_clone_test(f::Function, reponame::String, s::String) = (println(s); 
                                                                   sandboxed_clone_test(f, reponame))
 
 function sandboxed_checkout_test(f::Function)
-    sbt = setup(SandBoxedTest, "testrepo")
-    test_repo  = sbt.repo
-    test_clone = clone(sbt, "testrepo", "cloned_testrepo")
-    bare = setup(SandBoxedTest, "testrepo.git")
-    test_bare = repo_init(path(bare.repo), bare=true)
+    test_repo,  test_repo_dir  = setup_sandbox("testrepo")
+    test_clone, test_clone_dir = clone_sandbox(test_repo_dir)
+    test_bare,  test_bare_dir  = setup_sandbox("testrepo.git")
+    GitConfig(test_bare)["core.bare"] = true
     try
         f(test_repo, test_clone, test_bare)
     finally
         close(test_repo)
         close(test_clone)
         close(test_bare)
-        teardown(sbt)
-        teardown(bare)
+        rm(test_repo_dir, recursive=true)
+        rm(test_clone_dir, recursive=true)
+        rm(test_bare_dir, recursive=true)
     end
 end
 sandboxed_checkout_test(f::Function, s::String) = (println(s); 
                                                    sandboxed_checkout_test(f))
-
-type RepoAccess
-    path::String
-    repo::GitRepo
-end
-
-setup(::Type{RepoAccess}) = begin
-    dir = joinpath(TESTDIR, "fixtures/testrepo.git")
-    return RepoAccess(dir, GitRepo(dir))
-end
-
 function with_repo_access(f::Function)
-    ra = setup(RepoAccess)
+    path = joinpath(TESTDIR, "fixtures", "testrepo.git")
+    repo = GitRepo(path)
     try
-        f(ra.repo, ra.path)
+        f(repo, path)
     finally
-        close(ra.repo)
+        close(repo)
     end
 end
 with_repo_access(f::Function, s::String) = (println(s); with_repo_access(f))
 
-type TmpRepoAccess
-    path::String
-    repo::GitRepo
-    torndown::Bool
-end
-
-setup(::Type{TmpRepoAccess}) = begin
-    tmpdir = mktempdir()
-    repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
-    run(`git clone --quiet  -- $repo_dir $tmpdir`)
-    ra = TmpRepoAccess(tmpdir, GitRepo(tmpdir), false)
-    finalizer(ra, teardown)
-    return ra
-end
-
-teardown(ra::TmpRepoAccess) = begin
-    if !ra.torndown
-        try
-            close(ra.repo)
-            rm(ra.path, recursive=true)
-        catch err
-            rethrow(err)
-        finally
-            ra.torndown = true
-        end
-    end
-end
-
 function with_tmp_repo_access(f::Function)
-    ra = setup(TmpRepoAccess)
+    tmp_dir  = mktempdir()
+    repo_dir = joinpath(TESTDIR, "fixtures", "testrepo.git", ".")
+    run(`git clone --quiet -- $repo_dir $tmp_dir`)
+    repo = GitRepo(tmp_dir)
     try
-        f(ra.repo, ra.path)
+        f(repo, tmp_dir)
     finally
-        teardown(ra)
+        close(repo)
+        rm(tmp_dir, recursive=true)
     end
 end
 with_tmp_repo_access(f::Function, s::String) = (println(s); with_tmp_repo_access(f))
