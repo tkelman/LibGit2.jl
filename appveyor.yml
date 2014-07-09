@@ -18,6 +18,7 @@ build_script:
                                     Pkg.build(\"LibGit2\");
                                     cd(Pkg.dir(\"LibGit2\"));
                                     run(`git submodule init`);
-                                    run(`git submodule update`);"
+                                    run(`git submodule update`);
+                                    run(`git config --global user.name \"testfirst testlast\"`)"
 test_script:
   - C:\projects\julia\bin\julia -e "Pkg.test(\"LibGit2\")"

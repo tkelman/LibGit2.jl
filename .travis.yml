@@ -14,6 +14,8 @@ before_install:
 script:
   - git submodule init
   - git submodule update
+  # we need a global config for config tests
+  - git config --global user.name "testfirst testlast" 
   - julia -e 'Pkg.init(); 
               run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`);
               Pkg.pin("LibGit2");
@@ -21,7 +23,6 @@ script:
   - julia -e 'Pkg.build("LibGit2")'
   - julia -e 'using LibGit2; @assert isdefined(:LibGit2); @assert typeof(LibGit2) === Module'
   - cd test/
-  - git config --global user.name "testfirst testlast" 
   - julia --code-coverage runtests.jl all
 # - sh run_remote_clone.sh
   - cd ../
