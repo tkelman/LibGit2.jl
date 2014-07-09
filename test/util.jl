@@ -90,7 +90,7 @@ function seed_test_repo(repo)
 end
 
 function clone_sandbox(repo_path::String)
-        tmp_dir  = mktempdir()
+        tmp_dir = mktempdir()
         repo_path = abspath(repo_path)
         run(`git clone --quiet -- $repo_path $tmp_dir`)
         return GitRepo(tmp_dir), tmp_dir
@@ -98,7 +98,7 @@ end
 
 function setup_sandbox(repo_name::String)
     tmp_dir = mktempdir()
-    fixture_dir = joinpath(LIBGIT2_FIXTURE_DIR, repo_name, ".")
+    fixture_dir = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
     
     copy_recur(fixture_dir, tmp_dir)
     
