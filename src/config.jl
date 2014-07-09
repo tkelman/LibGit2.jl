@@ -109,7 +109,7 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
     elseif err == GitErrorConst.ENOTFOUND
         return nothing
     else
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
 end
 
@@ -128,7 +128,7 @@ function lookup(::Type{Int32}, c::GitConfig, name::String)
     elseif err == ENOTFOUND
         return nothing
     else
-        throw(GitError(err))
+        throw(LibGitError(err))
     end
 end
 
