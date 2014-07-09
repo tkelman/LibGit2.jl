@@ -9,7 +9,7 @@ context(f::Function, s::String) = (println(s); context(f))
 
 cleanup_dir(p) = begin
     if isdir(p)
-        rm(p, recursive=true) 
+        @unix_only rm(p, recursive=true) 
     end
 end
 
@@ -22,7 +22,7 @@ function remote_transport_test(f::Function)
         f(test_repo, test_remote)
     finally
         close(test_repo)
-        rm(tmp_dir, recursive=true)
+        @unix_only rm(tmp_dir, recursive=true)
     end
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
@@ -33,7 +33,7 @@ function repo_clone_test(f::Function)
     try
         f(source, tmp_dir)
     finally
-        rm(tmp_dir, recursive=true)
+        @unix_only rm(tmp_dir, recursive=true)
     end
 end 
 repo_clone_test(f::Function, s::String) = (println(s); repo_clone_test(f))
@@ -50,7 +50,7 @@ with_test_index(f::Function, s::String) = (println(s); with_test_index(f))
 
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
-        rm(test_path, recursive=true)
+        @unix_only rm(test_path, recursive=true)
     end
     repo = repo_init(test_path)
     open(joinpath(test_path, "README"), "w") do fh
@@ -109,7 +109,7 @@ function sandboxed_test(f::Function, reponame::String)
         f(repo, tmp_dir)
     finally
         close(repo)
-        rm(tmp_dir, recursive=true)
+        @unix_only rm(tmp_dir, recursive=true)
     end
 end
 sandboxed_test(f::Function, reponame::String, s::String) = (println(s); 
@@ -142,9 +142,9 @@ function sandboxed_checkout_test(f::Function)
         close(test_repo)
         close(test_clone)
         close(test_bare)
-        rm(test_repo_dir, recursive=true)
-        rm(test_clone_dir, recursive=true)
-        rm(test_bare_dir, recursive=true)
+        @unix_only rm(test_repo_dir, recursive=true)
+        @unix_only rm(test_clone_dir, recursive=true)
+        @unix_only rm(test_bare_dir, recursive=true)
     end
 end
 sandboxed_checkout_test(f::Function, s::String) = (println(s); 
@@ -169,7 +169,7 @@ function with_tmp_repo_access(f::Function)
         f(repo, tmp_dir)
     finally
         close(repo)
-        rm(tmp_dir, recursive=true)
+        @unix_only rm(tmp_dir, recursive=true)
     end
 end
 with_tmp_repo_access(f::Function, s::String) = (println(s); with_tmp_repo_access(f))
