@@ -1,6 +1,7 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
+#=
 context("test create / lookup ref") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
@@ -29,7 +30,7 @@ context("test create / lookup ref") do
         cleanup_dir(test_path)
     end
 end 
-
+=#
 #= TODO:
 context() do
     test_path = joinpath(pwd(), "testrepo")

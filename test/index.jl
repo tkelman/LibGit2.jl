@@ -1,6 +1,7 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
-# ------------------------------------
+# ------------------------------------ 
+#=
 context("test lookup tree") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
@@ -26,7 +27,7 @@ context("test lookup tree") do
         cleanup_dir(test_path)
     end
 end 
-
+=#
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
