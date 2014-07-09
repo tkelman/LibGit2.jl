@@ -2,8 +2,6 @@ sandboxed_test("merge-resolve", "test merge no conflict") do test_repo, path
     ours   = revparse(test_repo, "trivial-2alt")
     theirs = revparse(test_repo, "trivial-2alt-branch")
     base   = revparse(test_repo, merge_base(test_repo, ours, theirs))
-    
-    #TODO: merge should not have to take the repo as a parameter
     idx = merge!(test_repo, GitTree(ours), GitTree(theirs), GitTree(base))
     @test has_conflicts(idx) == false
 end
