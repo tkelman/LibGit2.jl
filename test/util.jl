@@ -28,16 +28,14 @@ end
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
 
 copy_recur(path::String, dest::String) = begin
-    apath = abspath(path)
-    adest = abspath(dest)
+    apath, adest = abspath(path), abspath(dest)
     if isfile(apath)
         cp(apath, adest)
         return
     end
     contents = readdir(path)
     for c in contents
-        pc = joinpath(apath, c)
-        dc = joinpath(adest, c)
+        pc, dc = joinpath(apath, c), joinpath(adest, c)
         if isfile(pc)
             cp(pc, dc)
         elseif isdir(pc)
