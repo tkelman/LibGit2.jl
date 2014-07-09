@@ -1,7 +1,7 @@
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
-with_repo_access() do test_repo, path
+with_repo_access() do test_repo, test_repo_path
     context("test read config file") do
         cfg = GitConfig(test_repo)
         @test isa(cfg, GitConfig)
@@ -10,7 +10,7 @@ with_repo_access() do test_repo, path
     end
 
     context("test read from path") do
-        cfg = GitConfig(joinpath(LibGit2.path(test_repo), "config"))
+        cfg = GitConfig(joinpath(path(test_repo), "config"))
         @test isa(cfg, GitConfig)
         @test cfg["core.bare"] == "false"
     end
@@ -23,7 +23,7 @@ with_repo_access() do test_repo, path
     end
 end
 
-with_tmp_repo_access() do test_repo, path
+with_tmp_repo_access() do test_repo, test_repo_path
    context("test write config values") do
        cfg = GitConfig(test_repo)
        cfg["custom.value"] = "my value"
@@ -31,7 +31,7 @@ with_tmp_repo_access() do test_repo, path
        cfg2 = GitConfig(test_repo)
        @test cfg2["custom.value"] == "my value"
 
-       content = open(readall, joinpath(LibGit2.path(test_repo), "config"))
+       content = open(readall, joinpath(path(test_repo), "config"))
        @test match(r"value = my value", content) != nothing
    end
 

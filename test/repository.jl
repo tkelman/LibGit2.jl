@@ -189,7 +189,7 @@ sandboxed_test("testrepo.git", "test enumerate all objects") do test_repo, path
 end
 
 sandboxed_test("testrepo.git", "test load alternates") do test_repo, _
-    alt_path = joinpath(pwd(), "fixtures/alternate/objects")
+    alt_path = joinpath(pwd(), "fixtures", "alternate", "objects")
     repo = GitRepo(path(test_repo), alternates=[alt_path])
     try 
       @test count(x->true, repo) == 1690
@@ -581,7 +581,7 @@ sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, 
     @test isfile(joinpath(workdir(test_repo), "README"))
     @test isfile(joinpath(workdir(test_repo), "branch_file.txt"))
     @test isfile(joinpath(workdir(test_repo), "new.txt"))
-    @test isfile(joinpath(workdir(test_repo), "a/b.txt"))
+    @test isfile(joinpath(workdir(test_repo), "a", "b.txt"))
 
     @test isfile(joinpath(workdir(test_repo), "ab")) == false
 
@@ -591,10 +591,10 @@ sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, 
     @test isfile(joinpath(workdir(test_repo), "README"))
     @test isfile(joinpath(workdir(test_repo), "branch_file.txt"))
     @test isfile(joinpath(workdir(test_repo), "new.txt"))
-    @test isfile(joinpath(workdir(test_repo), "ab/4.txt"))
-    @test isfile(joinpath(workdir(test_repo), "ab/c/3.txt"))
-    @test isfile(joinpath(workdir(test_repo), "ab/de/2.txt"))
-    @test isfile(joinpath(workdir(test_repo), "ab/de/fgh/1.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab","4.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab","c", "3.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab","de","2.txt"))
+    @test isfile(joinpath(workdir(test_repo), "ab","de","fgh","1.txt"))
     
     @test isdir(joinpath(workdir(test_repo), "a")) == false
 end
@@ -615,8 +615,8 @@ sandboxed_checkout_test("test checkout tree subdir") do test_repo, test_clone, t
                    {:strategy => :safe, :paths => "ab/de/"})
 
     @test isdir(joinpath(workdir(test_repo)), "ab")
-    @test isfile(joinpath(workdir(test_repo)), "ab/de/2.txt")
-    @test isfile(joinpath(workdir(test_repo)), "ab/de/fgh/1.txt")
+    @test isfile(joinpath(workdir(test_repo)), "ab","de","2.txt")
+    @test isfile(joinpath(workdir(test_repo)), "ab","de","fgh","1.txt")
 end
 
 sandboxed_checkout_test("test checkout tree subtree dir") do test_repo, test_clone, test_bare
@@ -624,9 +624,9 @@ sandboxed_checkout_test("test checkout tree subtree dir") do test_repo, test_clo
     checkout_tree!(test_repo, "refs/heads/subtrees:ab",
                    {:strategy => :safe, :paths => "de/"})
 
-    @test isdir(joinpath(workdir(test_repo)), "de")
-    @test isfile(joinpath(workdir(test_repo)), "de/2.txt")
-    @test isfile(joinpath(workdir(test_repo)), "de/fgh/1.txt")
+    @test isdir(joinpath(workdir(test_repo)),  "de")
+    @test isfile(joinpath(workdir(test_repo)), "de", "2.txt")
+    @test isfile(joinpath(workdir(test_repo)), "de", "fgh", "1.txt")
 end
 
 sandboxed_checkout_test("test checkout tree raises with bare repo") do test_repo, test_clone, test_bare

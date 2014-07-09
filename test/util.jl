@@ -2,7 +2,7 @@ using LibGit2
 
 const PKGDIR = Pkg.dir("LibGit2")
 const TESTDIR = joinpath(PKGDIR, "test")
-const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor/libgit2/tests/resources")
+const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor", "libgit2", "tests", "resources")
 
 context(f::Function) = f()
 context(f::Function, s::String) = (println(s); context(f))
@@ -40,7 +40,7 @@ repo_clone_test(f::Function, s::String) = (println(s); repo_clone_test(f))
 
 function with_test_index(f::Function)
     try
-        test_index_path = joinpath(TESTDIR, "fixtures/testrepo.git/index")
+        test_index_path = joinpath(TESTDIR, "fixtures", "testrepo.git", "index")
         test_index = GitIndex(test_index_path)
         f(test_index, test_index_path)
     finally

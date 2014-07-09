@@ -160,7 +160,7 @@ context("test adding a path") do
         add!(test_index1, "test.txt")
         write!(test_index1)
 
-        test_index2 = GitIndex(joinpath(tmp_path, ".git/index"))
+        test_index2 = GitIndex(joinpath(tmp_path, ".git", "index"))
         @test test_index2[1].path == "test.txt"
     finally
         close(test_repo)
@@ -179,7 +179,7 @@ context("test reloading index") do
         add!(index, "test.txt")
         write!(index)
 
-        rindex = GitIndex(joinpath(tmp_path, ".git/index"))
+        rindex = GitIndex(joinpath(tmp_path, ".git", "index"))
         entry = rindex["test.txt"]
         @test entry.stage == 0
 
