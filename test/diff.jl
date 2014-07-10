@@ -680,13 +680,13 @@ sandboxed_test("diff", "test diff treats files bigger than max size as binary") 
     b = lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10"))
     d = diff(test_repo, GitTree(a), GitTree(b), {:max_size=>10})
     @test length(patches(d)) == 2 
-    @test patch(d) == "diff --git a/another.txt b/another.txt
+    @test patch(d) == replace("diff --git a/another.txt b/another.txt
 index 3e5bcba..546c735 100644
 Binary files a/another.txt and b/another.txt differ
 diff --git a/readme.txt b/readme.txt
 index 7b808f7..29ab705 100644
 Binary files a/readme.txt and b/readme.txt differ
-"
+", "\r\n", "\n")
 end
 
 sandboxed_test("diff", "test constraining paths") do test_repo, path
@@ -714,7 +714,7 @@ sandboxed_test("diff", "test patch") do test_repo, path
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
     d = diff(test_repo, a, b, {:context_lines => 0})
 
-    @test patch(d) == "diff --git a/another.txt b/another.txt
+    @test patch(d) == replace("diff --git a/another.txt b/another.txt
 index 3e5bcba..546c735 100644
 --- a/another.txt
 +++ b/another.txt
@@ -751,7 +751,7 @@ index 7b808f7..29ab705 100644
 -it.
 +it.!
 \\ No newline at end of file
-" 
+", "\r\n", "\n") 
 end
 
 sandboxed_test("diff", "test iteration") do test_repo, path
@@ -832,9 +832,9 @@ sandboxed_test("diff", "test patch compact") do test_repo, path
     a = GitTree(test_repo[Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")])
     b = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d = diff(test_repo, a, b)
-    @test patch(d, format=:name_status) == "M\tanother.txt
+    @test patch(d, format=:name_status) == replace("M\tanother.txt
 M\treadme.txt
-"
+", "\r\n", "\n")
 end
 
 sandboxed_test("diff", "test stats") do test_repo, path

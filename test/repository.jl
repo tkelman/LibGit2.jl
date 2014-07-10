@@ -44,8 +44,8 @@ context("test creating repository") do
             @test isa(repo, GitRepo)
             @test !isbare(repo)
             @test isempty(repo)
-            @test workdir(repo) == abspath(test_repo_path)
-            @test path(repo) == joinpath(test_repo_path, ".git")
+            @test abspath(workdir(repo)) == abspath(test_repo_path)
+            @test abspath(path(repo)) == joinpath(test_repo_path, ".git")
             @test isa(GitIndex(repo), GitIndex)
             # empty repo has no head
             @test head(repo) == nothing

@@ -118,6 +118,7 @@ with_repo_access("test remote lookup invalid") do test_repo, path
     @test_throws LibGitError{:Config,:InvalidSpec} lookup_remote(test_repo, "*\?")
 end
 
+#TODO: make this work on windows
 with_tmp_repo_access("test remote add") do test_repo, path
     remote_add!(test_repo, "upstream", "git://github.com/libgit2/libgit2.git")
     remote = lookup_remote(test_repo, "upstream")

@@ -4,7 +4,7 @@ sandboxed_test("diff", "test patch") do test_repo, test_repo_path
     t2 = GitTree(test_repo[Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")])
     d  = diff(test_repo, t1, t2, {:context_lines => 0})
     s1 = string(patches(d)[1])
-    p1 = "diff --git a/another.txt b/another.txt
+    p1 = replace("diff --git a/another.txt b/another.txt
 index 3e5bcba..546c735 100644
 --- a/another.txt
 +++ b/another.txt
@@ -21,11 +21,11 @@ index 3e5bcba..546c735 100644
 +centralized version control system that is similar to CVS or
 +Perforce. Smaller is faster.
 +
-"
+", "\r\n", "\n")
     @test s1 == p1
 
     s2 = string(patches(d)[2])
-    p2 = "diff --git a/readme.txt b/readme.txt
+    p2 = replace("diff --git a/readme.txt b/readme.txt
 index 7b808f7..29ab705 100644
 --- a/readme.txt
 +++ b/readme.txt
@@ -45,6 +45,6 @@ index 7b808f7..29ab705 100644
 -it.
 +it.!
 \\ No newline at end of file
-"
+", "\r\n", "\n")
     @test s2 == p2
 end
