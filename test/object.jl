@@ -1,7 +1,6 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-#=
 context("test lookup git objects") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
@@ -37,10 +36,12 @@ context("test lookup git objects") do
         @test Oid(obj) == Oid(t)
     finally 
         close(repo)
-        cleanup_dir(test_path)
+        LibGit2.free!(repo)
+        Base.gc()
+        rm(test_path, recursive=true) 
     end
 end
-=#
+
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------

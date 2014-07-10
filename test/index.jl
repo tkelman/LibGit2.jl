@@ -1,7 +1,6 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------ 
-
 context("test lookup tree") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
@@ -26,7 +25,7 @@ context("test lookup tree") do
         close(repo)
         LibGit2.free!(repo)
         Base.gc()
-        cleanup_dir(test_path)
+        rm(test_path, recursive=true) 
     end
 end 
 

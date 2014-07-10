@@ -32,6 +32,7 @@ context("test creating bare repository") do
             @test isempty(repo)
         finally
             close(repo)
+            LibGit2.free!(repo)
         end 
     end
 end 
@@ -60,6 +61,7 @@ context("test creating repository") do
             @test isa(GitTreeBuilder(repo), GitTreeBuilder)
         finally
             close(repo)
+            LibGit2.free!(repo)
         end
     end
 end

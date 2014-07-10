@@ -1,7 +1,6 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-#=
 context("test create / lookup ref") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
@@ -27,11 +26,13 @@ context("test create / lookup ref") do
         @test isa(tag, GitReference{Oid})
     finally 
         close(repo)
-        cleanup_dir(test_path)
+        LibGit2.free!(repo)
+        Base.gc()
+        rm(test_path, recursive=true)
     end
 end 
-=#
-#= TODO:
+
+#=
 context() do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
@@ -39,7 +40,7 @@ context() do
         cid, tid = seed_test_repo(repo)
 
         sig = Signature("test", "test@test.com")
-        idx = repo_index(repo)
+        idx = GitIndex(repo)
         add!(idx, "README")
         tid = write_tree!(idx)
 
@@ -63,7 +64,6 @@ context() do
         for (exp, tst) in zip(expected, test_names)
             @test exp == tst
         end
-
         # test glob
         expected = ["refs/heads/two", "refs/heads/three"]
         test_names = String[]
@@ -77,7 +77,9 @@ context() do
         end
     finally 
         close(repo)
-        cleanup_dir(test_path)
+        LibGit2.free!(repo)
+        Base.gc()
+        rm(test_path, recursive=true)
     end
 end
 =#
