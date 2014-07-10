@@ -59,16 +59,12 @@ Base.push!(w::GitRevWalker, cid::Oid) = begin
     return w 
 end
 
-function _symbol_to_gitsort(s::Symbol)
-    s == :none && return GitConst.SORT_NONE
-    s == :topo && return GitConst.SORT_TOPOLOGICAL
-    s == :date && return GitConst.SORT_TIME
-    error("unknown git sort flag :$s")
-end
-
 #TODO: this does not mimic Base's sortby! functionality so it should be renamed
 Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false) = begin
-    s = _symbol_to_gitsort(sort_mode)
+    s = sort_mode === :none ? GitConst.SORT_NONE :
+        sort_mode === :topo ? GitConst.SORT_TOPOLOGICAL :
+        sort_mode === :date ? GitConst.SORT_TIME :
+        throw(ArgumentError("unknown git sort flag :$s"))
     rev && (s |= GitConst.SORT_REVERSE)
     sortby!(w, s)
     return 
