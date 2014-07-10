@@ -640,7 +640,7 @@ sandboxed_checkout_test("test checkout tree works with bare repo and target dir"
         @test isfile(joinpath(d, "README"))
         @test isfile(joinpath(d, "new.txt"))
     finally
-        @unix_only rm(d, recursive=true)
+        rm(d, recursive=true)
     end
 end
 

@@ -9,7 +9,7 @@ context(f::Function, s::String) = (println(s); context(f))
 
 cleanup_dir(p) = begin
     if isdir(p)
-        @unix_only rm(p, recursive=true) 
+        rm(p, recursive=true) 
     end
 end
 
@@ -22,7 +22,8 @@ function remote_transport_test(f::Function)
         f(test_repo, test_remote)
     finally
         close(test_repo)
-        @unix_only rm(tmp_dir, recursive=true)
+        LibGit2.free!(test_repo)
+        rm(tmp_dir, recursive=true)
     end
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
@@ -51,7 +52,7 @@ function repo_clone_test(f::Function)
     try
         f(source, tmp_dir)
     finally
-        @unix_only rm(tmp_dir, recursive=true)
+        rm(tmp_dir, recursive=true)
     end
 end 
 repo_clone_test(f::Function, s::String) = (println(s); repo_clone_test(f))
@@ -68,7 +69,7 @@ with_test_index(f::Function, s::String) = (println(s); with_test_index(f))
 
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
-        @unix_only rm(test_path, recursive=true)
+        rm(test_path, recursive=true)
     end
     repo = repo_init(test_path)
     open(joinpath(test_path, "README"), "w") do fh
@@ -126,7 +127,8 @@ function sandboxed_test(f::Function, reponame::String)
         f(repo, tmp_dir)
     finally
         close(repo)
-        @unix_only rm(tmp_dir, recursive=true)
+        LibGit2.free!(repo)
+        rm(tmp_dir, recursive=true)
     end
 end
 sandboxed_test(f::Function, reponame::String, s::String) = (println(s); 
@@ -141,6 +143,8 @@ function sandboxed_clone_test(f::Function, reponame::String)
     finally
         close(repo)
         close(remote)
+        LibGit2.free!(repo)
+        LibGit2.free!(remote)
         rm(tmp_dir1, recursive=true)
         rm(tmp_dir2, recursive=true)
     end
@@ -159,9 +163,12 @@ function sandboxed_checkout_test(f::Function)
         close(test_repo)
         close(test_clone)
         close(test_bare)
-        @unix_only rm(test_repo_dir, recursive=true)
-        @unix_only rm(test_clone_dir, recursive=true)
-        @unix_only rm(test_bare_dir, recursive=true)
+        LibGit2.free!(test_repo)
+        LibGit2.free!(test_clone)
+        LibGit2.free!(test_bare)
+        rm(test_repo_dir, recursive=true)
+        rm(test_clone_dir, recursive=true)
+        rm(test_bare_dir, recursive=true)
     end
 end
 sandboxed_checkout_test(f::Function, s::String) = (println(s); 
@@ -173,6 +180,7 @@ function with_repo_access(f::Function)
         f(repo, path)
     finally
         close(repo)
+        LibGit2.free!(repo)
     end
 end
 with_repo_access(f::Function, s::String) = (println(s); with_repo_access(f))
@@ -186,7 +194,8 @@ function with_tmp_repo_access(f::Function)
         f(repo, tmp_dir)
     finally
         close(repo)
-        @unix_only rm(tmp_dir, recursive=true)
+        LibGit2.free!(repo)
+        rm(tmp_dir, recursive=true)
     end
 end
 with_tmp_repo_access(f::Function, s::String) = (println(s); with_tmp_repo_access(f))
