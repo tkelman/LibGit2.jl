@@ -128,6 +128,7 @@ function sandboxed_test(f::Function, reponame::String)
     finally
         close(repo)
         LibGit2.free!(repo)
+        Base.gc()
         rm(tmp_dir, recursive=true)
     end
 end
@@ -145,6 +146,7 @@ function sandboxed_clone_test(f::Function, reponame::String)
         close(remote)
         LibGit2.free!(repo)
         LibGit2.free!(remote)
+        Base.gc()
         rm(tmp_dir1, recursive=true)
         rm(tmp_dir2, recursive=true)
     end
@@ -166,6 +168,7 @@ function sandboxed_checkout_test(f::Function)
         LibGit2.free!(test_repo)
         LibGit2.free!(test_clone)
         LibGit2.free!(test_bare)
+        Base.gc()
         rm(test_repo_dir, recursive=true)
         rm(test_clone_dir, recursive=true)
         rm(test_bare_dir, recursive=true)
@@ -181,6 +184,7 @@ function with_repo_access(f::Function)
     finally
         close(repo)
         LibGit2.free!(repo)
+        Base.gc()
     end
 end
 with_repo_access(f::Function, s::String) = (println(s); with_repo_access(f))
@@ -195,6 +199,7 @@ function with_tmp_repo_access(f::Function)
     finally
         close(repo)
         LibGit2.free!(repo)
+        Base.gc()
         rm(tmp_dir, recursive=true)
     end
 end
