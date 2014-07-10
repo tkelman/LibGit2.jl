@@ -1,9 +1,14 @@
 language: cpp
 compiler:
   - clang
+os:
+  - linux
 notifications:
   email: false
-
+env:
+    matrix:
+       #- JULIAVERSION="releases"
+        - JULIAVERSION="nightlies"
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
   - sudo add-apt-repository ppa:staticfloat/julianightlies -y
@@ -25,5 +30,9 @@ script:
   - cd test/
   - julia --code-coverage runtests.jl all
 # - sh run_remote_clone.sh
-  - cd ../
-  - julia -e 'Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+
+after_success:
+  - julia -e 'cd(Pkg.dir("LibGit2")); 
+              Pkg.add("Coverage"); 
+              using Coverage; 
+              Coveralls.submit(Coveralls.process_folder())'
