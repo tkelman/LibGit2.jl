@@ -113,15 +113,14 @@ with_tmp_repo_access("test write blob from disk") do test_repo, path
     @test isfile(file_path)
     id = blob_from_disk(test_repo, file_path)
     @test isa(id, Oid)
-    b = lookup(test_repo, id)
-    fh = open(file_path, "r")
-    c  = readbytes(fh)
-    rc = rawcontent(b)
-    @test length(c) == length(rc)
-    for i in length(c)
-        @assert c[i] == rc[i]
+    b = test_repo[id]
+    open(file_path, "r") do io
+        c,rc  = readbytes(io), rawcontent(b)
+        @test length(c) == length(rc)
+        for i in length(c)
+            @assert c[i] == rc[i]
+        end
     end
-    close(fh)
 end
 
 with_tmp_repo_access("test blob is binary") do test_repo, path
@@ -208,8 +207,7 @@ with_tmp_repo_access("test write blob from io with hintpath") do test_repo, path
         id = blob_from_stream(test_repo, io, "archive.tar.gz2")
         seekstart(io)
         blob = lookup(test_repo, id)
-        c = readbytes(io)
-        rc  = rawcontent(blob)
+        c,rc = readbytes(io), rawcontent(blob)
         @test length(c) == length(rc)
         for i in length(rc)
             @assert c[i] == rc[i]
@@ -223,8 +221,7 @@ with_tmp_repo_access("test write blob from io without hintpath") do test_repo, p
         id = blob_from_stream(test_repo, io)
         seekstart(io)
         blob = lookup(test_repo, id)
-        c = readbytes(io)
-        rc  = rawcontent(blob)
+        c,rc = readbytes(io), rawcontent(blob)
         @test length(c) == length(rc)
         for i in length(rc)
             @assert c[i] == rc[i]
