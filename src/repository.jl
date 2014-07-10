@@ -4,7 +4,7 @@ export isbare, isempty, workdir, path, repo_init, head, exists,
        revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, config,  GitTreeBuilder, set_workdir!, 
        insert!, write!, close, lookup, revparse, revparse_oid, remotes,
-       ahead_behind, merge_base, merge_commits,  blob_at, isshallow, hash_data,
+       ahead_behind, is_descendant_of, merge_base, merge_commits,  blob_at, isshallow, hash_data,
        default_signature, repo_discover, isempty, namespace, set_namespace!,
        notes, create_note!, remove_note!, note_default_ref,
        blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
@@ -558,6 +558,20 @@ function ahead_behind(r::GitRepo, lid::Oid, uid::Oid)
                  (Ptr{Csize_t}, Ptr{Csize_t}, Ptr{Void}, Ptr{Oid}, Ptr{Oid}),
                  ahead, behind, r, &lid, &uid)
     return (int(ahead[1]), int(behind[1]))
+end
+
+is_descendant_of(r::GitRepo, prev::GitCommit, ances::GitCommit) = 
+    is_descendant_of(r, Oid(prev), Oid(ances))
+
+function is_descendant_of(r::GitRepo, prev::Oid, ances::Oid)
+    if !isa(lookup(GitCommit, repo, prev), GitCommit)
+        throw(ArgumentError("prev $prev is not a valid commit id"))
+    end
+    if !isa(lookup(GitCommit, repo, ances), GitCommit)
+        throw(ArgumentError("ances $ances is not a valid commit id"))
+    end
+    return bool(ccall((:git_graph_descendant_of, libgit2), Cint,
+                      (Ptr{Void}, Ptr{Oid}, Ptr{Oid}), r, &prev, &ances))
 end
 
 function blob_at(r::GitRepo, rev::Oid, pth::String)
