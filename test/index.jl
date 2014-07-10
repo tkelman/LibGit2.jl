@@ -1,7 +1,7 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------ 
-#=
+
 context("test lookup tree") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
@@ -24,10 +24,12 @@ context("test lookup tree") do
         @test isa(hex(tree), ASCIIString)
     finally 
         close(repo)
+        LibGit2.free!(repo)
+        Base.gc()
         cleanup_dir(test_path)
     end
 end 
-=#
+
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
@@ -145,7 +147,7 @@ with_test_index("test can write index") do test_index, path
         @test length(test_index2) == 4
     finally
         close(tmp_io)
-        rm(tmp_path)
+        rm(tmp_path, recursive=true)
     end
 end
 
@@ -164,7 +166,9 @@ context("test adding a path") do
         @test test_index2[1].path == "test.txt"
     finally
         close(test_repo)
-        run(`rm -rf $tmp_path`)
+        LibGit2.free!(test_repo)
+        Base.gc()
+        rm(tmp_path, recursive=true) 
     end
 end
 
@@ -194,7 +198,9 @@ context("test reloading index") do
         @test entry.mode == 33188
     finally
         close(test_repo)
-        run(`rm -rf $tmp_path`)
+        LibGit2.free!(test_repo)
+        Base.gc()
+        rm(tmp_path, recursive=true)
     end
 end
 
@@ -227,7 +233,7 @@ end
 # --------------------
 
 # test add all lifecycle
-sandboxed_test("testrepo.git") do test_repo, path
+sandboxed_test("testrepo.git") do _, path
     test_repo = repo_init(joinpath(path, "add-all"))
     cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
@@ -265,10 +271,12 @@ sandboxed_test("testrepo.git") do test_repo, path
         @test index["other.zzz"] != nothing
         @test index["more.zzz"]  != nothing
     end
+    close(test_repo)
+    LibGit2.free!(test_repo)
 end
 
 # test update all
-sandboxed_test("testrepo.git") do test_repo, path
+sandboxed_test("testrepo.git") do _, path
     test_repo = repo_init(joinpath(path, "add-all"))
     cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
@@ -309,10 +317,12 @@ sandboxed_test("testrepo.git") do test_repo, path
 
         @test index["file.bar"] == nothing
     end
+    close(test_repo)
+    LibGit2.free!(test_repo)
 end
 
 # test remove all
-sandboxed_test("testrepo.git") do test_repo, path
+sandboxed_test("testrepo.git") do _, path
     test_repo = repo_init(joinpath(path, "add-all"))
     cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
@@ -342,4 +352,6 @@ sandboxed_test("testrepo.git") do test_repo, path
         @test index["file.bar"] != nothing 
         @test index["file.zzz"] == nothing
     end
+    close(test_repo)
+    LibGit2.free!(test_repo)
 end
