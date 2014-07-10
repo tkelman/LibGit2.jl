@@ -119,12 +119,14 @@ with_repo_access("test remote lookup invalid") do test_repo, path
 end
 
 #TODO: make this work on windows
-with_tmp_repo_access("test remote add") do test_repo, path
-    remote_add!(test_repo, "upstream", "git://github.com/libgit2/libgit2.git")
-    remote = lookup_remote(test_repo, "upstream")
-    @test name(remote) == "upstream"
-    @test url(remote)  == "git://github.com/libgit2/libgit2.git"
-end
+@unix_only begin
+    with_tmp_repo_access("test remote add") do test_repo, path
+        remote_add!(test_repo, "upstream", "git://github.com/libgit2/libgit2.git")
+        remote = lookup_remote(test_repo, "upstream")
+        @test name(remote) == "upstream"
+        @test url(remote)  == "git://github.com/libgit2/libgit2.git"
+    end
+end 
 
 with_tmp_repo_access("test remote add with invalid url") do test_repo, path
     @test_throws ArgumentError remote_add!(test_repo, "upstream", "libgit2")
