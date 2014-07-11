@@ -344,6 +344,19 @@ Base.merge!(d1::GitDiff, d2::GitDiff) = begin
     return d1
 end
 
+function diff_workdir(repo::GitRepo, opts::MaybeDict=nothing)
+    gopts = parse_git_diff_options(opts)
+    diff_ptr = Ptr{Void}[0]
+    @check ccall((:git_diff_index_to_workdir, libgit2), Cint,
+                 (Ptr{Ptr{Void}},
+                  Ptr{Void}, 
+                  Ptr{Void}, 
+                  Ptr{DiffOptionsStruct}),
+                 diff_ptr, repo, C_NULL, &gopts)
+    free!(gopts.pathspec)
+    return GitDiff(diff_ptr[1])
+end
+
 function diff_workdir(repo::GitRepo, left::String, opts::MaybeDict=nothing)
     return diff_workdir(repo, revparse(repo, left), opts)
 end
