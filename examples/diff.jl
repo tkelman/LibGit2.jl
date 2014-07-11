@@ -131,16 +131,15 @@ function parse_commandline()
 
     # Convert keys to symbol
     args = {symbol(k) => v for (k,v) in args}
-
-    # prune "nothing" values just for debug and to work in a clearer spaces
-    map((k, v) -> is(v, nothing) && delete!(args, k), args)
-
-    format_dic = {i => args[i] for i=(:raw, :patch, :name_only, :name_status)}
-    sum(values(format_dic)) > 1 && error("too many format flags")
+    for k in keys(args)
+        is(args[k], nothing) && delete!(args, k)
+    end 
+    format_dict = {k=>args[k] for k in (:raw, :patch, :name_only, :name_status)}
+    sum(values(format_dict)) > 1 && error("too many format flags")
 
     diff_format = :patch
-    for i in keys(format_dic)
-        format_dic[i] && diff_format = i
+    for k in keys(format_dict)
+        format_dict[k] && (diff_format = k)
     end
     return args, diff_format
 end
@@ -177,14 +176,16 @@ function color_printer(d)
     color, last_color = :reset, nothing
     ps = patches(d)
     for i = 1:length(ps)
-        hs = hunks(p[i])
-        for j = 1:length(h)
-            h, = hs[j]
-            head = hj.header
+        p = ps[i]
+        hs = hunks(p)
+        for j = 1:length(hs)
+            h = hs[j]
+            head = h.header
             
             # Hack to color only text between `@@`
             idx = search(head,"@@",3)
-            print(COLORS[:cyan],head[1:idx[end]],COLORS[:reset],head[idx[end]+1:end])
+            print(COLORS[:cyan],  head[1:idx[end]],
+                  COLORS[:reset], head[idx[end]+1:end])
 
           #= FIXME I miss the header like which should be highlited in bold:
           ```
@@ -198,7 +199,7 @@ function color_printer(d)
            d.new_file.path
           =#
 
-            l = lines(hj)
+            l = lines(h)
             for k = 1:length(l)
                 lo = l[k].line_origin
                 if lo == :addition || lo == :eof_newline_added
@@ -228,10 +229,10 @@ end
 
 function main()
     o, diff_format = parse_commandline()
-    if haskey(o,:path)
-        repo = LibGit2.Repository(o[:path])
+    if haskey(o,:path) 
+        repo = LibGit2.GitRepo(o[:path]) 
     else
-        repo = Libgit2.repo_discover()
+        repo = LibGit2.repo_discover()
     end
     if haskey(o,:treeish1) && haskey(o,:treeish2)
         println("diff trees")

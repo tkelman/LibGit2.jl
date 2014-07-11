@@ -21,33 +21,31 @@ end
 Base.convert(::Type{Ptr{Void}}, p::GitPatch) = p.ptr
 
 Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
-    old_path_ptr = zero(Ptr{Uint8})
-    new_path_ptr = zero(Ptr{Uint8})
+    old_path_ptr, new_path_ptr = zero(Ptr{Uint8}), zero(Ptr{Uint8})
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::ByteString)
+            old_path = convert(Ptr{Uint8}, opts[:old_path]::String)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::ByteString)
+            new_path = convert(Ptr{Uint8}, opts[:new_path]::String)
         end
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
     @check ccall((:git_patch_from_blobs, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Cchar}, Ptr{Void}, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, C_NULL, new_path_ptr, &gopts)
     return GitPatch(patch_ptr[1])
 end
 
-Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts=nothing) = begin
-    old_path_ptr = zero(Ptr{Uint8})
-    new_path_ptr = zero(Ptr{Uint8})
+Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts::MaybeDict=nothing) = begin
+    old_path_ptr, new_path_ptr = zero(Ptr{Uint8}), zero(Ptr{Uint8})
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Uint8}, pointer(opts[:old_path]::ByteString))
+            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::String)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Uint8}, pointer(opts[:new_path]::ByteString))
+            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::String)
         end
     end
     gopts = parse_git_diff_options(opts)
@@ -58,22 +56,21 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts=nothing) = begin
     return GitPatch(patch_ptr[1])
 end
 
-Base.diff(repo::GitRepo, blob::GitBlob, other::String, opts= nothing) = begin
-    old_path_ptr = zero(Ptr{Uint8})
-    new_path_ptr = zero(Ptr{Uint8})
+Base.diff(repo::GitRepo, blob::GitBlob, other::String, opts::MaybeDict=nothing) = begin
+    old_path_ptr, new_path_ptr = zero(Ptr{Uint8}), zero(Ptr{Uint8}) 
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Uint8}, pointer(opts[:old_path]::ByteString))
+            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::String)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Uint8}, pointer(opts[:new_path]::ByteString))
+            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::String)
         end
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
     @check ccall((:git_patch_from_blob_and_buffer, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
-                  Ptr{Cchar}, Csize_t, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
+                  Ptr{Uint8}, Csize_t, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, buffer, length(buffer), new_path_ptr, &gopts)
     return GitPatch(patch_ptr[1])
 end
