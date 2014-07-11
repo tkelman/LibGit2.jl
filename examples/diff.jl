@@ -125,22 +125,19 @@ function parse_commandline()
           arg_type = String
           dest_name = "new_prefix"
         =#
-
     end
-    args = parse_args(settings)
-
-    # Convert keys to symbol
-    args = {symbol(k) => v for (k,v) in args}
-    for k in keys(args)
-        is(args[k], nothing) && delete!(args, k)
-    end 
-    format_dict = {k=>args[k] for k in (:raw, :patch, :name_only, :name_status)}
-    sum(values(format_dict)) > 1 && error("too many format flags")
-
+    
+    diff_flags = (:raw, :patch, :name_only, :name_status)
     diff_format = :patch
-    for k in keys(format_dict)
-        format_dict[k] && (diff_format = k)
-    end
+
+    args = Dict() 
+    for (k,v) in parse_args(settings) 
+        is(v, nothing) && continue
+        args[symbol(k)] = v
+        if k in diff_flags
+            diff_flags = v
+        end
+    end 
     return args, diff_format
 end
 
@@ -161,14 +158,13 @@ function diff_print_shortstat(d::GitDiff)
     end
 end
 
-#TODO: support iteration for patches
-function diff_print_numstat(d::GitDiff) # L278 libgit2/examples/diff.c
+function diff_print_numstat(d::GitDiff) 
     p = LibGit2.patches(d)
     is(p, nothing) && return
-    for i=1:length(p)
-        a   = LibGit2.stat(p[i])
-        del = LibGit2.delta(p[i])
-        @printf("%d\t%d\t%s\n", a.adds, a.dels, del.new_file.path)
+    for p in patches
+        s = LibGit2.stat(p)
+        d = LibGit2.delta(p)
+        @printf("%d\t%d\t%s\n", s.adds, s.dels, d.new_file.path)
     end
 end
 
@@ -176,9 +172,8 @@ function color_printer(d)
     color, last_color = :reset, nothing
     for p in LibGit2.patches(d)
         for h in LibGit2.hunks(p) 
-            
-            # Hack to color only text between `@@`
-            idx = search(h.header,"@@",3)
+            # color only text between `@@`
+            idx = search(h.header,"@@", 3)
             print(COLORS[:cyan],  h.header[1:idx[end]],
                   COLORS[:reset], h.header[idx[end]+1:end])
 
@@ -200,7 +195,7 @@ function color_printer(d)
                     color = :green
                 elseif lo == :deletion || lo == :eof_newline_removed
                     color = :red
-                # elseif lo == :file_header # TODO
+                #TODO: elseif lo == :file_header
                 else
                     color = :reset
                 end
@@ -223,29 +218,24 @@ end
 
 function main()
     o, diff_format = parse_commandline()
-    if haskey(o,:path) 
-        repo = LibGit2.GitRepo(o[:path]) 
-    else
-        repo = LibGit2.repo_discover()
-    end
-    if haskey(o,:treeish1) && haskey(o,:treeish2)
+    repo = haskey(o, :path) ? LibGit2.GitRepo(o[:path]) :
+                              LibGit2.repo_discover()
+    if haskey(o, :treeish1) && haskey(o, :treeish2)
         println("diff trees")
         d = LibGit2.diff(repo, o[:treeish1], o[:treeish2], o)
-    elseif haskey(o,:treeish1) && o[:cached]
+    elseif haskey(o, :treeish1) && o[:cached]
         println("diff tree to index")
         d = LibGit2.diff(repo, o[:treeish1], GitIndex(repo), o)
-    elseif haskey(o,:treeish1) # TODO
+    elseif haskey(o, :treeish1) 
         println("diff tree to working directory")
-        # d = LibGit2.diff_workdir_with_index(repo, o[:treeish1], o)
-        error("unimplemented: bindings to git_diff_tree_to_workdir_with_index()")
-    elseif o[:cached]
+        d = LibGit2.diff_workdir(repo, o[:treeish1], o) 
+    elseif haskey(o, :cached)
         println("diff head to index")
         d = LibGit2.diff(repo, "HEAD", GitIndex(repo), o)
     else
         println("diff index to working directory")
-        d = LibGit2.diff(repo, GitIndex(repo), o)
+        d = LibGit2.diff_workdir(repo, o)
     end
-
     if o[:numstat]
         diff_print_numstat(d)
     elseif o[:shortstat]
