@@ -7,7 +7,6 @@ export isbare, isempty, workdir, path, repo_init, head, exists,
        ahead_behind, is_descendant_of, merge_base, merge_commits,  blob_at, isshallow, hash_data,
        default_signature, repo_discover, isempty, namespace, set_namespace!,
        notes, create_note!, remove_note!, note_default_ref,
-       blob_from_buffer, blob_from_workdir, blob_from_disk, blob_from_stream,
        branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
@@ -276,9 +275,10 @@ end
 const c_cb_push_status = cfunction(cb_push_status, Cint,
                                    (Ptr{Uint8}, Ptr{Uint8}, Ptr{Void}))
 
-#TODO: git push update tips takes a signature and message
 #TODO: better error messages
-Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
+Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T};
+                      sig::MaybeSignature=nothing,
+                      logmsg::MaybeString=nothing) = begin
     push_ptr = Ptr{Void}[0]
     err = ccall((:git_push_new, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), push_ptr, remote)
@@ -301,7 +301,7 @@ Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
     if err != GitErrorConst.GIT_OK
         ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         if err == GitErrorConst.ENONFASTFORWARD
-            error("non-fast-forward upate rejected")
+            error("non-fast-forward update rejected")
         elseif err == GitErrorConst.EBAREREPO
             error("could not push to repo (check for non-bare repo)")
         end
@@ -319,7 +319,9 @@ Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T}) = begin
         throw(LibGitError(err))
     end
     err = ccall((:git_push_update_tips, libgit2), Cint,
-                (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), p, C_NULL, C_NULL)
+                (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), p,
+                sig != nothing ? sig : C_NULL,
+                logmsg != nothing ? logmsg : C_NULL)
     if err != GitErrorConst.GIT_OK
         ccall((:git_push_free, libgit2), Void, (Ptr{Void},), p)
         throw(LibGitError(err))
@@ -683,7 +685,6 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
     end
     return T(obj_ptr[1]) 
 end
-
 lookup(r::GitRepo, id::String) = lookup(GitAnyObject, r, id)
 lookup(r::GitRepo, id::Oid)    = lookup(GitAnyObject, r, id)
 lookup_tree(r::GitRepo, id)    = lookup(GitTree, r, id)
@@ -692,10 +693,10 @@ lookup_commit(r::GitRepo, id)  = lookup(GitCommit, r, id)
 
 references(r::GitRepo, glob::String="") = collect(GitReference, foreach(GitReference, r, glob)) 
 
-function lookup_ref(r::GitRepo, refname::String)
+function lookup(::Type{GitReference}, r::GitRepo, name::String)
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_lookup, libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, refname)
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, name)
     if err == GitErrorConst.ENOTFOUND
         return nothing
     elseif err != GitErrorConst.GIT_OK
@@ -703,6 +704,7 @@ function lookup_ref(r::GitRepo, refname::String)
     end
     return GitReference(ref_ptr[1])
 end
+lookup_ref(r::GitRepo, name::String) = lookup(GitReference, r, name)
 
 function create_ref(r::GitRepo, refname::String, id::Oid; 
                     force::Bool=false, 
