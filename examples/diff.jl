@@ -174,34 +174,28 @@ end
 
 function color_printer(d)
     color, last_color = :reset, nothing
-    ps = patches(d)
-    for i = 1:length(ps)
-        p = ps[i]
-        hs = hunks(p)
-        for j = 1:length(hs)
-            h = hs[j]
-            head = h.header
+    for p in LibGit2.patches(d)
+        for h in LibGit2.hunks(p) 
             
             # Hack to color only text between `@@`
-            idx = search(head,"@@",3)
-            print(COLORS[:cyan],  head[1:idx[end]],
-                  COLORS[:reset], head[idx[end]+1:end])
+            idx = search(h.header,"@@",3)
+            print(COLORS[:cyan],  h.header[1:idx[end]],
+                  COLORS[:reset], h.header[idx[end]+1:end])
 
-          #= FIXME I miss the header like which should be highlited in bold:
-          ```
-          diff --git a/src/diff.jl b/src/diff.jl
-          index c27da2b..a01abcd 100644
-          --- a/src/diff.jl
-          +++ b/src/diff.jl
-          ```
-          to recover the file I have to pass through delta
-           d = delta(hj.patch)
-           d.new_file.path
-          =#
+            #= FIXME I miss the header like which should be highlited in bold:
+            ```
+            diff --git a/src/diff.jl b/src/diff.jl
+            index c27da2b..a01abcd 100644
+            --- a/src/diff.jl
+            +++ b/src/diff.jl
+            ```
+            to recover the file I have to pass through delta
+            d = delta(hj.patch)
+            d.new_file.path
+            =#
 
-            l = lines(h)
-            for k = 1:length(l)
-                lo = l[k].line_origin
+            for l in lines(h)
+                lo = l.line_origin
                 if lo == :addition || lo == :eof_newline_added
                     color = :green
                 elseif lo == :deletion || lo == :eof_newline_removed
@@ -220,7 +214,7 @@ function color_printer(d)
                 lo == :context && print(" ")
                 lo == :addition && print("+")
                 lo == :deletion && print("-")
-                print(l[k].content)
+                print(l.content)
             end
         end
     end
