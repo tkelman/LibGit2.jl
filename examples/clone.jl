@@ -33,57 +33,11 @@ function parse_commandline()
         "directory"
         help = ""
     end
-    args = parse_args(settings)
-    # Convert keys to symbol
-    #a rgs = {symbol(k)=>v for (k,v) in args}
-    # prune "nothing" values just for debug and to work in a clearer space
-    for (k,v) in args
-        v == nothing && delete!(args,k)
-    end
-    return args
+    return parse_args(settings)
 end
 
-
-function clone(repo_url::String, dest_dir::String="")
-    # fetch and checkout head with progress indication
-    # FIXME logic
-    if isempty(dest_dir)
-        dest_dir = dest_dir * basename(splitext(repo_url)[1])
-        mkdir(dest_dir)
-    end
-
-    println(dest_dir)
-    info("dest dir generated: $dest_dir")
-
-    total_objects = indexed_objects = received_objects = received_bytes = 0
-    repo = repo_clone(repo_url, dest_dir, {
-        :callbacks => {
-          :transfer_progress => (args...) -> begin
-            total_objects, indexed_objects, received_objects, received_bytes = args
-            perc = int(received_objects / total_objects * 100.0)
-            print("\rReceiving objects: $perc% ($received_objects/$total_objects) $(pretty_size(received_bytes))")
-            end
-          }
-        }
-      )
-    println(", done.")
-
-    path = completed_steps = total_steps = payload = 0
-    checkout_head!(repo,
-      {:strategy => :safe_create,
-      :progress => (args...) -> begin
-        path, completed_steps, total_steps = args
-        print("\rUnpacking files: $completed_steps/$total_steps")
-      end
-      }
-    )
-
-    println(", done.")
-    return repo
-end
-
+# Assuming n is in bytes
 function pretty_sizen(n)
-    # Assuming n is in bytes
     c = log2(n) / 10
     val = n / 1024^floor(c)
     c < 1      && return @sprintf("%i B",val)
@@ -92,9 +46,52 @@ function pretty_sizen(n)
     3 <= c     && return @sprintf("%.2f GiB",val)
 end
 
+# fetch and checkout head with progress indication
+function doclone(repo_url::String, dest_dir::String="")
+    if isempty(dest_dir)
+        dest_dir = basename(splitext(repo_url)[1])
+        mkdir(dest_dir)
+    end
+
+    println(dest_dir)
+    info("dest dir generated: $dest_dir")
+
+    total_objects = indexed_objects = received_objects = received_bytes = 0
+                    
+    repo = LibGit2.repo_clone(repo_url, dest_dir, {
+        :callbacks => {
+          :transfer_progress => (args...) -> begin
+                total_objects, indexed_objects, received_objects, received_bytes = args
+                perc = int(received_objects / total_objects * 100.0)
+                print("\rReceiving objects: $perc% ($received_objects/$total_objects) ",
+                      "$(pretty_size(received_bytes))")
+            end
+          }
+        })
+
+    println(", done.")
+
+    path = completed_steps = total_steps = payload = 0
+
+    LibGit2.checkout_head!(repo,
+        {:strategy => :safe_create,
+         :progress => (args...) -> begin
+            path, completed_steps, total_steps = args
+            print("\rUnpacking files: $completed_steps/$total_steps")
+         end
+        })
+
+    println(", done.")
+    return repo
+end
+
 function main()
     opts = parse_commandline()
-    haskey(opts, "directory") ? clone(opts["repo_url"], opts["directory"]) : clone(opts["repo_url"])
+    if haskey(opts, "directory")
+        doclone(opts["repo_url"], opts["directory"])
+    else
+        doclone(opts["repo_url"])
+    end
 end
 
 main()
