@@ -1404,7 +1404,7 @@ parse_clone_options(opts, payload::Dict) = begin
                                             zero(Ptr{Void}),
                                             remote_payload)
     return CloneOptionsStruct(one(Cuint),
-                              checkout_struct,
+                              checkout_stuct,
                               remotecb_struct,
                               bare,
                               zero(Cint),

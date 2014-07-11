@@ -37,7 +37,7 @@ function parse_commandline()
 end
 
 # Assuming n is in bytes
-function pretty_sizen(n)
+function pretty_size(n)
     c = log2(n) / 10
     val = n / 1024^floor(c)
     c < 1      && return @sprintf("%i B",val)
@@ -49,16 +49,16 @@ end
 # fetch and checkout head with progress indication
 function doclone(repo_url::String, dest_dir::String="")
     if isempty(dest_dir)
-        dest_dir = basename(splitext(repo_url)[1])
-        mkdir(dest_dir)
+        git_dir = joinpath(pwd(), basename(splitext(repo_url)[1]))
+    else
+        git_dir = joinpath(dest_dir, basename(splitext(repo_url)[1]))
     end
 
-    println(dest_dir)
-    info("dest dir generated: $dest_dir")
+    mkdir(git_dir)
+    info("git dir generated: $git_dir")
 
     total_objects = indexed_objects = received_objects = received_bytes = 0
-                    
-    repo = LibGit2.repo_clone(repo_url, dest_dir, {
+    repo = LibGit2.repo_clone(repo_url, git_dir, {
         :callbacks => {
           :transfer_progress => (args...) -> begin
                 total_objects, indexed_objects, received_objects, received_bytes = args
@@ -72,7 +72,6 @@ function doclone(repo_url::String, dest_dir::String="")
     println(", done.")
 
     path = completed_steps = total_steps = payload = 0
-
     LibGit2.checkout_head!(repo,
         {:strategy => :safe_create,
          :progress => (args...) -> begin
