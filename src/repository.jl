@@ -10,7 +10,7 @@ export isbare, isempty, workdir, path, init_repo, head, exists,
        branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
-       repo_clone, foreach
+       repo_clone, foreach, reset!
 
 typealias MaybeOid Union(Nothing, Oid)
 typealias MaybeString Union(Nothing, String)
@@ -704,7 +704,10 @@ function lookup(::Type{GitReference}, r::GitRepo, name::String)
     end
     return GitReference(ref_ptr[1])
 end
+lookup(::Type{GitReference}, r::GitRepo, ref::GitReference{Oid}) = lookup(r, target(ref))
+    
 lookup_ref(r::GitRepo, name::String) = lookup(GitReference, r, name)
+lookup_ref(r::GitRepo, ref::GitReference) = lookup(GitReference, r, ref)
 
 function create_ref(r::GitRepo, refname::String, id::Oid; 
                     force::Bool=false, 
@@ -755,6 +758,21 @@ function commit(r::GitRepo,
                  id_ptr, r, refname, author, committer, C_NULL, msg, tree, 
                  nparents, nparents > 0 ? parentptrs : C_NULL)
     return id_ptr[1]
+end
+
+function reset!(r::GitRepo, obj::Union(GitCommit,GitTag), typ::Symbol;
+                sig::MaybeSignature=nothing, 
+                logmsg::MaybeString=nothing)
+    git_reset = typ === :soft ? 1 :
+                typ === :mixed ? 2 :
+                typ === :hard ? 3 :
+                throw(ArgumentError("unknown reset type :$type"))
+    @check ccall((:git_reset, libgit2), Cint, 
+                 (Ptr{Void}, Ptr{Void}, Cint, Ptr{Void}, Ptr{Uint8}),
+                 r, obj, git_reset, 
+                 sig != nothing ? sig : C_NULL, 
+                 logmsg != nothing ? logmsg : C_NULL)
+    return
 end
 
 function set_workdir!(r::GitRepo, dir::String, update::Bool)

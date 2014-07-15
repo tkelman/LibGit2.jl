@@ -206,10 +206,9 @@ end
 with_new_repo(f::Function, s::String; bare::Bool=false) = 
     (println(s); with_new_repo(f; bare=bare))
 
-
-function with_standard_test_repo(f::Function)
+with_test_repo(f::Function, reponame::String) = begin
     tmp_dir = mktempdir()
-    fixture_dir = joinpath(FIXTURE_DIR, "testrepo_wd") 
+    fixture_dir = joinpath(FIXTURE_DIR, reponame) 
     copy_recur(fixture_dir, tmp_dir)
     rename_git_files!(tmp_dir)
     repo = GitRepo(tmp_dir)
@@ -219,5 +218,12 @@ function with_standard_test_repo(f::Function)
         cleanup!(repo, tmp_dir)
     end
 end
+
+with_standard_test_repo(f::Function) = with_test_repo(f, "testrepo_wd")
 with_standard_test_repo(f::Function, s::String) =  
     (println(s); with_standard_test_repo(f))
+
+with_merged_test_repo(f::Function) = with_test_repo(f, "mergedrepo_wd")
+with_merged_test_repo(f::Function, s::String) = 
+    (println(s); with_merged_test_repo(f))
+
