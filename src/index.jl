@@ -1,6 +1,6 @@
 export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
        remove!, removedir!, read_tree!, add_all!, update_all!,
-       remove_all!, has_conflicts, add!
+       remove_all!, has_conflicts, add!, is_fully_merged
 
 type GitIndex
     ptr::Ptr{Void}
@@ -39,6 +39,7 @@ end
 function has_conflicts(idx::GitIndex)
     return bool(ccall((:git_index_has_conflicts, libgit2), Cint, (Ptr{Void},), idx))
 end
+is_fully_merged(idx::GitIndex) = !has_conflicts(idx)
 
 function clear!(idx::GitIndex)
     ccall((:git_index_clear, libgit2), Void, (Ptr{Void},), idx)

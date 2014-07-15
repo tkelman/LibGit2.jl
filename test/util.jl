@@ -2,6 +2,7 @@ using LibGit2
 
 const PKGDIR = Pkg.dir("LibGit2")
 const TESTDIR = joinpath(PKGDIR, "test")
+const FIXTURE_DIR = joinpath(TESTDIR, "fixtures")
 const LIBGIT2_FIXTURE_DIR = joinpath(PKGDIR, "vendor", "libgit2", "tests", "resources")
 
 context(f::Function) = f()
@@ -31,7 +32,8 @@ function remote_transport_test(f::Function)
         cleanup!(test_repo, tmp_dir)
     end
 end 
-remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
+remote_transport_test(f::Function, s::String) =
+    (println(s); remote_transport_test(f))
 
 copy_recur(path::String, dest::String) = begin
     apath, adest = abspath(path), abspath(dest)
@@ -70,7 +72,8 @@ function with_test_index(f::Function)
     finally
     end
 end 
-with_test_index(f::Function, s::String) = (println(s); with_test_index(f))
+with_test_index(f::Function, s::String) =
+    (println(s); with_test_index(f))
 
 function create_test_repo(test_path)
     if isdir(abspath(test_path))
@@ -102,12 +105,7 @@ function clone_sandbox(repo_path::String)
         return GitRepo(tmp_dir), tmp_dir
 end
 
-function setup_sandbox(repo_name::String)
-    tmp_dir = mktempdir()
-    fixture_dir = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
-    
-    copy_recur(fixture_dir, tmp_dir)
-   
+function rename_git_files!(tmp_dir::String)
     # rename git specific files and folders in cloned test dir
     for d in [".gitted", "dot_git"]
         d = joinpath(tmp_dir, d)
@@ -117,6 +115,13 @@ function setup_sandbox(repo_name::String)
         p = joinpath(tmp_dir, f)
         isfile(p) && mv(p, joinpath(tmp_dir, "."*f))
     end
+end
+
+function setup_sandbox(repo_name::String)
+    tmp_dir = mktempdir()
+    fixture_dir = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
+    copy_recur(fixture_dir, tmp_dir)
+    rename_git_files!(tmp_dir)
     return GitRepo(tmp_dir), tmp_dir
 end
 
@@ -142,8 +147,8 @@ function sandboxed_clone_test(f::Function, reponame::String)
         cleanup!(remote, tmp_dir2)
     end
 end 
-sandboxed_clone_test(f::Function, reponame::String, s::String) = (println(s); 
-                                                                  sandboxed_clone_test(f, reponame))
+sandboxed_clone_test(f::Function, reponame::String, s::String) = 
+    (println(s); sandboxed_clone_test(f, reponame))
 
 function sandboxed_checkout_test(f::Function)
     test_repo,  test_repo_dir  = setup_sandbox("testrepo")
@@ -158,8 +163,9 @@ function sandboxed_checkout_test(f::Function)
         cleanup!(test_bare, test_bare_dir)
     end
 end
-sandboxed_checkout_test(f::Function, s::String) = (println(s); 
-                                                   sandboxed_checkout_test(f))
+sandboxed_checkout_test(f::Function, s::String) =
+    (println(s); sandboxed_checkout_test(f))
+
 function with_repo_access(f::Function)
     path = joinpath(TESTDIR, "fixtures", "testrepo.git")
     repo = GitRepo(path)
@@ -171,7 +177,8 @@ function with_repo_access(f::Function)
         Base.gc()
     end
 end
-with_repo_access(f::Function, s::String) = (println(s); with_repo_access(f))
+with_repo_access(f::Function, s::String) = 
+    (println(s); with_repo_access(f))
 
 function with_tmp_repo_access(f::Function)
     tmp_dir  = mktempdir()
@@ -184,14 +191,33 @@ function with_tmp_repo_access(f::Function)
         cleanup!(repo, tmp_dir)
     end
 end
-with_tmp_repo_access(f::Function, s::String) = (println(s); with_tmp_repo_access(f))
+with_tmp_repo_access(f::Function, s::String) = 
+    (println(s); with_tmp_repo_access(f))
 
-function with_new_repo(f::Function; isbare=false)
+function with_new_repo(f::Function; bare=false)
     tmp_dir = mktempdir()
-    repo = LibGit2.init_repo(temp_dir; bare=isbare)
+    repo = LibGit2.init_repo(tmp_dir; bare=bare)
     try
         f(repo, tmp_dir)
     finally
         cleanup!(repo, tmp_dir)
     end
 end
+with_new_repo(f::Function, s::String; bare::Bool=false) = 
+    (println(s); with_new_repo(f; bare=bare))
+
+
+function with_standard_test_repo(f::Function)
+    tmp_dir = mktempdir()
+    fixture_dir = joinpath(FIXTURE_DIR, "testrepo_wd") 
+    copy_recur(fixture_dir, tmp_dir)
+    rename_git_files!(tmp_dir)
+    repo = GitRepo(tmp_dir)
+    try
+        f(repo, tmp_dir)
+    finally
+        cleanup!(repo, tmp_dir)
+    end
+end
+with_standard_test_repo(f::Function, s::String) =  
+    (println(s); with_standard_test_repo(f))
