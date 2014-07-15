@@ -13,6 +13,13 @@ cleanup_dir(p) = begin
     end
 end
 
+function cleanup!(repo::GitRepo, dir::String)
+    close(repo)
+    LibGit2.free!(repo)
+    Base.gc()
+    rm(dir, recursive=true)
+end
+
 function remote_transport_test(f::Function) 
     tmp_dir = mktempdir()
     test_repo = repo_init(tmp_dir, bare=false)
@@ -21,9 +28,7 @@ function remote_transport_test(f::Function)
         test_remote = remote_add!(test_repo, "origin", test_repo_dir)
         f(test_repo, test_remote)
     finally
-        close(test_repo)
-        LibGit2.free!(test_repo)
-        rm(tmp_dir, recursive=true)
+        cleanup!(test_repo, tmp_dir)
     end
 end 
 remote_transport_test(f::Function, s::String) = (println(s); remote_transport_test(f))
@@ -52,7 +57,7 @@ function repo_clone_test(f::Function)
     try
         f(source, tmp_dir)
     finally
-        rm(tmp_dir, recursive=true)
+        cleanup_dir(tmp_dir)
     end
 end 
 repo_clone_test(f::Function, s::String) = (println(s); repo_clone_test(f))
@@ -102,21 +107,15 @@ function setup_sandbox(repo_name::String)
     fixture_dir = joinpath(LIBGIT2_FIXTURE_DIR, repo_name)
     
     copy_recur(fixture_dir, tmp_dir)
-    
-    dirname = joinpath(tmp_dir, ".gitted")
-    if isdir(dirname)
-        newdirname = joinpath(tmp_dir, ".git")
-        mv(dirname, newdirname)
-    end 
-    filename = joinpath(tmp_dir, "gitattributes")
-    if isfile(filename)
-        newfilename = joinpath(tmp_dir, ".gitattributes")
-        mv(filename, newfilename)
+   
+    # rename git specific files and folders in cloned test dir
+    for d in [".gitted", "dot_git"]
+        d = joinpath(tmp_dir, d)
+        isdir(d) && mv(d, joinpath(tmp_dir, ".git"))
     end
-    filename = joinpath(tmp_dir, "gitignore")
-    if isfile(filename)
-        newfilename = joinpath(tmp_dir, ".gitignore")
-        mv(filename, newfilename)
+    for f in ["gitattributes", "gitignore", "gitmodules"]
+        p = joinpath(tmp_dir, f)
+        isfile(p) && mv(p, joinpath(tmp_dir, "."*f))
     end
     return GitRepo(tmp_dir), tmp_dir
 end
@@ -126,10 +125,7 @@ function sandboxed_test(f::Function, reponame::String)
     try
         f(repo, tmp_dir)
     finally
-        close(repo)
-        LibGit2.free!(repo)
-        Base.gc()
-        rm(tmp_dir, recursive=true)
+        cleanup!(repo, tmp_dir)
     end
 end
 sandboxed_test(f::Function, reponame::String, s::String) = (println(s); 
@@ -142,13 +138,8 @@ function sandboxed_clone_test(f::Function, reponame::String)
     try
         f(repo, remote, tmp_dir1)
     finally
-        close(repo)
-        close(remote)
-        LibGit2.free!(repo)
-        LibGit2.free!(remote)
-        Base.gc()
-        rm(tmp_dir1, recursive=true)
-        rm(tmp_dir2, recursive=true)
+        cleanup!(repo, tmp_dir1)
+        cleanup!(remote, tmp_dir2)
     end
 end 
 sandboxed_clone_test(f::Function, reponame::String, s::String) = (println(s); 
@@ -162,16 +153,9 @@ function sandboxed_checkout_test(f::Function)
     try
         f(test_repo, test_clone, test_bare)
     finally
-        close(test_repo)
-        close(test_clone)
-        close(test_bare)
-        LibGit2.free!(test_repo)
-        LibGit2.free!(test_clone)
-        LibGit2.free!(test_bare)
-        Base.gc()
-        rm(test_repo_dir, recursive=true)
-        rm(test_clone_dir, recursive=true)
-        rm(test_bare_dir, recursive=true)
+        cleanup!(test_repo, test_repo_dir)
+        cleanup!(test_clone, test_clone_dir)
+        cleanup!(test_bare, test_bare_dir)
     end
 end
 sandboxed_checkout_test(f::Function, s::String) = (println(s); 
@@ -197,10 +181,17 @@ function with_tmp_repo_access(f::Function)
     try
         f(repo, tmp_dir)
     finally
-        close(repo)
-        LibGit2.free!(repo)
-        Base.gc()
-        rm(tmp_dir, recursive=true)
+        cleanup!(repo, tmp_dir)
     end
 end
 with_tmp_repo_access(f::Function, s::String) = (println(s); with_tmp_repo_access(f))
+
+function with_new_repo(f::Function; isbare=false)
+    tmp_dir = mktempdir()
+    repo = LibGit2.init_repo(temp_dir; bare=isbare)
+    try
+        f(repo, tmp_dir)
+    finally
+        cleanup!(repo, tmp_dir)
+    end
+end
