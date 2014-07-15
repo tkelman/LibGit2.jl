@@ -1,4 +1,4 @@
-export GitRevWalker, hide!, reset!, walk
+export GitRevWalker, hide!, reset!, walk, sortby!
 
 type GitRevWalker
     repo::GitRepo
@@ -59,8 +59,7 @@ Base.push!(w::GitRevWalker, cid::Oid) = begin
     return w 
 end
 
-#TODO: this does not mimic Base's sortby! functionality so it should be renamed
-Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false) = begin
+function sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false)
     s = sort_mode === :none ? GitConst.SORT_NONE :
         sort_mode === :topo ? GitConst.SORT_TOPOLOGICAL :
         sort_mode === :date ? GitConst.SORT_TIME :
@@ -70,7 +69,7 @@ Base.sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false) = begin
     return 
 end
 
-Base.sortby!(w::GitRevWalker, sort_mode::Cint) = begin
+function sortby!(w::GitRevWalker, sort_mode::Cint)
     ccall((:git_revwalk_sorting, libgit2), Void,
            (Ptr{Void}, Cint), w, sort_mode)
     return w 

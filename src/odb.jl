@@ -103,8 +103,10 @@ function open_wstream{T<:GitObject}(::Type{T}, odb::Odb, len::Int)
     return OdbWrite(stream_ptr[1])
 end
 
+#=
 Base.isreadable(io::OdbWrite)  = false 
 Base.iswriteable(io::OdbWrite) = true
+=#
 
 #TODO: this needs to be reworked
 Base.write(io::OdbWrite, buffer::ByteString) = begin 
@@ -135,9 +137,10 @@ type OdbRead <: OdbIO
 end
 
 Base.convert(::Type{Ptr{Void}}, o::OdbRead) = o.ptr 
+#=
 Base.isreadable(io::OdbRead)  = true
 Base.iswriteable(io::OdbRead) = false
-
+=#
 Base.readbytes!(io::OdbRead, buffer::Vector{Uint8}, nb=length(b)) = begin
     @assert io.ptr != C_NULL
     len = convert(Csize_t, length(b))

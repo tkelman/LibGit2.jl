@@ -1,6 +1,6 @@
 export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
        remove!, removedir!, read_tree!, add_all!, update_all!,
-       remove_all!, has_conflicts
+       remove_all!, has_conflicts, add!
 
 type GitIndex
     ptr::Ptr{Void}
@@ -170,14 +170,14 @@ function GitIndexEntry(ptr::Ptr{IndexEntryStruct})
                          dev, ino, mode, uid, gid, valid, stage)
 end
 
-Base.add!(idx::GitIndex, entry::GitIndexEntry) = begin
+function add!(idx::GitIndex, entry::GitIndexEntry)
     estruct = IndexEntryStruct(entry)
     @check ccall((:git_index_add, libgit2), Cint,
                  (Ptr{Void}, Ptr{IndexEntryStruct}), idx, &estruct)
     return idx
 end
 
-Base.add!(idx::GitIndex, path::String) = begin
+function add!(idx::GitIndex, path::String)
     @check ccall((:git_index_add_bypath, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}), idx, path)
     return idx
