@@ -152,7 +152,7 @@ end
 
 context("test adding a path") do
     tmp_path = mktempdir()
-    test_repo  = repo_init(tmp_path, bare=false)
+    test_repo = init_repo(tmp_path, bare=false)
     try
         test_index1 = GitIndex(test_repo)
         fh = open(joinpath(tmp_path, "test.txt"), "w")
@@ -173,7 +173,7 @@ end
 
 context("test reloading index") do 
     tmp_path = mktempdir()
-    test_repo = repo_init(tmp_path, bare=false)
+    test_repo = init_repo(tmp_path, bare=false)
     try
         index = GitIndex(test_repo)
         fh = open(joinpath(tmp_path, "test.txt"), "w")
@@ -233,7 +233,7 @@ end
 
 # test add all lifecycle
 sandboxed_test("testrepo.git") do _, path
-    test_repo = repo_init(joinpath(path, "add-all"))
+    test_repo = init_repo(joinpath(path, "add-all"))
     cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
             write(fh, "a file")
@@ -276,7 +276,7 @@ end
 
 # test update all
 sandboxed_test("testrepo.git") do _, path
-    test_repo = repo_init(joinpath(path, "add-all"))
+    test_repo = init_repo(joinpath(path, "add-all"))
     cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
             write(fh, "a file")
@@ -322,7 +322,7 @@ end
 
 # test remove all
 sandboxed_test("testrepo.git") do _, path
-    test_repo = repo_init(joinpath(path, "add-all"))
+    test_repo = init_repo(joinpath(path, "add-all"))
     cd(workdir(test_repo)) do
         open("file.foo", "w") do fh
             write(fh, "a file")

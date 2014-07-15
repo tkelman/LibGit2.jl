@@ -24,7 +24,7 @@ end
 # ------------------------------------
 context("test creating bare repository") do 
     tmp_repo(test_repo_path) do
-        repo_init(test_repo_path; bare=true)
+        init_repo(test_repo_path; bare=true)
         repo = GitRepo(test_repo_path)
         try 
             @test isa(repo, GitRepo)
@@ -39,7 +39,7 @@ end
 
 context("test creating repository") do 
     tmp_repo(test_repo_path) do
-        repo_init(test_repo_path)
+        init_repo(test_repo_path)
         repo = GitRepo(test_repo_path)
         try
             @test isa(repo, GitRepo)
@@ -353,7 +353,7 @@ discover_test("test discover nested false") do tmpdir
 end
 
 discover_test("test discover true") do tmpdir
-    repo = repo_init(tmpdir, bare=true)
+    repo = init_repo(tmpdir, bare=true)
     root = repo_discover(tmpdir)
     try 
         @test isbare(root) == true
@@ -365,7 +365,7 @@ discover_test("test discover true") do tmpdir
 end
 
 discover_test("test discover nested true") do tmpdir
-    repo = repo_init(tmpdir, bare=true)
+    repo = init_repo(tmpdir, bare=true)
     root = repo_discover(joinpath(tmpdir, "foo"))
     try 
         @test isbare(root) == true
@@ -390,7 +390,7 @@ end
 repo_init_test(f::Function, s::String) = (println(s); repo_init_test(f))
 
 repo_init_test("test init bare false") do tmpdir 
-    repo = repo_init(tmpdir, bare=false)
+    repo = init_repo(tmpdir, bare=false)
     try
         @test isbare(repo) == false
     finally
@@ -399,7 +399,7 @@ repo_init_test("test init bare false") do tmpdir
 end
 
 repo_init_test("test init bare true") do tmpdir
-    repo = repo_init(tmpdir, bare=true)
+    repo = init_repo(tmpdir, bare=true)
     try 
         @test isbare(repo) == true
     finally
@@ -408,7 +408,7 @@ repo_init_test("test init bare true") do tmpdir
 end
 
 repo_init_test("test init non bare default") do tmpdir
-    repo = repo_init(tmpdir)
+    repo = init_repo(tmpdir)
     try
         @test isbare(repo) == false
     finally

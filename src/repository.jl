@@ -1,4 +1,4 @@
-export isbare, isempty, workdir, path, repo_init, head, exists,
+export isbare, isempty, workdir, path, init_repo, head, exists,
        set_head!, tags, tag!, commits, references, lookup,
        lookup_tree, lookup_commit, commit, ref_names,
        revparse_single, create_ref, create_sym_ref, lookup_ref,
@@ -157,7 +157,7 @@ function is_head_detached(r::GitRepo)
     return bool(ccall((:git_repository_head_detached, libgit2), Cint, (Ptr{Void},), r))
 end
 
-function repo_init(path::String; bare::Bool=false)
+function init_repo(path::String; bare::Bool=false)
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_init, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}, Cint), repo_ptr, path, bare)

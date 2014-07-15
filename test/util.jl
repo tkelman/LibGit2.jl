@@ -22,7 +22,7 @@ end
 
 function remote_transport_test(f::Function) 
     tmp_dir = mktempdir()
-    test_repo = repo_init(tmp_dir, bare=false)
+    test_repo = init_repo(tmp_dir, bare=false)
     test_repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
     try
         test_remote = remote_add!(test_repo, "origin", test_repo_dir)
@@ -76,7 +76,7 @@ function create_test_repo(test_path)
     if isdir(abspath(test_path))
         rm(test_path, recursive=true)
     end
-    repo = repo_init(test_path)
+    repo = init_repo(test_path)
     open(joinpath(test_path, "README"), "w") do fh
         write(fh, "foo\n")
     end
