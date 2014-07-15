@@ -94,7 +94,7 @@ function seed_test_repo(repo)
 
     msg = "This is a commit\n"
     tree = lookup(GitTree, repo, tree_id)
-    commit_id = commit(repo, "HEAD", sig, sig, msg, tree)
+    commit_id = commit(repo, "HEAD", msg, sig, sig, tree)
     return commit_id, tree_id
 end
 
@@ -206,10 +206,14 @@ end
 with_new_repo(f::Function, s::String; bare::Bool=false) = 
     (println(s); with_new_repo(f; bare=bare))
 
-with_test_repo(f::Function, reponame::String) = begin
+with_test_repo(f::Function, reponame::String, clone::Bool=false) = begin
     tmp_dir = mktempdir()
-    fixture_dir = joinpath(FIXTURE_DIR, reponame) 
-    copy_recur(fixture_dir, tmp_dir)
+    fixture_dir = joinpath(FIXTURE_DIR, reponame)
+    if clone
+        run(`git clone --quiet -- $fixture_dir $tmp_dir`)
+    else
+        copy_recur(fixture_dir, tmp_dir)
+    end 
     rename_git_files!(tmp_dir)
     repo = GitRepo(tmp_dir)
     try
@@ -219,11 +223,16 @@ with_test_repo(f::Function, reponame::String) = begin
     end
 end
 
-with_standard_test_repo(f::Function) = with_test_repo(f, "testrepo_wd")
+with_standard_test_repo(f::Function, clone::Bool) = with_test_repo(f, "testrepo_wd", clone)
 with_standard_test_repo(f::Function, s::String) =  
-    (println(s); with_standard_test_repo(f))
+    (println(s); with_standard_test_repo(f, false))
 
-with_merged_test_repo(f::Function) = with_test_repo(f, "mergedrepo_wd")
+clone_standard_test_repo(f::Function, s::String) = 
+    (println(s); with_standard_test_repo(f, true)) 
+
+with_merged_test_repo(f::Function, clone::Bool) = with_test_repo(f, "mergedrepo_wd", clone)
 with_merged_test_repo(f::Function, s::String) = 
-    (println(s); with_merged_test_repo(f))
+    (println(s); with_merged_test_repo(f, false))
 
+clone_merged_test_repo(f::Function, s::String) = 
+    (println(s); with_merged_test_repo(f, true))
