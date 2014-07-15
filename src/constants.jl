@@ -192,4 +192,15 @@ module GitConst
     const CREDTYPE_SSH_KEY = cuint(1) << cint(1)
     const CREDTYPE_SSH_CUSTOM = cuint(1) << cint(2)
     const CREDTYPE_DEFAULT = cuint(1) << cint(3)
+
+	const GIT_REPOSITORY_STATE_NONE = cint(0)
+	const GIT_REPOSITORY_STATE_MERGE = cint(1)
+	const GIT_REPOSITORY_STATE_REVERT = cint(2)
+	const GIT_REPOSITORY_STATE_CHERRY_PICK = cint(3)
+	const GIT_REPOSITORY_STATE_BISECT = cint(4)
+	const GIT_REPOSITORY_STATE_REBASE = cint(5)
+	const GIT_REPOSITORY_STATE_REBASE_INTERACTIVE = cint(6)
+	const GIT_REPOSITORY_STATE_REBASE_MERGE = cint(7)
+	const GIT_REPOSITORY_STATE_APPLY_MAILBOX = cint(8)
+	const GIT_REPOSITORY_STATE_APPLY_MAILBOX_OR_REBASE = cint(9)
 end

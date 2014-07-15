@@ -10,7 +10,7 @@ export isbare, isempty, workdir, path, init_repo, head, exists,
        branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
-       repo_clone, foreach, reset!
+       repo_clone, foreach, reset!, currentstate
 
 typealias MaybeOid Union(Nothing, Oid)
 typealias MaybeString Union(Nothing, String)
@@ -109,6 +109,21 @@ exists(r::GitRepo, ref::String) = begin
     return true
 end
 exists(r::GitRepo, id::Oid) = id in r 
+
+function currentstate(r::GitRepo)
+    res = ccall((:git_repository_state, libgit2), Cint, (Ptr{Void},), r)
+    res == 0 && return :none
+    res == 1 && return :merge
+    res == 2 && return :revert
+    res == 3 && return :cherry_pick
+    res == 4 && return :bisect
+    res == 5 && return :rebase
+    res == 6 && return :rebase_interactive
+    res == 7 && return :rebase_merge
+    res == 8 && return :apply_mailbox
+    res == 9 && return :apply_mailbox_or_rebase
+    error("unknown state constant $res")
+end 
 
 function isbare(r::GitRepo)
     return bool(ccall((:git_repository_is_bare, libgit2), Cint, (Ptr{Void},), r))

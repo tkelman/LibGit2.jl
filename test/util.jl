@@ -206,6 +206,18 @@ end
 with_new_repo(f::Function, s::String; bare::Bool=false) = 
     (println(s); with_new_repo(f; bare=bare))
 
+touch_test(parent::String, file::String, content=nothing) = begin
+    fp = joinpath(parent, file)
+    dr = dirname(fp)
+    isdir(dr) ||  mkdir(dr)
+    open(fp, "w") do fh
+        if content != nothing
+            write(fh, content) 
+        end
+    end
+    return fp
+end
+
 with_test_repo(f::Function, reponame::String, clone::Bool=false) = begin
     tmp_dir = mktempdir()
     fixture_dir = joinpath(FIXTURE_DIR, reponame)
@@ -227,12 +239,6 @@ with_standard_test_repo(f::Function, clone::Bool) = with_test_repo(f, "testrepo_
 with_standard_test_repo(f::Function, s::String) =  
     (println(s); with_standard_test_repo(f, false))
 
-clone_standard_test_repo(f::Function, s::String) = 
-    (println(s); with_standard_test_repo(f, true)) 
-
 with_merged_test_repo(f::Function, clone::Bool) = with_test_repo(f, "mergedrepo_wd", clone)
 with_merged_test_repo(f::Function, s::String) = 
     (println(s); with_merged_test_repo(f, false))
-
-clone_merged_test_repo(f::Function, s::String) = 
-    (println(s); with_merged_test_repo(f, true))

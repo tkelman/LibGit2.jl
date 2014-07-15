@@ -30,7 +30,13 @@ with_merged_test_repo(
         "try commit unmerged entries", author, author)
 end
 
-# test can reieve the branch begin merged
+with_standard_test_repo(
+"test can retrieve the branch begin merged") do test_repo, _
+    first_branch = "9fd738e8f7967c078dceed8190330fc8648ee56a";
+    second_branch = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    touch_test(path(test_repo), "MERGE_HEAD", "$first_branch\n$second_branch\n") 
+    @test currentstate(test_repo) === :merge
+end
 
 # test can merge repo non-ff
 
