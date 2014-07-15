@@ -742,9 +742,9 @@ end
 
 function commit(r::GitRepo,
                 refname::String,
+                msg::String,
                 author::Signature,
                 committer::Signature,
-                msg::String,
                 tree::GitTree,
                 parents::GitCommit...)
     id_ptr = [Oid()]
@@ -758,6 +758,19 @@ function commit(r::GitRepo,
                  id_ptr, r, refname, author, committer, C_NULL, msg, tree, 
                  nparents, nparents > 0 ? parentptrs : C_NULL)
     return id_ptr[1]
+end
+
+function commit(r::GitRepo, 
+                msg::String, 
+                author::Signature, 
+                committer::Signature)
+    idx = GitIndex(r)
+    id_ptr = [Oid()]
+    @check ccall((:git_index_write_tree, libgit2), Cint, 
+                 (Ptr{Oid}, Ptr{Void}), id_ptr, idx)
+    tree = lookup(GitTree, r, treeid)
+    parent = target(head(repo))
+    return commit(r, "HEAD", author, committer, msg, tree, parent)
 end
 
 function reset!(r::GitRepo, obj::Union(GitCommit,GitTag), typ::Symbol;

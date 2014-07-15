@@ -12,7 +12,7 @@ with_standard_test_repo(
 end
 
 with_merged_test_repo(
-"test soft reset a repo wth unmerged entries throws exception") do test_repo, path
+"test soft reset a repo wth unmerged entries throws") do test_repo, path
     idx = GitIndex(test_repo)
     @test is_fully_merged(idx) == false
     # head commit
@@ -21,7 +21,14 @@ with_merged_test_repo(
     @test_throws LibGitError{:Object,:Unmerged} reset!(test_repo, fcp, :soft)
 end
 
-# test commit against a repo with unmerged entries throws
+with_merged_test_repo( 
+"test commit against a repo with unmerged entries throws") do test_repo, path
+    idx = GitIndex(test_repo)
+    @test is_fully_merged(idx) == false
+    author = Signature("test", "test@test.com")
+    @test_throws LibGitError{:Index,:Unmerged} commit(test_repo, 
+        "try commit unmerged entries", author, author)
+end
 
 # test can reieve the branch begin merged
 
