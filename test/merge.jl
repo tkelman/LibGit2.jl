@@ -53,7 +53,7 @@ for detach_head in (true, false)
         sbname = "first+second branch file.txt";
 
         b1 = create_branch(test_repo, "FirstBranch")
-        checkout!(test_repo, b1)
+        checkout!(b1)
 
         original_tree_count = GitTree(tip(b1)) |> length
         
@@ -67,7 +67,7 @@ for detach_head in (true, false)
             # detaches head
             checkout!(test_repo, tip(b2))
         else
-            checkout!(test_repo, b2)
+            checkout!(b2)
         end
         
         # Commit with one new file to second branch
@@ -97,11 +97,11 @@ with_standard_test_repo(
     sbname = "first+second branch file.txt"
 
     b1 = create_branch(test_repo, "first_branch")
-    checkout!(test_repo, b1)
+    checkout!(b1)
     add_file_and_commit(test_repo, b1name)
 
     b2 = create_branch(test_repo, "second_branch")
-    checkout!(test_repo, b2)
+    checkout!(b2)
 
     merge!(test_repo, b1)
 end
@@ -120,7 +120,7 @@ for detach_head in (true, false)
             remove_untracked!(test_repo)
 
             b1 = create_branch(test_repo, "FirstBranch")
-            checkout!(test_repo, b1)
+            checkout!(b1)
             
             # commit with ONE new file to both b1 & b2
             add_file_and_commit(test_repo, sbname)
@@ -134,7 +134,7 @@ for detach_head in (true, false)
             if detach_head
                 checkout!(test_repo, tip(b2))
             else
-                checkout!(test_repo, b2)
+                checkout!(b2)
             end
             @test is_head_detached(test_repo) == detach_head
 
@@ -149,7 +149,15 @@ for detach_head in (true, false)
     end
 end
 
-# test conflicting merge repos
+with_standard_test_repo(
+"test conflicting merge repos") do test_repo, _
+    b1name = "first branch file.txt"
+    b2name = "second branch file.txt"
+    sbname = "first+second branch file.txt"
+
+    b1 = create_branch(test_repo, "FirstBranch")
+    checkout!(b1)
+end
 
 # test conflicting merge repos binary
 

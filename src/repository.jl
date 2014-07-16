@@ -648,7 +648,7 @@ function revparse(r::GitRepo, rev::String)
 end
 revparse(r::GitRepo, rev::Oid) = revparse(r, string(rev))
 
-function merge_base{T}(r::GitRepo, args::T...)
+function merge_base(r::GitRepo, args...)
     if length(args) < 2
         throw(ArgumentError("merge_base needs 2+ commits"))
     end
@@ -1429,6 +1429,8 @@ function checkout!(r::GitRepo, target::GitCommit, opts::MaybeDict=nothing)
     create_ref(r, "HEAD", Oid(target), force=true)
     checkout_tree!(r, target, opts)
 end
+
+checkout!(target::GitBranch, opts=Dict()) = checkout!(owner(target), target, opts)
 
 function checkout!(r::GitRepo, target, opts=Dict())
     delete!(opts, :paths)
