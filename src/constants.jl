@@ -182,6 +182,16 @@ module GitConst
 
     const MERGE_NO_FASTFORWARD = cint(1)
     const MERGE_FASTFORWARD_ONLY = cint(2)
+	
+    const GIT_MERGE_ANALYSIS_NONE = 0,
+	const GIT_MERGE_ANALYSIS_NORMAL = (1 << 0),
+	const GIT_MERGE_ANALYSIS_UP_TO_DATE = (1 << 1),
+	const GIT_MERGE_ANALYSIS_FASTFORWARD = (1 << 2),
+	const GIT_MERGE_ANALYSIS_UNBORN = (1 << 3),
+	
+    const GIT_MERGE_PREFERENCE_NONE = 0,
+	const GIT_MERGE_PREFERENCE_NO_FASTFORWARD = (1 << 0),
+	const GIT_MERGE_PREFERENCE_FASTFORWARD_ONLY = (1 << 1),
 
     const DIRECTION_FETCH = cint(0)
     const DIRECTION_PUSH  = cint(1)

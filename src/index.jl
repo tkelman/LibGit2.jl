@@ -171,14 +171,14 @@ function GitIndexEntry(ptr::Ptr{IndexEntryStruct})
                          dev, ino, mode, uid, gid, valid, stage)
 end
 
-function add!(idx::GitIndex, entry::GitIndexEntry)
+Base.push!(idx::GitIndex, entry::GitIndexEntry) = begin
     estruct = IndexEntryStruct(entry)
     @check ccall((:git_index_add, libgit2), Cint,
                  (Ptr{Void}, Ptr{IndexEntryStruct}), idx, &estruct)
     return idx
 end
 
-function add!(idx::GitIndex, path::String)
+Base.push!(idx::GitIndex, path::String) = begin
     @check ccall((:git_index_add_bypath, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}), idx, path)
     return idx

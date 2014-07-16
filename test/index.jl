@@ -8,7 +8,7 @@ context("test lookup tree") do
         @test isdir(workdir(repo)) 
         idx = GitIndex(repo)
         @test isa(idx, GitIndex)
-        add!(idx, "README")
+        push!(idx, "README")
         tree_id = write_tree!(idx)
         @test isa(tree_id, Oid)
         @test isequal(hex(tree_id), "b7119b11e8ef7a1a5a34d3ac87f5b075228ac81e")
@@ -113,7 +113,7 @@ with_test_index("test update entries") do test_index, path
     entry.uid = 502
     entry.gid = 502
     entry.stage = 3
-    add!(test_index, entry)
+    push!(test_index, entry)
     newentry = test_index[entry.path, 3]
     @test isa(newentry, GitIndexEntry)
     #TODO: rounding in times causes this test to fail
@@ -121,7 +121,7 @@ with_test_index("test update entries") do test_index, path
 end
 
 with_test_index("test add new entries") do test_index, path
-    add!(test_index, new_idx_entry())
+    push!(test_index, new_idx_entry())
     @test length(test_index) == 3
     c = sort(collect(test_index), by=x->Oid(x))
     @test join(map(x -> x.path, c), ":") == "README:new_path:new.txt"
@@ -135,9 +135,9 @@ with_test_index("test can write index") do test_index, path
         test_index1 = GitIndex(tmp_path)
 
         entry = new_idx_entry()
-        add!(test_index1, entry)
+        push!(test_index1, entry)
         entry.path = "else.txt"
-        add!(test_index1, entry)
+        push!(test_index1, entry)
         write!(test_index1)
 
         test_index2 = GitIndex(tmp_path)
@@ -158,7 +158,7 @@ context("test adding a path") do
         fh = open(joinpath(tmp_path, "test.txt"), "w")
         write(fh, "test content")
         close(fh)
-        add!(test_index1, "test.txt")
+        push!(test_index1, "test.txt")
         write!(test_index1)
 
         test_index2 = GitIndex(joinpath(tmp_path, ".git", "index"))
@@ -179,14 +179,14 @@ context("test reloading index") do
         fh = open(joinpath(tmp_path, "test.txt"), "w")
         write(fh, "test content")
         close(fh)
-        add!(index, "test.txt")
+        push!(index, "test.txt")
         write!(index)
 
         rindex = GitIndex(joinpath(tmp_path, ".git", "index"))
         entry = rindex["test.txt"]
         @test entry.stage == 0
 
-        add!(rindex, new_idx_entry())
+        push!(rindex, new_idx_entry())
         write!(rindex)
 
         @test length(index) == 1

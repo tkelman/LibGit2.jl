@@ -4,13 +4,14 @@ export isbare, isempty, workdir, path, init_repo, head, exists,
        revparse_single, create_ref, create_sym_ref, lookup_ref,
        repo_odb, config,  GitTreeBuilder, set_workdir!, 
        insert!, write!, close, lookup, revparse, revparse_oid, remotes,
-       ahead_behind, is_descendant_of, merge_base, merge_commits,  blob_at, isshallow, hash_data,
+       ahead_behind, is_descendant_of, merge_base, merge_commits,  
+       blob_at, isshallow, hash_data,
        default_signature, repo_discover, isempty, namespace, set_namespace!,
        notes, create_note!, remove_note!, note_default_ref,
        branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
-       repo_clone, foreach, reset!, currentstate
+       repo_clone, foreach, reset!, currentstate, remove_untracked!
 
 typealias MaybeOid Union(Nothing, Oid)
 typealias MaybeString Union(Nothing, String)
@@ -706,6 +707,9 @@ lookup_tree(r::GitRepo, id)    = lookup(GitTree, r, id)
 lookup_blob(r::GitRepo, id)    = lookup(GitBlob, r, id)
 lookup_commit(r::GitRepo, id)  = lookup(GitCommit, r, id)
 
+lookup(r::GitRepo, o::GitReference) = lookup(GitReference, r, o)
+
+
 references(r::GitRepo, glob::String="") = collect(GitReference, foreach(GitReference, r, glob)) 
 
 function lookup(::Type{GitReference}, r::GitRepo, name::String)
@@ -783,9 +787,9 @@ function commit(r::GitRepo,
     id_ptr = [Oid()]
     @check ccall((:git_index_write_tree, libgit2), Cint, 
                  (Ptr{Oid}, Ptr{Void}), id_ptr, idx)
-    tree = lookup(GitTree, r, treeid)
-    parent = target(head(repo))
-    return commit(r, "HEAD", author, committer, msg, tree, parent)
+    tree = lookup(GitTree, r, id_ptr[1])
+    parent = lookup(GitCommit, r, target(head(r)))
+    return commit(r, "HEAD", msg, author, committer, tree, parent)
 end
 
 function reset!(r::GitRepo, obj::Union(GitCommit,GitTag), typ::Symbol;
@@ -801,6 +805,12 @@ function reset!(r::GitRepo, obj::Union(GitCommit,GitTag), typ::Symbol;
                  sig != nothing ? sig : C_NULL, 
                  logmsg != nothing ? logmsg : C_NULL)
     return
+end
+
+function reset!(r::GitRepo, ref::String, typ::Symbol;
+       sig::MaybeSignature=nothing,
+       logmsg::MaybeString=nothing)
+    reset!(r, revparse(r, ref), typ, sig=sig, logmsg=logmsg)
 end
 
 function set_workdir!(r::GitRepo, dir::String, update::Bool)
@@ -990,7 +1000,45 @@ function parse_merge_options(opts::Dict)
     if get(opts, :renames, false)
         flags |= MERGE_TREE_FIND_RENAMES
     end
-    return MergeTreeOptsStruct(one(Cint), flags, rename_threshold, target_limit, C_NULL, automerge_flags)
+    return MergeTreeOptsStruct(one(Cint), 
+                               flags, 
+                               rename_threshold, 
+                               target_limit, 
+                               C_NULL, 
+                               automerge_flags)
+end
+
+immutable MergeResult
+    status::Symbol
+    commit::Oid
+end 
+
+#=
+merge_base(r::GitRepo, id1::Oid, id2::Oid) = begin
+    out_id = [Oid()]
+    @check ccall((:git_merge_base, libgit2), Cint, 
+                 (Ptr{Oid}, Ptr{Void}, Ptr{Oid}, Ptr{Oid}),
+                 id_ptr, r, id1, id2)
+    return out_id[1]
+end 
+
+merge_base(r::GitRepo, ids::Oid...) = begin 
+    in_ids = [ids...]
+    out_id = [Oid()]
+    @check ccall((:git_merge_base_many, libgit2), Cint, 
+                 (Ptr{Oid}, Ptr{Void}, Csize_t, Ptr{Oid}),
+                 out_id, r, length(in_ids), in_ids)
+    return out_id[1]
+end 
+=#
+
+merge_analyis(repo::GitRepo, mheads::Vector{Ptr{Void}}) = begin
+    analysis_ptr = Cint[0]
+    preference_ptr = Cint[0]
+    @check ccall((:git_merge_analysis, libgit2), Cint,
+                 (Ptr{Cint}, Ptr{Cint}, Ptr{Void}, Ptr{Ptr{Void}}, Csize_t),
+                 analysis_ptr, preference_ptr, repo, mheads, length(mheads))
+    return analysis_ptr[1], preference_ptr[1]
 end
 
 #TODO: tree's should reference owning repository
@@ -998,19 +1046,50 @@ Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, opts=nothing) = begin
     gopts = parse_merge_options(opts)
     idx_ptr = Ptr{Void}[0]
     @check ccall((:git_merge_trees, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{MergeTreeOptsStruct}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
+                  Ptr{Void}, Ptr{Void}, Ptr{MergeTreeOptsStruct}),
                  idx_ptr, r, C_NULL, t1, t2, &gopts)
     return GitIndex(idx_ptr[1])
 end
 
-Base.merge!(r::GitRepo, t1::GitTree, t2::GitTree, ancestor::GitTree, opts=nothing) = begin
+Base.merge!(r::GitRepo, 
+            t1::GitTree,
+            t2::GitTree,
+            ancestor::GitTree, 
+            opts::MaybeDict=nothing) = begin
     gopts = parse_merge_options(opts)
     idx_ptr = Ptr{Void}[0]
     @check ccall((:git_merge_trees, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{Void}, Ptr{MergeTreeOptsStruct}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}, 
+                 Ptr{Void}, Ptr{Void}, Ptr{MergeTreeOptsStruct}),
                  idx_ptr, r, ancestor.ptr, t1, t2, &gopts)
     return GitIndex(idx_ptr[1])
 end
+
+Base.merge!(r::GitRepo, b::GitBranch) = begin
+    ref = resolve(b)
+    mhead_ptr = Ptr{Void}[0]
+    @check ccall((:git_merge_head_from_ref, libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}), mhead_ptr, r, ref)
+    @show merge_analyis(r, mhead_ptr)
+    cid = Oid(ccall((:git_merge_head_id, libgit2), Ptr{Oid}, 
+                    (Ptr{Void},), mhead_ptr[1]))
+    ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
+    return cid
+end 
+
+Base.merge!(r::GitRepo, c::GitCommit) = begin
+    id = Oid(c)
+    mhead_ptr = Ptr{Void}[0]
+    @check ccall((:git_merge_head_from_id, libgit2), Cint, 
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}),
+                 mhead_ptr, r, &id)
+    @show merge_analyis(r, mhead_ptr)
+    cid = Oid(ccall((:git_merge_head_id, libgit2), Ptr{Oid}, 
+                    (Ptr{Void},), mhead_ptr[1]))
+    ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
+    return cid
+end 
 
 #------- Merge Commits -----
 function merge_commits(r::GitRepo, 
@@ -1250,35 +1329,52 @@ end
 
 typealias Treeish Union(GitCommit, GitTag, GitTree)
 
-function checkout_tree!(r::GitRepo, tree::String, opts=nothing)
-    t = revparse(r, tree)
-    return checkout_tree!(r, t, opts)
+function remove_untracked!(r::GitRepo)
+    opts = {:strategy => [:remove_untracked, :allow_conflicts]}
+    gopts = parse_checkout_options(opts)
+    err = ccall((:git_checkout_index, libgit2), Cint,
+                (Ptr{Void}, Ptr{Void}, Ptr{CheckoutOptionsStruct}),
+                r, C_NULL, &gopts)
+    free!(gopts.paths)
+    if err != GitErrorConst.GIT_OK
+        throw(LibGitError(err))
+    end
+    return r
 end
 
-function checkout_tree!(r::GitRepo, tree::Treeish, opts=nothing)
+checkout_tree!(r::GitRepo, tree::String, opts::MaybeDict=nothing) =
+    return checkout_tree!(r, revparse(r, tree), opts)
+
+function checkout_tree!(r::GitRepo, tree::Treeish, opts::MaybeDict=nothing)
     gopts = parse_checkout_options(opts)
     err = ccall((:git_checkout_tree, libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Ptr{CheckoutOptionsStruct}),
                 r, tree, &gopts)
+    free!(gopts.paths)
     if err != GitErrorConst.GIT_OK
-        free!(gopts.paths)
         throw(LibGitError(err))
     end
     return r 
 end
 
-function checkout_head!(r::GitRepo, opts=nothing)
+function checkout_head!(r::GitRepo, opts::MaybeDict=nothing)
     gopts = parse_checkout_options(opts)
     err = ccall((:git_checkout_head, libgit2), Cint,
                 (Ptr{Void}, Ptr{CheckoutOptionsStruct}),r, &gopts)
+    free!(gopts.paths)
     if err != GitErrorConst.GIT_OK
-        free!(gopts.paths)
         throw(GitError(err))
     end
     return r
 end
 
-function checkout!(r::GitRepo, target, opts={})
+function checkout!(r::GitRepo, target::GitCommit, opts::MaybeDict=nothing)
+    prev_head = is_head_detached(r) ? tip(head(r)) : name(head(r))
+    create_ref(r, "HEAD", Oid(target), force=true)
+    checkout_tree!(r, target, opts)
+end
+
+function checkout!(r::GitRepo, target, opts=Dict())
     delete!(opts, :paths)
     !haskey(opts, :strategy) && (opts[:strategy] = :safe)
     if target == "HEAD"
@@ -1303,7 +1399,6 @@ function checkout!(r::GitRepo, target, opts={})
         checkout_tree!(r, commit, opts)
     end
 end
-
 
 #------- Repo Clone -------
 function cb_remote_transfer(stats_ptr::Ptr{TransferProgressStruct},

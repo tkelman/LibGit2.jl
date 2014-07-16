@@ -89,7 +89,7 @@ end
 function seed_test_repo(repo)
     sig = Signature("test", "test@test.com")
     idx = GitIndex(repo)
-    add!(idx, "README")
+    push!(idx, "README")
     tree_id = write_tree!(idx)
 
     msg = "This is a commit\n"
@@ -242,3 +242,8 @@ with_standard_test_repo(f::Function, s::String) =
 with_merged_test_repo(f::Function, clone::Bool) = with_test_repo(f, "mergedrepo_wd", clone)
 with_merged_test_repo(f::Function, s::String) = 
     (println(s); with_merged_test_repo(f, false))
+
+with_merge_test_repo(f::Function, clone::Bool) = 
+    with_test_repo(f, "merge_testrepo_wd", false)
+with_merge_test_repo(f::Function, s::String) = 
+    (println(s); with_merge_test_repo(f, false))
