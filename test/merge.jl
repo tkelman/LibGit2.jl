@@ -157,27 +157,182 @@ with_standard_test_repo(
 
     b1 = create_branch(test_repo, "FirstBranch")
     checkout!(b1)
+    
+    # Commit with ONE new file to both first and second branch
+    add_file_and_commit(test_repo, sbname)
+    
+    b2 = create_branch(test_repo, "SecondBranch")
+    
+    # Commit with ONE new file to first branch
+    # first branch moves  forward as it is checked out
+    # second branch stays back one
+    add_file_and_commit(test_repo, b1name)
+    add_file_and_commit(test_repo, sbname, "The first branches comment")
+
+    checkout!(b2)
+
+    # Commit with ONE new file to second branch
+    # first branch and second branch now point to separate commits
+    # that both have the same parent commit
+    add_file_and_commit(test_repo, b2name)
+    add_file_and_commit(test_repo, sbname, "The second branches comment")
+
+    res = merge!(test_repo, tip(b1))
+    
+    idx = GitIndex(test_repo)
+    @show res
+    @show LibGit2.merge_analysis(test_repo, res)
+    @show length(idx) 
+    @show has_conflicts(idx)
 end
 
-# test conflicting merge repos binary
+with_standard_test_repo(
+"test conflicting merge repos binary") do test_repo, _
+    b1name = "first branch file.txt"
+    b2name = "second branch file.txt"
+    sbname = "first+second branch file.txt"
+
+    b1 = create_branch(test_repo, "FirstBranch")
+    checkout!(b1)
+
+    # commit with ONE new file to both first and second branch
+    add_file_and_commit(test_repo, sbname)
+
+    b2 = create_branch(test_repo, "SecondBranch")
+
+    # commit with ONE new file to first branch
+    # first branch moves forward as it is checked out,
+    # second branch stays back one
+    add_file_and_commit(test_repo, b1name)
+
+    # change file in first branch 
+    add_file_and_commit(test_repo, sbname, "\0The first branches comment\0")
+    
+    res = merge!(test_repo, tip(lookup_branch(test_repo, "FirstBranch")))
+
+    idx = GitIndex(test_repo)
+    @show LibGit2.merge_analysis(test_repo, res)
+    @show has_conflicts(idx)
+end
 
 # test can ff commit
+for (detach_head,ffstrategy) in [(true, :default),
+                                 (true, :fastforwardonly),
+                                 (false, :default), 
+                                 (false, :fastforwardonly)]
+    with_merge_test_repo(
+        "test can ff merge commit") do test_repo, _
+            if detach_head
+                checkout!(test_repo, test_repo[head(test_repo)])
+            end
+            commit_to_merge = tip(lookup_branch(test_repo, "fast_forward"))
+            res = merge!(test_repo, commit_to_merge, 
+                         {:strategy => ffstrategy})
+            @show LibGit2.merge_analysis(test_repo, res)
+    end
+end 
 
-# test can ff merge commit 
+for (detach_head, ffstrategy, status) in [(true, :default, :nonfastforward),
+                                          (true, :nofastforward, :nonfastforward),
+                                          (false, :default, :nonfastforward),
+                                          (false, :nofastforward, :nonfastforward)]
+    with_merge_test_repo(
+        "test can non ff merge commit") do test_repo, _
+            if detach_head
+                checkout!(test_repo, test_repo[head(test_repo)])
+            end
+            commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
+            res = merge!(test_repo, commit_to_merge, {:strategy => ffstrategy})
+            @show LibGit2.merge_analysis(test_repo, res)
+    end
+end
 
-# test merge reports checkout progress
+with_merge_test_repo(
+"test merge reports checkout progress") do test_repo, _
+    commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
+    was_called = false
+    opts = {:checkout_progress => (args...) -> begin
+        was_called = true
+    end}
+    res = merge!(test_repo, commit_to_merge, opts)
+    @show was_called
+end
 
-# test merge reports checkout notifications
+with_merge_test_repo(
+"test merge reports checkout notifications") do test_repo, _
+    commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
+    was_called = false
+    checkout_notify = :none
+    opts = {:on_checkout => (path, notify) -> begin
+        was_called = true
+        checkout_notify = notify
+    end}
+    res = merge!(test_repo, commit_to_merge, opts)
+    @show was_called, checkout_notify
+end
 
-# test ff merge reports checkout progress
+with_merge_test_repo(
+"test ff merge reports checkout progress") do test_repo, _
+    commit_to_merge = tip(lookup_branch(test_repo, "fast_forward")) 
+    was_called = false
+    opts = {:checkout_progress => (args...) -> begin
+        was_called = true
+    end}
+    res = merge!(test_repo, commit_to_merge, opts)
+    @show was_called
+end
 
-# test ff merge reports checkout notifications
+with_merge_test_repo(
+"test ff merge reports checkout notifications") do test_repo, _
+    commit_to_merge = tip(lookup_branch(test_repo, "fast_forward"))
+    was_called = false
+    checkout_notify = :none
+    opts = {:on_checkout => (path, notify) -> begin
+        was_called = true
+        checkout_notify = notify
+    end}
+    res = merge!(test_repo, commit_to_merge, opts)
+    @show was_called, checkout_notify
+end
 
-# test merge can detect renames
+with_merge_test_repo(
+"test merge can detect renames") do test_repo, _
+    #= 
+    The environment is set up such that:
+    file b.txt is edited in the "rename" branch and
+    edited and renamed in the "rename_source" branch.
+    The edits are automergable.
+    We can rename "rename_source" into "rename"
+    if rename detection is enabled,
+    but the merge will fail with conflicts if this
+    change is not detected as a rename.
+    =#
+    current_branch = checkout!(test_repo, "rename_source")
+    branch_to_merge = lookup_branch(test_repo, "rename")
+    res = merge!(test_repo, branch_to_merge)
+    @show LibGit2.merge_analysis(test_repo, res)
+end
 
-# test ff non ff merge throws
+with_merge_test_repo(
+"test ff non ff merge throws") do test_repo, _
+    commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
+    try
+        merge!(test_repo, commit_to_merge, {:strategy => :fastforwardonly})
+    catch ex
+        @show ex
+    end 
+end 
 
-# test can force ff merge through config 
+with_merge_test_repo(
+"test can force ff merge through config") do test_repo, _
+    GitConfig(test_repo)["merge.ff"] = "only"
+    commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
+    try
+        merge!(test_repo, commit_to_merge)
+    catch ex
+        @show ex
+    end 
+end 
 
 with_merge_test_repo(
 "test can merge and not commit") do test_repo, _
@@ -210,16 +365,96 @@ with_merge_test_repo(
     end 
 end
 
-# test verify up to date merge 
+with_merge_test_repo(
+"test verify up to date merge") do test_repo, _
+    commit_to_merge = tip(lookup_branch(test_repo, "master"))
+    res = merge!(test_repo, commit_to_merge, {:strategy => :nofastforward})
+    @show LibGit2.merge_analysis(test_repo, res)
+end
 
-# test can merge committish
+for (commitish, strategy, status) in [
+    ("refs/heads/normal_merge", :default, :nonfastforward),
+    ("normal_merge", :default, :nonfastforward),
+    (Oid("625186280ed2a6ec9b65d250ed90cf2e4acef957"), :default, :nonfastforward),
+    ("fast_forward", :default, :fastforward)]
 
-# test can merge with workdir conflicts
+    with_merge_test_repo(
+    "test can merge committish") do test_repo, _
+        res = merge!(test_repo, commitish, {:strategy => strategy})
+        @show LibGit2.merge_analysis(test_repo, res)
+    end 
+end 
 
-# test can specify conflict file strategy 
+for (should_stage, strategy) in [(true, :fastforwardonly),
+                                 (false, :fastforwardonly), 
+                                 (true, :nofastforward), 
+                                 (false, :nofastforward)]
+    with_merge_test_repo(
+    "test can merge with workdir conflicts throws") do test_repo, _
+        #=
+        Merging the fast_forward branch results in a change to file
+        b.txt. In this test we modify the file in the working directory
+        and then attempt to perform a merge. We expect the merge to fail
+        due to merge conflicts.
+        =#
+        committish_to_merge = "fast_forward" 
+        touch_test(workdir(test_repo), "b.txt", "this is an alternate change")
+        if should_stage
+            idx = GitIndex(test_repo)
+            #TODO: the libgit2 stage concept is much cleaner, we should steal that
+            push!(idx, "b.txt")
+            write!(idx)
+        end
+        try
+            merge!(test_repo, committish_to_merge, {:strategy => strategy})
+        catch ex
+            @show ex
+        end 
+    end 
+end
 
-# test merge can specify merge file flavor option
-#"test can merge branch"
+for strategy in (:ours, :theirs)
+    with_merge_test_repo(
+        "test can specify conflict file strategy") do test_repo, _
+        conflict_file  = "a.txt"
+        conflict_branchname = "conflicts"
+        branch = lookup_branch(test_repo, conflict_branchname)
+        @test branch != nothing
+        opts = {:strategy => strategy}
+        res = merge!(test_repo, branch, opts)
+
+        @show LibGit2.merge_analysis(test_repo, res)
+        #TODO:
+    end 
+end
+
+for flavor in (:ours, :theirs) 
+    with_merge_test_repo(
+        "test merge can specify merge file flavor option") do test_repo, _
+        conflict_file  = "a.txt"
+        conflict_branchname = "conflicts"
+        branch = lookup_branch(test_repo, conflict_branchname)
+        @test branch != nothing
+        opts = {:merge_file_flavor => flavor}
+            
+        res = merge!(test_repo, branch, opts)
+        @show LibGit2.merge_analysis(test_repo, res)
+        #TODO:
+    end
+end
+
+for (branchname, strategy, status) in [
+    ("refs/heads/normal_merge", :default, :nonfastforward),
+    ("fast_forward", :default, :fastforward)]
+    
+    with_merge_test_repo(
+    "test can merge branch") do test_repo, _
+        #branch = lookup_ref(test_repo, branchname)
+        #@assert branch != nothing
+        res = merge!(test_repo, branchname, {:strategy => strategy})
+        @show LibGit2.merge_analysis(test_repo, res)
+    end 
+end 
 
 with_merge_test_repo(
 "test can merge into orphaned branch") do test_repo, path

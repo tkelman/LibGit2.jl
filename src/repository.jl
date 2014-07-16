@@ -1122,7 +1122,9 @@ Base.merge!(r::GitRepo,
     return GitIndex(idx_ptr[1])
 end
 
-Base.merge!(r::GitRepo, b::GitBranch) = begin
+Base.merge!(r::GitRepo, b::String, opts=nothing) = merge!(r, revparse(r, b), opts)
+Base.merge!(r::GitRepo, id::Oid, opts=nothing) = merge!(r, lookup(r, id), opts)
+Base.merge!(r::GitRepo, b::GitBranch, opts=nothing) = begin
     ref = resolve(b)
     mhead_ptr = Ptr{Void}[0]
     @check ccall((:git_merge_head_from_ref, libgit2), Cint,
@@ -1134,7 +1136,7 @@ Base.merge!(r::GitRepo, b::GitBranch) = begin
     return cid
 end 
 
-Base.merge!(r::GitRepo, c::GitCommit) = begin
+Base.merge!(r::GitRepo, c::GitCommit, opts=nothing) = begin
     id = Oid(c)
     mhead_ptr = Ptr{Void}[0]
     @check ccall((:git_merge_head_from_id, libgit2), Cint, 
