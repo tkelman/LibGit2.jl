@@ -39,43 +39,43 @@ end
 
 with_standard_test_repo(
 "test can retrieve the branch begin merged") do test_repo, _
-    first_branch = "9fd738e8f7967c078dceed8190330fc8648ee56a";
-    second_branch = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    touch_test(path(test_repo), "MERGE_HEAD", "$first_branch\n$second_branch\n") 
+    b1 = "9fd738e8f7967c078dceed8190330fc8648ee56a";
+    b2 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    touch_test(path(test_repo), "MERGE_HEAD", "$b1\n$b2\n") 
     @test currentstate(test_repo) === :merge
 end
 
 for detach_head in (true, false)
     with_standard_test_repo(
     "test can merge repo non-ff => $detach_head") do test_repo, _
-        firstBranchFileName = "first branch file.txt";
-        secondBranchFileName = "second branch file.txt";
-        sharedBranchFileName = "first+second branch file.txt";
+        b1name = "first branch file.txt";
+        b2name = "second branch file.txt";
+        sbname = "first+second branch file.txt";
 
-        first_branch = create_branch(test_repo, "FirstBranch")
-        checkout!(test_repo, first_branch)
+        b1 = create_branch(test_repo, "FirstBranch")
+        checkout!(test_repo, b1)
 
-        original_tree_count = GitTree(tip(first_branch)) |> length
+        original_tree_count = GitTree(tip(b1)) |> length
         
         # commit with ONE new file to both first and
         # second branches
-        add_file_and_commit(test_repo, sharedBranchFileName)
+        add_file_and_commit(test_repo, sbname)
         
-        second_branch = create_branch(test_repo, "SecondBranch")
+        b2 = create_branch(test_repo, "SecondBranch")
 
         if detach_head
             # detaches head
-            checkout!(test_repo, tip(second_branch))
+            checkout!(test_repo, tip(b2))
         else
-            checkout!(test_repo, second_branch)
+            checkout!(test_repo, b2)
         end
         
         # Commit with one new file to second branch
         # first branch and second branch now point to different
         # commits that both have thhe same parent commit
-        add_file_and_commit(test_repo, secondBranchFileName)
+        add_file_and_commit(test_repo, b2name)
         
-        res = merge!(test_repo, tip(first_branch))
+        res = merge!(test_repo, tip(b1))
         
         @show res
         @show Oid(test_repo[head(test_repo)])
@@ -84,7 +84,7 @@ for detach_head in (true, false)
 
         if !detach_head
             # ensure HEAD is still attached and points to second branch
-            @show canonical_name(second_branch)
+            @show canonical_name(b2)
             @show symbolic_target(head(test_repo))
         end
     end
@@ -92,13 +92,13 @@ end
 
 with_standard_test_repo(
 "test is up to date merged") do test_repo, _
-    b1fn = "first branch file.txt"
-    b2fn = "second branch file.txt"
-    b12fn = "first+second branch file.txt"
+    b1name = "first branch file.txt"
+    b2name = "second branch file.txt"
+    sbname = "first+second branch file.txt"
 
     b1 = create_branch(test_repo, "first_branch")
     checkout!(test_repo, b1)
-    add_file_and_commit(test_repo, b1fn)
+    add_file_and_commit(test_repo, b1name)
 
     b2 = create_branch(test_repo, "second_branch")
     checkout!(test_repo, b2)
@@ -139,6 +139,8 @@ for detach_head in (true, false)
             @test is_head_detached(test_repo) == detach_head
 
             res = merge!(test_repo, tip(b1))
+
+            @show LibGit2.merge_analysis(test_repo, res)
 
             @show tip(b1) == res
             @show tip(b1) == test_repo[head(test_repo)]

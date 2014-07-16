@@ -648,7 +648,7 @@ function revparse(r::GitRepo, rev::String)
 end
 revparse(r::GitRepo, rev::Oid) = revparse(r, string(rev))
 
-function merge_base(r::GitRepo, args...)
+function merge_base{T}(r::GitRepo, args::T...)
     if length(args) < 2
         throw(ArgumentError("merge_base needs 2+ commits"))
     end
@@ -1032,7 +1032,63 @@ merge_base(r::GitRepo, ids::Oid...) = begin
 end 
 =#
 
-merge_analyis(repo::GitRepo, mheads::Vector{Ptr{Void}}) = begin
+merge_analysis(r::GitRepo, their_commit::String) = begin
+    commit = revparse(r, revparse)
+    if !isa(commit, GitCommit)
+        throw(ArgumentError("reference string must point to a valid git commit"))
+    end
+    return merge_analysis(r, commit)
+end
+
+merge_analysis(r::GitRepo, their_commit::GitReference) = begin
+    commit = lookup(r, their_commit)
+    if !isa(commit, GitCommit)
+        throw(ArgumentError("GitReference must point to a valid git commit"))
+    end
+    return merge_analysis(r, commit)
+end 
+
+merge_analysis(r::GitRepo, their_commit::Oid) = begin
+    commit = lookup(r, their_commit)
+    if !isa(commit, GitCommit)
+        throw(ArgumentError("Oid must be a point to a valid git commit"))
+    end
+    return merge_analysis(r, commit)
+end
+
+merge_analysis(r::GitRepo, their_commit::GitCommit) = begin
+    id = Oid(their_commit)
+    mhead_ptr = Ptr{Void}[0]
+    @check ccall((:git_merge_head_from_id, libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}),
+                 mhead_ptr, r, &id)
+    analysis_ptr, pref_ptr = Cint[0], Cint[0]
+    @check ccall((:git_merge_analysis, libgit2), Cint,
+                 (Ptr{Cint}, Ptr{Cint}, Ptr{Void},  Ptr{Ptr{Void}}, Csize_t),
+                 analysis_ptr, pref_ptr, r, mhead_ptr, 1)
+    ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
+    res = Symbol[]
+    analysis = analysis_ptr[1]
+    if bool(analysis & GitConst.GIT_MERGE_ANALYSIS_NORMAL)
+        push!(res, :normal)
+    end 
+    if bool(analysis & GitConst.GIT_MERGE_ANALYSIS_UP_TO_DATE)
+        push!(res, :uptodate)
+    end
+    if bool(analysis & GitConst.GIT_MERGE_ANALYSIS_FASTFORWARD)
+        push!(res, :fastforward)
+    end
+    if bool(analysis & GitConst.GIT_MERGE_ANALYSIS_UNBORN)
+        push!(res, :unborn)
+    end
+    pref = pref_ptr[1] == GitConst.GIT_MERGE_PREFERENCE_NONE ? :none :
+           pref_ptr[1] == GitConst.GIT_MERGE_PREFERENCE_NO_FASTFORWARD ? :nofastforward :
+           pref_ptr[1] == GitConst.GIT_MERGE_PREFERENCE_FASTFORWARD_ONLY ? :fastforwardonly :
+           error("unknown merge analysis preference const $(pref_ptr[1])")
+    return res, pref 
+end
+
+merge_analysis(repo::GitRepo, mheads::Vector{Ptr{Void}}) = begin
     analysis_ptr = Cint[0]
     preference_ptr = Cint[0]
     @check ccall((:git_merge_analysis, libgit2), Cint,
@@ -1071,7 +1127,7 @@ Base.merge!(r::GitRepo, b::GitBranch) = begin
     mhead_ptr = Ptr{Void}[0]
     @check ccall((:git_merge_head_from_ref, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}), mhead_ptr, r, ref)
-    @show merge_analyis(r, mhead_ptr)
+    @show merge_analysis(r, mhead_ptr)
     cid = Oid(ccall((:git_merge_head_id, libgit2), Ptr{Oid}, 
                     (Ptr{Void},), mhead_ptr[1]))
     ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
@@ -1084,7 +1140,7 @@ Base.merge!(r::GitRepo, c::GitCommit) = begin
     @check ccall((:git_merge_head_from_id, libgit2), Cint, 
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}),
                  mhead_ptr, r, &id)
-    @show merge_analyis(r, mhead_ptr)
+    @show merge_analysis(r, mhead_ptr)
     cid = Oid(ccall((:git_merge_head_id, libgit2), Ptr{Oid}, 
                     (Ptr{Void},), mhead_ptr[1]))
     ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
