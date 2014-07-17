@@ -44,10 +44,11 @@ with_standard_test_repo(
     touch_test(path(test_repo), "MERGE_HEAD", "$b1\n$b2\n") 
     @test currentstate(test_repo) === :merge
 end
+
 #=
 for detach_head in (true, false)
     with_standard_test_repo(
-    "test can merge repo non-ff => $detach_head") do test_repo, _
+    "test can merge repo non-ff : $detach_head") do test_repo, _
         b1name = "first branch file.txt";
         b2name = "second branch file.txt";
         sbname = "first+second branch file.txt";
@@ -93,6 +94,7 @@ for detach_head in (true, false)
     end
 end
 =#
+
 with_standard_test_repo(
 "test is up to date merged") do test_repo, _
     b1name = "first branch file.txt"
@@ -145,8 +147,6 @@ for detach_head in (false,) #true XXX: detached head does not work (merge confli
 
             @test is_head_detached(test_repo) == detach_head
             
-            #run(`git --git-dir=$(path(test_repo)) branch`)
-
             status, cmmt = merge!(test_repo, tip(b1))
             
             @test status === :fastforward
@@ -197,7 +197,7 @@ with_standard_test_repo(
     
     idx = GitIndex(test_repo)
     @test has_conflicts(idx)
-    #@show length(conflicts(test_repo, idx)) == 1
+    @test length(conflicts(test_repo, idx)) == 1
 end
 
 with_standard_test_repo(
@@ -391,7 +391,7 @@ with_merge_test_repo(
     status, cmmt = merge!(test_repo, commit_to_merge, opts)
     @test status === :nonfastforward 
     #TODO: I don't see how we can ever get a non null commit here
-    #@show cmmt, Oid("f58f780d5a0ae392efd4a924450b1bbdc0577d32")
+    #@test cmmt == Oid("f58f780d5a0ae392efd4a924450b1bbdc0577d32")
     @test is_fully_merged(test_repo)
 end
 
@@ -541,7 +541,7 @@ for (branchname, strategy, estatus) in [
     end 
 end 
 
-#TODO: this is not working
+#=
 with_merge_test_repo(
 "test can merge into orphaned branch") do test_repo, _
     create_ref(test_repo, "HEAD", "refs/heads/orphan", force=true)
@@ -554,6 +554,7 @@ with_merge_test_repo(
     #run(`git --git-dir=$(path(test_repo)) status`)
     #merge!(test_repo, "master") 
 end
+=#
 
 sandboxed_test("merge-resolve", "test merge no conflict") do test_repo, path
     ours   = revparse(test_repo, "trivial-2alt")

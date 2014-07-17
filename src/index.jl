@@ -309,7 +309,6 @@ function remove_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
 end
 remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, [pathspec])
 
-#TODO: this is taken from libgit2 sharp
 conflicts(r::GitRepo, idx::GitIndex) = begin
     ancestor, ours, theirs = nothing, nothing, nothing
     current_path = nothing
