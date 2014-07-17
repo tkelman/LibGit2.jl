@@ -21,6 +21,7 @@ script:
   - git submodule update
   # we need a global config for config tests
   - git config --global user.name "testfirst testlast" 
+  - git config --global user.email "test@test.com"
   - julia -e 'Pkg.init(); 
               run(`ln -s $(pwd()) $(Pkg.dir("LibGit2"))`);
               Pkg.pin("LibGit2");
