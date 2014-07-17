@@ -1177,7 +1177,7 @@ _normal_merge(r::GitRepo, mhead_ptr::Vector{Ptr{Void}}, opts=Dict()) = begin
                  (Ptr{Void}, Ptr{Ptr{Void}}, Csize_t, 
                   Ptr{MergeTreeOptsStruct}, Ptr{CheckoutOptionsStruct}),
                   r, mhead_ptr, length(mhead_ptr), &mopts, &copts)
-    # TODO: free str array in options
+    free!(copts.paths)
     idx = GitIndex(r)
     if is_fully_merged(idx)
         if haskey(opts, :commit_on_success)
