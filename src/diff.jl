@@ -282,6 +282,10 @@ Base.diff(repo::GitRepo, left::MaybeGitTree, right::MaybeGitTree, opts::MaybeDic
     return GitDiff(diff_ptr[1])
 end
 
+Base.diff(repo::GitRepo, left::Oid, right::Oid, opts::MaybeDict=nothing) = begin
+    return diff(repo, lookup(repo, left), lookup(repo, right), opts)
+end
+
 Base.diff(repo::GitRepo, left::String, right::GitIndex, opts::MaybeDict=nothing) = begin
     return diff(repo, revparse(repo, left), right, opts)
 end

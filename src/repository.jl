@@ -11,7 +11,7 @@ export isbare, isempty, workdir, path, init_repo, head, exists,
        branch_names, lookup_branch, create_branch, lookup_remote, 
        remote_names, remote_add!, checkout_tree!, checkout_head!, checkout!, 
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey, 
-       repo_clone, foreach, reset!, currentstate, remove_untracked!
+       repo_clone, foreach, reset!, currentstate, remove_untracked!, branches
 
 typealias MaybeOid Union(Nothing, Oid)
 typealias MaybeString Union(Nothing, String)
@@ -709,7 +709,6 @@ lookup_commit(r::GitRepo, id)  = lookup(GitCommit, r, id)
 
 lookup(r::GitRepo, o::GitReference) = lookup(GitReference, r, o)
 
-
 references(r::GitRepo, glob::String="") = collect(GitReference, foreach(GitReference, r, glob)) 
 
 function lookup(::Type{GitReference}, r::GitRepo, name::String)
@@ -818,38 +817,6 @@ function set_workdir!(r::GitRepo, dir::String, update::Bool)
                  (Ptr{Void}, Ptr{Uint8}, Cint), r, dir, update)
     return r
 end
-
-# filter can be :all, :local, :remote
-function branch_names(r::GitRepo, filter::Symbol=:all)
-    git_filter = filter === :all ? (GitConst.BRANCH_LOCAL | GitConst.BRANCH_REMOTE) :
-                 filter === :local ? GitConst.BRANCH_LOCAL :
-                 filter === :remote ? GitConst.BRANCH_REMOTE :
-                 throw(ArgumentError("filter can be :all, :local, or :remote"))
-    iter_ptr = Ptr{Void}[0]
-    @check ccall((:git_branch_iterator_new, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Cint), iter_ptr, r, git_filter)
-    branch_ptr, branch_type = Ptr{Void}[0], Cint[0]
-    names = UTF8String[]
-    while true
-        err = ccall((:git_branch_next, libgit2), Cint,
-                    (Ptr{Ptr{Void}}, Ptr{Cint}, Ptr{Void}),
-                    branch_ptr, branch_type, iter_ptr[1])
-        err == GitErrorConst.ITEROVER && break
-        if err != GitErrorConst.GIT_OK
-            if iter_ptr[1] != C_NULL
-                ccall((:git_branch_iterator_free, libgit2), Void,
-                      (Ptr{Void},), iter_ptr[1])
-            end
-            throw(LibGitError(err))
-        end
-        name_ptr = ccall((:git_reference_shorthand, libgit2), Ptr{Uint8}, 
-                         (Ptr{Void},), branch_ptr[1])
-        push!(names, utf8(bytestring(name_ptr)))
-    end
-    ccall((:git_branch_iterator_free, libgit2), Void, (Ptr{Void},), iter_ptr[1])
-    return names
-end
-
 # branch type can be :local or :remote
 function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type::Symbol=:local)
     git_branch_type = branch_type == :local  ? GitConst.BRANCH_LOCAL :
@@ -966,6 +933,9 @@ Base.next(it::BranchIterator, state) = begin
     return (state, GitBranch(branch_ptr[1]))
 end
 
+branches(r::GitRepo, filter::Symbol=:all) = collect(GitBranch, foreach(GitBranch, r, filter))
+branch_names(r::GitRepo, filter::Symbol=:all) = map(name, branches(r, filter))
+
 #------- Tree merge ---------
 parse_merge_options(opts::Nothing) = MergeTreeOptsStruct()
 
@@ -984,14 +954,14 @@ function parse_merge_options(opts::Dict)
     local automerge_flags = zero(Cint)
     if haskey(opts, :automerge)
         a = opts[:automerge]
-        if a == :normal
-            flags = GitConst.MERGE_AUTOMERGE_NORMAL
-        elseif a == :none
-            flags = GitConst.MERGE_AUTOMERGE_NONE
-        elseif a == :favor_ours
-            flags = GitConst.MERGE_AUTOMERGE_FAVOR_OURS
-        elseif a == :favor_theirs
-            flags = GitConst.MERGE_AUTOMERGE_FAVOR_THEIRS
+        if a === :normal
+            automerge_flags = GitConst.MERGE_AUTOMERGE_NORMAL
+        elseif a === :favor_ours
+            automerge_flags = GitConst.MERGE_AUTOMERGE_FAVOR_OURS
+        elseif a === :favor_theirs
+            automerge_flags = GitConst.MERGE_AUTOMERGE_FAVOR_THEIRS
+        elseif a === :union
+            automerge_flags = GitConst.MERGE_AUTOMERGE_FAVOR_UNION 
         else
             throw(ArgumentError("Unknown automerge option :$a"))
         end
@@ -1122,33 +1092,130 @@ Base.merge!(r::GitRepo,
     return GitIndex(idx_ptr[1])
 end
 
-Base.merge!(r::GitRepo, b::String, opts=nothing) = merge!(r, revparse(r, b), opts)
-Base.merge!(r::GitRepo, id::Oid, opts=nothing) = merge!(r, lookup(r, id), opts)
-Base.merge!(r::GitRepo, b::GitBranch, opts=nothing) = begin
-    ref = resolve(b)
-    mhead_ptr = Ptr{Void}[0]
-    @check ccall((:git_merge_head_from_ref, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}), mhead_ptr, r, ref)
-    @show merge_analysis(r, mhead_ptr)
-    cid = Oid(ccall((:git_merge_head_id, libgit2), Ptr{Oid}, 
-                    (Ptr{Void},), mhead_ptr[1]))
-    ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
-    return cid
-end 
+Base.merge!(r::GitRepo, b::String, opts=Dict()) = merge!(r, revparse(r, b), opts)
+Base.merge!(r::GitRepo, id::Oid, opts=Dict()) = merge!(r, lookup(r, id), opts)
 
-Base.merge!(r::GitRepo, c::GitCommit, opts=nothing) = begin
+Base.merge!(r::GitRepo, c::GitCommit, opts=Dict()) = begin
     id = Oid(c)
     mhead_ptr = Ptr{Void}[0]
     @check ccall((:git_merge_head_from_id, libgit2), Cint, 
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}),
                  mhead_ptr, r, &id)
-    @show merge_analysis(r, mhead_ptr)
-    cid = Oid(ccall((:git_merge_head_id, libgit2), Ptr{Oid}, 
-                    (Ptr{Void},), mhead_ptr[1]))
-    ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
-    return cid
+    try
+        return _do_merge(r, mhead_ptr, #=sig,=# opts)
+    finally
+        if mhead_ptr[1] != C_NULL
+            ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
+        end
+    end
 end 
 
+Base.merge!(r::GitRepo, b::GitBranch, opts=Dict()) = begin
+    ref = resolve(b)
+    mhead_ptr = Ptr{Void}[0]
+    @check ccall((:git_merge_head_from_ref, libgit2), Cint,
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Void}), mhead_ptr, r, ref)
+    try
+        _do_merge(r, mhead_ptr, opts)
+    finally
+        if mhead_ptr[1] != C_NULL
+            ccall((:git_merge_head_free, libgit2), Void, (Ptr{Void},), mhead_ptr[1])
+        end
+    end
+end
+
+function _do_merge(r::GitRepo, mhead_ptr::Vector{Ptr{Void}}, #=sig,=# opts=Dict())
+    analysis_ptr, pref_ptr = Cint[0], Cint[0]
+    @check ccall((:git_merge_analysis, libgit2), Cint,
+                 (Ptr{Cint}, Ptr{Cint}, Ptr{Void},  Ptr{Ptr{Void}}, Csize_t),
+                 analysis_ptr, pref_ptr, r, mhead_ptr, length(mhead_ptr))
+    analysis, pref = analysis_ptr[1], pref_ptr[1]
+    if isequal(analysis & GitConst.GIT_MERGE_ANALYSIS_UP_TO_DATE,
+               GitConst.GIT_MERGE_ANALYSIS_UP_TO_DATE)
+        return :uptodate, nothing
+    end
+    local ffstrategy::Symbol
+    if haskey(opts, :ffstrategy) && opts[:ffstrategy] != :default
+        ffstrategy = opts[:ffstrategy]
+    else
+        ffstrategy = pref == GitConst.GIT_MERGE_PREFERENCE_NONE ? :default :
+                     pref == GitConst.GIT_MERGE_PREFERENCE_NO_FASTFORWARD ? :nofastforward :
+                     pref == GitConst.GIT_MERGE_PREFERENCE_FASTFORWARD_ONLY ? :fastforwardonly :
+                     error("unknown merge analysis preference const $(pref)")
+    end
+    if ffstrategy === :default
+        if bool(analysis & GitConst.GIT_MERGE_ANALYSIS_FASTFORWARD)
+            merge_result = _fast_forward_merge(r, mhead_ptr[1], #=sig,=# opts)
+        elseif bool(analysis & GitConst.GIT_MERGE_ANALYSIS_NORMAL)
+            merge_result = _normal_merge(r, mhead_ptr, #=sig,=# opts)
+        else
+            error("unknown merge analysis strategy: $analysis")
+        end
+    elseif ffstrategy === :fastforwardonly
+        if bool(analysis & GitConst.GIT_MERGE_ANALYSIS_FASTFORWARD)
+            merge_result = _fast_forward_merge(r, mhead_ptr[1], #=sig,=# opts)
+        else 
+            error("cannot perform fast forward on a non fast forward merge")
+        end
+    elseif ffstrategy === :nofastforward
+        if bool(analysis & GitConst.GIT_MERGE_ANALYSIS_NORMAL)
+            merge_result = _normal_merge(r, mhead_ptr, #=sig,=# opts)
+        else
+            error("unknown merge analysis const $analysis")
+        end 
+    else
+        error("unknown fast forward strategy :$ffstrategy")
+    end
+    return merge_result
+end 
+
+# perform a normal merge
+_normal_merge(r::GitRepo, mhead_ptr::Vector{Ptr{Void}}, opts=Dict()) = begin
+    mopts = parse_merge_options(opts)
+    copts = parse_checkout_options(opts)
+    @check ccall((:git_merge, libgit2), Cint,
+                 (Ptr{Void}, Ptr{Ptr{Void}}, Csize_t, 
+                  Ptr{MergeTreeOptsStruct}, Ptr{CheckoutOptionsStruct}),
+                  r, mhead_ptr, length(mhead_ptr), &mopts, &copts)
+    # TODO: free str array in options
+    idx = GitIndex(r)
+    if is_fully_merged(idx)
+        if haskey(opts, :commit_on_success)
+            msg = opts[:commit_on_success]
+            if !isa(msg, String)
+                throw(ArgumentError(":commit_on_success option value must be a string"))
+            end
+            # todo: Signature 
+            sig = default_signature(r)
+            # commit the merge
+            merge_commit = commit(r, msg, sig, sig)
+            return (:nonfastforward, merge_commit)
+        else
+            return (:nonfastforward, nothing)
+        end 
+    else
+        return (:conflicts, nothing)
+    end
+end
+
+_fast_forward_merge(r::GitRepo, mhead::Ptr{Void}, opts=Dict()) = begin
+    id = Oid(ccall((:git_merge_head_id, libgit2), Ptr{Oid}, (Ptr{Void},), mhead))
+    ffcommit = lookup(r, id)
+    @assert ffcommit != nothing
+    opts[:strategy] = :safe
+    
+    checkout_tree!(r, GitTree(ffcommit), opts)
+    ref = resolve(head(r))
+    if ref === nothing
+        # reference does not exist, create it :TODO sig
+        create_ref(r, "HEAD", id, force=true)
+    else
+        # update target reference
+        set_target(head(r), id)
+    end
+    return (:fastforward, ffcommit)
+end
+ 
 #------- Merge Commits -----
 function merge_commits(r::GitRepo, 
                        ours::Union(GitCommit, Oid), 
@@ -1719,5 +1786,4 @@ Base.next(it::ReferenceIterator, state) = begin
     end
     return (state, GitReference(ref_ptr[1]))
 end
-
 ref_names(r::GitRepo, glob::String="") = map(name, foreach(GitReference, r, glob))

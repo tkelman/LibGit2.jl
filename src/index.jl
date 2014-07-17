@@ -1,6 +1,6 @@
 export GitIndex, GitIndexEntry, add_bypath!, write_tree!, write!, reload!, clear!,
        remove!, removedir!, read_tree!, add_all!, update_all!,
-       remove_all!, has_conflicts, add!, is_fully_merged
+       remove_all!, has_conflicts, add!, is_fully_merged, conflicts
 
 type GitIndex
     ptr::Ptr{Void}
@@ -36,25 +36,31 @@ GitIndex(r::GitRepo) = begin
     return GitIndex(idxptr[1])
 end
 
-function has_conflicts(idx::GitIndex)
-    return bool(ccall((:git_index_has_conflicts, libgit2), Cint, (Ptr{Void},), idx))
-end
+has_conflicts(idx::GitIndex) = 
+    bool(ccall((:git_index_has_conflicts, libgit2), Cint, (Ptr{Void},), idx))
+
+has_conflicts(idx::GitRepo) = has_conflicts(GitIndex(repo))
+
 is_fully_merged(idx::GitIndex) = !has_conflicts(idx)
+is_fully_merged(repo::GitRepo) = is_fully_merged(GitIndex(repo))
 
 function clear!(idx::GitIndex)
     ccall((:git_index_clear, libgit2), Void, (Ptr{Void},), idx)
     return idx
 end
+clear!(repo::GitRepo) = clear!(GitIndex(repo))
 
 function reload!(idx::GitIndex)
     @check ccall((:git_index_read, libgit2), Cint, (Ptr{Void}, Cint), idx, zero(Cint)) 
     return idx
 end
+reload!(repo::GitRepo) = reload!(GitIndex(repo))
 
 function write!(idx::GitIndex)
     @check ccall((:git_index_write, libgit2), Cint, (Ptr{Void},), idx) 
     return idx
 end 
+write!(repo::GitRepo) = write!(GitIndex(repo))
 
 function remove!(idx::GitIndex, path::String, stage::Integer=0)
     @check ccall((:git_index_remove, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
@@ -302,3 +308,33 @@ function remove_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
     return idx
 end
 remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, [pathspec])
+
+#TODO: this is taken from libgit2 sharp
+conflicts(r::GitRepo, idx::GitIndex) = begin
+    ancestor, ours, theirs = nothing, nothing, nothing
+    current_path = nothing
+    res = {}
+    for entry in idx
+        if entry.stage == 0 # staged 
+            continue
+        end
+        if current_path != nothing && entry.path != current_path
+            push!(res, (ancestor, ours, theirs))
+            ancestor, ours, theirs = nothing, nothing, nothing 
+        end
+        current_path = entry.path
+        if entry.stage == 1 # ancestor
+            ancestor = entry
+        elseif  entry.stage == 2 # ours 
+            ours = entry
+        elseif entry.stage == 3 # theirs 
+            theirs = entry
+        else
+            error("entry $entry has unexpected stage level $(entry.stage)")
+        end
+    end
+    if current_path != nothing
+        push!(res, (ancestor, ours, theirs))
+    end
+    return res
+end

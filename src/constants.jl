@@ -175,10 +175,11 @@ module GitConst
     const INDEX_STAGE_ANY = cint(-1)
 
     const MERGE_TREE_FIND_RENAMES = cint(1) << cint(0)
+
     const MERGE_AUTOMERGE_NORMAL  = cint(0)
-    const MERGE_AUTOMERGE_NONE    = cint(1)
-    const MERGE_AUTOMERGE_FAVOR_OURS = cint(2)
-    const MERGE_AUTOMERGE_FAVOR_THEIRS = cint(3)
+    const MERGE_AUTOMERGE_FAVOR_OURS = cint(1)
+    const MERGE_AUTOMERGE_FAVOR_THEIRS = cint(2)
+    const MERGE_AUTOMERGE_FAVOR_UNION  = cint(3)
 
     const MERGE_NO_FASTFORWARD = cint(1)
     const MERGE_FASTFORWARD_ONLY = cint(2)
