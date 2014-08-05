@@ -2,8 +2,20 @@ using BinDeps
 
 @BinDeps.setup
 
-libgit2 = library_dependency("libgit2")
 version = "0.21.1"
+libgit2 = library_dependency("libgit2", 
+    validate = (name, handle) -> begin
+        major, minor, patch = Cint[0], Cint[0], Cint[0]
+        ccall(dlsym(handle, :git_libgit2_version), Void, 
+              (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}), major, minor, patch)
+        if version  == string(VersionNumber(major[1], minor[1], patch[1]))
+            return true
+        else
+            return false
+        end
+    end
+)
+
 provides(Sources,
          URI("https://github.com/libgit2/libgit2/archive/v$version.tar.gz"),
          libgit2,
