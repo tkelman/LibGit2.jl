@@ -3,7 +3,7 @@ using BinDeps
 @BinDeps.setup
 
 libgit2 = library_dependency("libgit2")
-version = "0.21.0"
+version = "0.21.1"
 provides(Sources,
          URI("https://github.com/libgit2/libgit2/archive/v$version.tar.gz"),
          libgit2,
