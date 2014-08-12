@@ -45,3 +45,8 @@ provides(SimpleBuild,
     end), libgit2, os = :Unix)
 
 @BinDeps.install [:libgit2 => :libgit2]
+
+cd(Pkg.dir("LibGit2")) do
+    run(`git submodule init`)
+    run(`git submodule update`)
+end
