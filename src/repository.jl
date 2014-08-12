@@ -711,8 +711,10 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
 end
 lookup(r::GitRepo, id::Oid)    = lookup(GitAnyObject, r, id)
 lookup(r::GitRepo, id::String) = lookup(GitAnyObject, r, id)
-lookup_blob(r::GitRepo, id)    = lookup(GitBlob, r, id)
-lookup_commit(r::GitRepo, id)  = lookup(GitCommit, r, id)
+
+lookup_blob(r::GitRepo, id)   = lookup(GitBlob, r, id)
+lookup_tree(r::GitRepo, id)   = lookup(GitTree, r, id)
+lookup_commit(r::GitRepo, id) = lookup(GitCommit, r, id)
 
 lookup(r::GitRepo, o::GitReference) = lookup(GitReference, r, o)
 
