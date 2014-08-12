@@ -2,13 +2,14 @@ using BinDeps
 
 @BinDeps.setup
 
-version = "0.21.1"
+version = v"0.21.1"
 libgit2 = library_dependency("libgit2", 
     validate = (name, handle) -> begin
         major, minor, patch = Cint[0], Cint[0], Cint[0]
         ccall(dlsym(handle, :git_libgit2_version), Void, 
               (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}), major, minor, patch)
-        if version  == string(VersionNumber(major[1], minor[1], patch[1]))
+        v = VersionNumber(major[1], minor[1])
+        if v.major == version.major && v.minor == version.minor #TODO: patch is broken in libgit2
             return true
         else
             return false
