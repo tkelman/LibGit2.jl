@@ -20,14 +20,6 @@ Pkg.clone("LibGit2")
 Pkg.build("LibGit2")
 ```
 
-To run the tests you must first update the libgit2 submodule in the LibGit2 package directory.
-
-```julia
-cd(Pkg.dir("LibGit2"))
-run(`git submodule init`)
-run(`git submodule update`)
-```
-
 The test suite can then be run with:
 
 ```julia
