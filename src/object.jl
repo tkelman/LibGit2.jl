@@ -1,3 +1,7 @@
+Base.show(io::IO, o::GitObject) = begin
+    write(io, "$(typeof(o))($(hex(o)))")
+end
+
 Base.(:(==))(o1::GitObject, o2::GitObject) = isequal(Oid(o1), Oid(o2))
 Base.isequal(o1::GitObject, o2::GitObject) = isequal(Oid(o1), Oid(o2))
 Base.isless(o1::GitObject, o2::GitObject)  = isless(Oid(o1), Oid(o2))

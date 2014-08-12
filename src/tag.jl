@@ -1,5 +1,9 @@
 export git_otype, message, target_id, target, tagger, lookup_tag
 
+Base.show(io::IO, t::GitTag) = begin
+    write(io, "GitTag(\"$(name)\" @ $(target_id(t))")
+end
+
 name(t::GitTag) = bytestring(ccall((:git_tag_name, libgit2), Ptr{Uint8}, (Ptr{Void},), t))
 
 function message(t::GitTag)

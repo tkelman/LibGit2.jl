@@ -18,6 +18,10 @@ GitRemote(r::GitRepo, url::String) = begin
     return GitRemote(remote_ptr[1])
 end
 
+Base.show(io::IO, r::GitRemote) = begin
+    write(io, "GitRemote(\"$(name(r))\" @ $(url(r)))")
+end
+
 function name(r::GitRemote)
     name_ptr = ccall((:git_remote_name, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
     return name_ptr != C_NULL ? bytestring(name_ptr) : nothing

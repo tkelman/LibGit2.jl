@@ -41,6 +41,10 @@ GitRepo(path::String; alternates={}) = begin
     return repo
 end
 
+Base.show(io::IO, r::GitRepo) = begin
+    write(io, "GitRepo(\"$(workdir(r))\")")
+end 
+
 Base.close(r::GitRepo) = begin
     if r.ptr != C_NULL
         ccall((:git_repository__cleanup, libgit2), Void, (Ptr{Void},), r.ptr)
@@ -236,9 +240,13 @@ function set_head!(r::GitRepo, ref::String;
     return r
 end
 
-#TODO: this needs to be implemented
-function commits(r::GitRepo)
-    return GitCommit[] 
+commits(repo::GitRepo) = begin
+    cs = GitCommit[]
+    for id in repo
+        obj = lookup(repo, id)
+        isa(obj, GitCommit) && push!(cs, obj)
+    end
+    return cs
 end
 
 function remotes(r::GitRepo)
@@ -701,9 +709,8 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
     end
     return T(obj_ptr[1]) 
 end
-lookup(r::GitRepo, id::String) = lookup(GitAnyObject, r, id)
 lookup(r::GitRepo, id::Oid)    = lookup(GitAnyObject, r, id)
-lookup_tree(r::GitRepo, id)    = lookup(GitTree, r, id)
+lookup(r::GitRepo, id::String) = lookup(GitAnyObject, r, id)
 lookup_blob(r::GitRepo, id)    = lookup(GitBlob, r, id)
 lookup_commit(r::GitRepo, id)  = lookup(GitCommit, r, id)
 
