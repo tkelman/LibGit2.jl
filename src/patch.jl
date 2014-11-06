@@ -158,7 +158,7 @@ type DiffLine
     content::ByteString
     old_lineno::Int
     new_lineno::Int
-    content_offset::Union(Nothing, Int)
+    content_offset::Union(Nothing, Int64)
 
     function DiffLine(h::DiffHunk, ptr::Ptr{DiffLineStruct})
         @assert ptr != C_NULL

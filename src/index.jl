@@ -103,7 +103,6 @@ immutable IndexTimeStruct
     seconds::GitTimeT
     nanoseconds::Cuint
 end
-
 IndexTimeStruct() = IndexTimeStruct(0, 0)
 
 immutable IndexEntryStruct
@@ -141,9 +140,8 @@ IndexEntryStruct(entry::GitIndexEntry) = begin
     flags |= (uint16(entry.stage) << GitConst.IDXENTRY_STAGESHIFT) & GitConst.IDXENTRY_STAGEMASK
     flags &= ~GitConst.IDXENTRY_VALID
     entry.valid && (flags |= GitConst.IDXENTRY_VALID)
-    #TODO: rounding
-    ctime = IndexTimeStruct(ifloor(entry.ctime), ifloor(entry.ctime - floor(entry.ctime) * 1e3))
-    mtime = IndexTimeStruct(ifloor(entry.mtime), ifloor(entry.mtime - floor(entry.mtime) * 1e3))
+    ctime = IndexTimeStruct(ifloor(entry.ctime), 0) #TODO (rounding): ifloor(entry.ctime - floor(entry.ctime) * 1e3))
+    mtime = IndexTimeStruct(ifloor(entry.mtime), 0) #TODO (rounding): ifloor(entry.mtime - floor(entry.mtime) * 1e3))
     return IndexEntryStruct(ctime,
                             ctime,
                             entry.dev,
