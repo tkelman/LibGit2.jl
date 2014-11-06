@@ -28,9 +28,9 @@ Oid(ptr::Ptr{Uint8}) = begin
     if ptr == C_NULL
         throw(ArgumentError("NULL pointer passed to Oid() constructor"))
     end
-    id = Oid()
-    ccall((:git_oid_fromraw, libgit2), Void, (Ptr{Oid}, Ptr{Uint8}), &id, ptr)
-    return id 
+    oid_ptr = Oid[Oid()]
+    ccall((:git_oid_fromraw, libgit2), Void, (Ptr{Oid}, Ptr{Uint8}), oid_ptr, ptr)
+    return oid_ptr[1]
 end
 
 Oid(id::Array{Uint8,1}) = begin
@@ -45,10 +45,10 @@ Oid(id::String) = begin
     if sizeof(bstr) != OID_HEXSZ
         throw(ArgumentError("invalid hex size"))
     end
-    oid = Oid()
+    oid_ptr = Oid[Oid()]
     @check ccall((:git_oid_fromstrp, libgit2), Cint,
-                 (Ptr{Oid}, Ptr{Cchar}), &oid, bstr)
-    return oid
+                 (Ptr{Oid}, Ptr{Cchar}), oid_ptr, bstr)
+    return oid_ptr[1]
 end
 
 Oid(id::Oid) = id
