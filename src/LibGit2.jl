@@ -6,32 +6,16 @@ else
     error("LibGit2 not properly installed. Please run Pkg.build(\"LibGit2\")")
 end
 
-#=
 # libgit threads must be initialized before any library calls,
 # these functions are a no-op if libgit is built without thread support
-=#
 function __init__()
     err = ccall((:git_threads_init, libgit2), Cint, ())
-    if err != zero(Cint)
-        error("error initializing LibGit2 module")
+    err == 0 || error("error initializing LibGit2 module")
+    atexit() do
+        err = ccall((:git_threads_shutdown, libgit2), Cint, ()) 
+        err == 0 || error("error uninitalizing LibGit2 module")
     end
 end
-
-# when the module is GC'd, call git_threads_shutdown
-type LibGitHandle
-    LibGitHandle() = begin
-        handle = new()
-        finalizer(handle, h -> begin
-            err = ccall((:git_threads_shutdown, libgit2), Cint, ())
-            if err != zero(Cint)
-                error("error uninitalizing LibGit2 module")
-            end
-        end)
-        return handle
-    end
-end
-
-const __threads_handle = LibGitHandle()
 
 include("constants.jl")
 include("error.jl")
