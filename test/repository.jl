@@ -108,7 +108,7 @@ end
 
 sandboxed_test("testrepo.git", "test walking with block") do test_repo, path
     oid = Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")
-    list = {}
+    list = []
     walk(test_repo, oid) do c
        push!(list, c)
     end
@@ -441,7 +441,7 @@ end
 
 #:test_clone_bare
 @repo_clone_test begin
-    repo = repo_clone(source_path, tmppath, {:bare => true})
+    repo = repo_clone(source_path, tmppath, Dict{Any,Any}(:bare => true))
     try
         @test isbare(repo)
     catch
@@ -453,14 +453,14 @@ end
 @repo_clone_test begin
     total_objects = indexed_objects = received_objects = received_bytes = 0
     callsback = 0
-    repo = repo_clone(source_path, tmppath, {
-      :callbacks => {
+    repo = repo_clone(source_path, tmppath, Dict{Any,Any}(
+      :callbacks => Dict{Any,Any}(
         :transfer_progress => (args...) -> begin
           total_objects, indexed_objects, received_objects, received_bytes = args
           callsback += 1
           end
-        }
-      }
+        )
+      )
     )
     close(repo)
     @test 22 == callsback
@@ -473,9 +473,9 @@ end
 #:test_clone_quits_on_error
 @repo_clone_test begin
     try
-      repo_clone(source_path, tmppath, {:callbacks => {
+      repo_clone(source_path, tmppath, Dict{Any,Any}(:callbacks => Dict{Any,Any}(
         :transfer_progress => (args...) -> error("boom")
-      }})
+      )))
     catch err
       @test err.msg == "boom"
     end
@@ -484,9 +484,9 @@ end
 
 # test_clone_with_bad_progress_callback
 @repo_clone_test begin
-    @test_throws repo_clone(source_path, tmppath, {:callbacks => {
+    @test_throws repo_clone(source_path, tmppath, Dict{Any,Any}(:callbacks => Dict{Any,Any}(
         :transfer_progress => ()
-      }})
+      )))
     @test isdir(joinpath(tmppath, ".git")) == false
 end
 =#
@@ -577,7 +577,7 @@ end
 # Repo Checkout Test
 #---------------------------
 sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, test_clone, test_bare
-    checkout_tree!(test_repo, "refs/heads/dir", {:strategy => :force})
+    checkout_tree!(test_repo, "refs/heads/dir", Dict{Any,Any}(:strategy => :force))
     set_head!(test_repo, "refs/heads/dir")
 
     @test isfile(joinpath(workdir(test_repo), "README"))
@@ -587,7 +587,7 @@ sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, 
 
     @test isfile(joinpath(workdir(test_repo), "ab")) == false
 
-    checkout_tree!(test_repo, "refs/heads/subtrees", {:strategy => :safe})
+    checkout_tree!(test_repo, "refs/heads/subtrees", Dict{Any,Any}(:strategy => :safe))
     set_head!(test_repo, "refs/heads/subtrees")
 
     @test isfile(joinpath(workdir(test_repo), "README"))
@@ -604,8 +604,8 @@ end
 sandboxed_checkout_test("test checkout raises errors in callback") do test_repo, test_clone, test_bare
     try
         checkout_tree!(test_repo, "refs/heads/dir",
-                {:strategy => :force,
-                 :progress => (x...) -> error("fail")})
+                Dict{Any,Any}(:strategy => :force,
+                              :progress => (x...) -> error("fail")))
     catch err
         @test err.msg == "fail"
     end
@@ -614,7 +614,8 @@ end
 sandboxed_checkout_test("test checkout tree subdir") do test_repo, test_clone, test_bare
     @test isfile(joinpath(workdir(test_repo), "ab")) == false
     checkout_tree!(test_repo, "refs/heads/subtrees",
-                   {:strategy => :safe, :paths => "ab/de/"})
+                   Dict{Any,Any}(:strategy => :safe, 
+                                 :paths => "ab/de/"))
 
     @test isdir(joinpath(workdir(test_repo)), "ab")
     @test isfile(joinpath(workdir(test_repo)), "ab","de","2.txt")
@@ -624,7 +625,7 @@ end
 sandboxed_checkout_test("test checkout tree subtree dir") do test_repo, test_clone, test_bare
     @test isfile(joinpath(workdir(test_repo), "de")) == false
     checkout_tree!(test_repo, "refs/heads/subtrees:ab",
-                   {:strategy => :safe, :paths => "de/"})
+                  Dict{Any,Any}(:strategy => :safe, :paths => "de/"))
 
     @test isdir(joinpath(workdir(test_repo)),  "de")
     @test isfile(joinpath(workdir(test_repo)), "de", "2.txt")
@@ -632,13 +633,14 @@ sandboxed_checkout_test("test checkout tree subtree dir") do test_repo, test_clo
 end
 
 sandboxed_checkout_test("test checkout tree raises with bare repo") do test_repo, test_clone, test_bare
-    @test_throws LibGitError{:Repo,:BareRepo} checkout_tree!(test_bare, "HEAD", {:strategy => :safe_create})
+    @test_throws LibGitError{:Repo,:BareRepo} checkout_tree!(test_bare, "HEAD", 
+                    Dict{Any,Any}(:strategy => :safe_create))
 end
 
 sandboxed_checkout_test("test checkout tree works with bare repo and target dir") do test_repo, test_clone, test_bare
     d = mktempdir()
     try
-        checkout_tree!(test_bare, "HEAD", {:strategy => :safe_create, :target_directory => d})
+        checkout_tree!(test_bare, "HEAD", Dict{Any,Any}(:strategy => :safe_create, :target_directory => d))
         @test isfile(joinpath(d, "README"))
         @test isfile(joinpath(d, "new.txt"))
     finally
@@ -647,27 +649,27 @@ sandboxed_checkout_test("test checkout tree works with bare repo and target dir"
 end
 
 sandboxed_checkout_test() do test_repo, test_clone, test_bare
-    checkout!(test_repo, "dir", {:strategy => :force})
+    checkout!(test_repo, "dir", Dict{Any,Any}(:strategy => :force))
     @test head(test_repo) |> name == "refs/heads/dir"
 end
 
 sandboxed_checkout_test("test checkout with head") do test_repo, test_clone, test_bare
-    checkout!(test_repo, "dir", {:strategy => :force})
+    checkout!(test_repo, "dir", Dict{Any,Any}(:strategy => :force))
     rm(joinpath(workdir(test_repo), "README"))
 
-    checkout!(test_repo, "HEAD", {:strategy => :force})
+    checkout!(test_repo, "HEAD", Dict{Any,Any}(:strategy => :force))
     @test isfile(joinpath(workdir(test_repo), "README"))
     @test name(head(test_repo)) == "refs/heads/dir"
 end
 
 sandboxed_checkout_test("test checkout with commit detaches HEAD") do test_repo, test_clone, test_bare
-    checkout!(test_repo, revparse_oid(test_repo, "refs/heads/dir"), {:strategy => :force})
+    checkout!(test_repo, revparse_oid(test_repo, "refs/heads/dir"), Dict{Any,Any}(:strategy => :force))
     @test is_head_detached(test_repo)
     @test revparse_oid(test_repo, "refs/heads/dir") == target(head(test_repo))
 end
 
 sandboxed_checkout_test("test checkout with remote branch detaches HEAD") do test_repo, test_clone, test_bare
-    checkout!(test_clone, "origin/dir", {:strategy => :force})
+    checkout!(test_clone, "origin/dir", Dict{Any,Any}(:strategy => :force))
     @test is_head_detached(test_clone)
     @test revparse_oid(test_clone, "refs/remotes/origin/dir") == target(head(test_clone))
 end

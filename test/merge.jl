@@ -255,7 +255,7 @@ for (detach_head, ffstrategy) in [(true, :default),
             end
             commit_to_merge = tip(lookup_branch(test_repo, "fast_forward"))
             status, cmmt = merge!(test_repo, commit_to_merge,
-                                  {:ffstrategy => ffstrategy})
+                                  AnyDict(:ffstrategy => ffstrategy))
             @test status === :fastforward
             @test Oid(cmmt) == Oid("4dfaa1500526214ae7b33f9b2c1144ca8b6b1f53")
             @test detach_head == is_head_detached(test_repo)
@@ -272,7 +272,7 @@ for (detach_head, ffstrategy, estatus) in [(true, :default, :nonfastforward),
                 checkout!(test_repo, test_repo[head(test_repo)])
             end
             commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
-            status, cmmt = merge!(test_repo, commit_to_merge, {:ffstrategy => ffstrategy})
+            status, cmmt = merge!(test_repo, commit_to_merge, AnyDict(:ffstrategy => ffstrategy))
 
             @test status === estatus
             @test detach_head == is_head_detached(test_repo)
@@ -283,9 +283,9 @@ with_merge_test_repo(
 "test merge reports checkout progress") do test_repo, _
     commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
     was_called = false
-    opts = {:progress => (args...) -> begin
+    opts = AnyDict(:progress => (args...) -> begin
         was_called = true
-    end}
+    end)
     res = merge!(test_repo, commit_to_merge, opts)
     @test was_called
 end
@@ -296,10 +296,10 @@ with_merge_test_repo(
     commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
     was_called = false
     checkout_notify = :none
-    opts = {:notify => (why, path, diffs...) -> begin
+    opts = AnyDict(:notify => (why, path, diffs...) -> begin
         was_called = true
         checkout_notify = why
-    end}
+    end)
     res = merge!(test_repo, commit_to_merge, opts)
     #@show was_called, checkout_notify
 end
@@ -308,9 +308,9 @@ with_merge_test_repo(
 "test ff merge reports checkout progress") do test_repo, _
     commit_to_merge = tip(lookup_branch(test_repo, "fast_forward"))
     was_called = false
-    opts = {:progress => (args...) -> begin
+    opts = AnyDict(:progress => (args...) -> begin
         was_called = true
-    end}
+    end)
     res = merge!(test_repo, commit_to_merge, opts)
     @test was_called
 end
@@ -321,10 +321,10 @@ with_merge_test_repo(
     commit_to_merge = tip(lookup_branch(test_repo, "fast_forward"))
     was_called = false
     checkout_notify = :none
-    opts = {:notify => (path, notify) -> begin
+    opts = AnyDict(:notify => (path, notify) -> begin
         was_called = true
         checkout_notify = notify
-    end}
+    end)
     res = merge!(test_repo, commit_to_merge, opts)
     #@show was_called, checkout_notify
 end
@@ -359,7 +359,7 @@ with_merge_test_repo(
     commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
     #TODO: better errors
     @test_throws ErrorException merge!(test_repo, commit_to_merge,
-                                       {:ffstrategy => :fastforwardonly})
+                                       AnyDict(:ffstrategy => :fastforwardonly))
 end
 
 with_merge_test_repo(
@@ -387,7 +387,7 @@ end
 with_merge_test_repo(
 "test can force non ff merge") do test_repo, _
     commit_to_merge = tip(lookup_branch(test_repo,"fast_forward"))
-    opts = {:ffstrategy => :nofastforward}
+    opts = AnyDict(:ffstrategy => :nofastforward)
     status, cmmt = merge!(test_repo, commit_to_merge, opts)
     @test status === :nonfastforward
     #TODO: I don't see how we can ever get a non null commit here
@@ -408,7 +408,7 @@ end
 with_merge_test_repo(
 "test verify up to date merge") do test_repo, _
     commit_to_merge = tip(lookup_branch(test_repo, "master"))
-    status, cmmt = merge!(test_repo, commit_to_merge, {:strategy => :nofastforward})
+    status, cmmt = merge!(test_repo, commit_to_merge, AnyDict(:strategy => :nofastforward))
     @test status === :uptodate
     @test is(cmmt, nothing)
     @test is_fully_merged(test_repo)
@@ -422,7 +422,7 @@ for (committish, strategy, estatus) in [
 
     with_merge_test_repo(
     "test can merge committish: $committish, $strategy, $estatus") do test_repo, _
-        status, cmmt  = merge!(test_repo, committish, {:ffstrategy => strategy})
+        status, cmmt  = merge!(test_repo, committish, AnyDict(:ffstrategy => strategy))
         @test status === estatus
         @test is_fully_merged(test_repo)
     end
@@ -450,10 +450,10 @@ for (should_stage, strategy) in [(true, :fastforwardonly),
         end
         if strategy === :fastforwardonly
             @test_throws LibGitError{:Checkout,:MergeConflict} merge!(test_repo,
-                committish_to_merge, {:ffstrategy => strategy})
+                committish_to_merge, AnyDict(:ffstrategy => strategy))
         else
             @test_throws LibGitError{:Merge,:MergeConflict} merge!(test_repo,
-                committish_to_merge, {:ffstrategy => strategy})
+                committish_to_merge, AnyDict(:ffstrategy => strategy))
         end
     end
 end
@@ -468,7 +468,7 @@ for strategy in (:use_ours, :use_theirs)
         branch = lookup_branch(test_repo, conflict_branchname)
         @test branch != nothing
 
-        opts = {:strategy => strategy}
+        opts = AnyDict(:strategy => strategy)
         status, cmmt = merge!(test_repo, branch, opts)
 
         @test status === :conflicts
@@ -502,7 +502,7 @@ for favor in (:favor_ours, :favor_theirs)
 
         @test branch != nothing
 
-        opts = {:automerge => favor}
+        opts = AnyDict(:automerge => favor)
         status, _ = merge!(test_repo, branch, opts)
         reload!(test_repo)
 
@@ -535,7 +535,7 @@ for (branchname, strategy, estatus) in [
 
     with_merge_test_repo(
     "test can merge branch: $branchname, $strategy, $estatus") do test_repo, _
-        status, cmmt= merge!(test_repo, branchname, {:ffstrategy => strategy})
+        status, cmmt= merge!(test_repo, branchname, AnyDict(:ffstrategy => strategy))
         @test status === estatus
         @test is_fully_merged(test_repo)
     end

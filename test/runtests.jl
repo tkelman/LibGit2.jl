@@ -1,6 +1,8 @@
 using Base.Test
 using LibGit2
 
+import Base: AnyDict
+
 include("util.jl")
 
 testnames = ["oid",

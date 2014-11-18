@@ -195,7 +195,7 @@ sandboxed_test("diff", "test diff with paths") do test_repo, path
 
     b = lookup(test_repo, Oid(t1["readme.txt"]))
     o = lookup(test_repo, Oid(t2["readme.txt"]))
-    p = diff(test_repo, b, o, {:old_path => "old_readme.txt", :new_path => "new_readme.txt"})
+    p = diff(test_repo, b, o, Dict{Any,Any}(:old_path => "old_readme.txt", :new_path => "new_readme.txt"))
 
     @test "old_readme.txt" == delta(p).old_file.path
     @test "new_readme.txt" == delta(p).new_file.path
