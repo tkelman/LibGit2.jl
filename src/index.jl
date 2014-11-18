@@ -311,7 +311,7 @@ remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, [pathspec])
 conflicts(r::GitRepo, idx::GitIndex) = begin
     ancestor, ours, theirs = nothing, nothing, nothing
     current_path = nothing
-    res = {}
+    res = []
     for entry in idx
         if entry.stage == 0 # staged
             continue

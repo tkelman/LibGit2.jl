@@ -120,7 +120,7 @@ const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
 
 function blob_from_stream(r::GitRepo, io::IO, hintpath::String="")
     id_ptr = [Oid()]
-    payload = {io, nothing}
+    payload = Any[io, nothing]
     err = ccall((:git_blob_create_fromchunks, libgit2), Cint,
                 (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Any),
                 id_ptr, r, !isempty(hintpath) ? hintpath : C_NULL,

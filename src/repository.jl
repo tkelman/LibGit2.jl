@@ -17,7 +17,7 @@ typealias MaybeOid Union(Nothing, Oid)
 typealias MaybeString Union(Nothing, String)
 typealias MaybeSignature Union(Nothing, Signature)
 
-GitRepo(path::String; alternates={}) = begin
+GitRepo(path::String; alternates=[]) = begin
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_open, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}), repo_ptr, path)
@@ -1464,7 +1464,7 @@ end
 typealias Treeish Union(GitCommit, GitTag, GitTree)
 
 function remove_untracked!(r::GitRepo)
-    opts = {:strategy => [:remove_untracked, :allow_conflicts]}
+    opts = Dict{Any,Any}(:strategy => [:remove_untracked, :allow_conflicts])
     gopts = parse_checkout_options(opts)
     err = ccall((:git_checkout_index, libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Ptr{CheckoutOptionsStruct}),

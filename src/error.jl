@@ -22,7 +22,7 @@ module GitErrorConst
     const ITEROVER        = cint(-31)
 end
 
-const git_error_code = (Int => Symbol)[
+const git_error_code = Dict{Int,Symbol}(
      00 => :OK,             # no error
     -01 => :Error,          # generic error
     -03 => :NotFound,       # requested object could not be found
@@ -39,9 +39,9 @@ const git_error_code = (Int => Symbol)[
     -14 => :Locked,         # lock file prevented op
     -15 => :Modified,       # ref value does not match expected
     -31 => :Iterover        # signals end of iteration
-]
+)
 
-const git_error_class = (Int => Symbol)[
+const git_error_class = Dict{Int,Symbol}(
      0 => :None,
      1 => :NoMemory,
      2 => :OS,
@@ -70,7 +70,7 @@ const git_error_class = (Int => Symbol)[
     25 => :Revert,
     26 => :Callback,
     27 => :CherryPick
-]
+)
 
 immutable ErrorStruct
     message::Ptr{Uint8}

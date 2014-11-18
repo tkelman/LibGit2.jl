@@ -226,9 +226,9 @@ Base.diff(repo::GitRepo, left::MaybeString, right::MaybeString, opts::MaybeDict=
     if l != nothing
         return diff(repo, l, r, opts)
     elseif r != nothing
-        opts = opts == nothing ? {} : opts
+        opts = opts == nothing ? Dict{Any,Any}() : opts
         return diff(repo, l, r,
-                merge(opts, {:reverse => !get(opts, :reverse, true)}))
+                merge(opts, Dict{Any,Any}(:reverse => !get(opts, :reverse, true))))
     end
     return nothing
 end

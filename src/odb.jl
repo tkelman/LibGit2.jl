@@ -30,8 +30,8 @@ function read_header(odb::Odb, id::Oid)
     otype  = Cint[0]
     @check ccall((:git_odb_read_header, libgit2), Cint,
                  (Ptr{Csize_t}, Ptr{Cint}, Ptr{Void}, Ptr{Oid}), nbytes, otype, odb, &id)
-    return {:type => gitobj_const_type(otype[1]),
-            :nbytes => nbytes[1]}
+    return Dict{Any,Any}(:type => gitobj_const_type(otype[1]),
+                         :nbytes => nbytes[1])
 end
 
 type OdbObject{T<:GitObject}
