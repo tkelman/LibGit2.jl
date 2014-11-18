@@ -3,7 +3,7 @@ function add_file_and_commit(repo::GitRepo, filename::String, content=nothing)
     touch_test(workdir(repo), filename, content)
     push!(idx, filename)
     commit(repo, "New commit", sig, sig)
-end 
+end
 
 with_new_repo("test a new repo is fully merged") do test_repo, path
     @test is_fully_merged(GitIndex(test_repo))
@@ -28,12 +28,12 @@ with_merged_test_repo(
     @test_throws LibGitError{:Object,:Unmerged} reset!(test_repo, fcp, :soft)
 end
 
-with_merged_test_repo( 
+with_merged_test_repo(
 "test commit against a repo with unmerged entries throws") do test_repo, path
     idx = GitIndex(test_repo)
     @test is_fully_merged(idx) == false
     author = Signature("test", "test@test.com")
-    @test_throws LibGitError{:Index,:Unmerged} commit(test_repo, 
+    @test_throws LibGitError{:Index,:Unmerged} commit(test_repo,
         "try commit unmerged entries", author, author)
 end
 
@@ -41,7 +41,7 @@ with_standard_test_repo(
 "test can retrieve the branch begin merged") do test_repo, _
     b1 = "9fd738e8f7967c078dceed8190330fc8648ee56a";
     b2 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    touch_test(path(test_repo), "MERGE_HEAD", "$b1\n$b2\n") 
+    touch_test(path(test_repo), "MERGE_HEAD", "$b1\n$b2\n")
     @test currentstate(test_repo) === :merge
 end
 
@@ -57,11 +57,11 @@ for detach_head in (true, false)
         checkout!(b1)
 
         original_tree_count = GitTree(tip(b1)) |> length
-        
+
         # commit with ONE new file to both first and
         # second branches
         add_file_and_commit(test_repo, sbname)
-        
+
         b2 = create_branch(test_repo, "SecondBranch")
 
         if detach_head
@@ -70,19 +70,19 @@ for detach_head in (true, false)
         else
             checkout!(b2)
         end
-        
+
         # Commit with one new file to second branch
         # first branch and second branch now point to different
         # commits that both have thhe same parent commit
         add_file_and_commit(test_repo, b2name)
-       
+
         status, commit = merge!(test_repo, tip(b1))
-       
+
         @test status === :nonfastforward
         @test isa(commit, GitCommit)
         #=
         @show Oid(test_repo[head(test_repo)])
-        @show parent_count(test_repo[res]) 
+        @show parent_count(test_repo[res])
         @show is_head_detached(test_repo) == detach_head
 
         if !detach_head
@@ -111,34 +111,34 @@ with_standard_test_repo(
     status, cmmt = merge!(test_repo, b1)
 
     @test status === :uptodate
-    @test is(cmmt, nothing) 
+    @test is(cmmt, nothing)
 end
 
 for detach_head in (false,) #true XXX: detached head does not work (merge conflict)
     with_standard_test_repo(
      "test can ff repos : $detach_head") do test_repo, _
-            
+
             b1name = "first branch file.txt";
             sbname = "first+second branch file.txt";
-            
+
             # reset the index and the working tree
             reset!(test_repo, "HEAD", :hard)
 
             # clean up the working directory
             remove_untracked!(test_repo)
-            
+
             b1 = create_branch(test_repo, "FirstBranch")
             checkout!(b1)
-            
+
             # commit with ONE new file to both b1 & b2
             add_file_and_commit(test_repo, sbname)
-            
+
             b2 = create_branch(test_repo, "SecondBranch")
-            
+
             # commit with ONE new file to first branch
             # b2 is now 1 behind  b1
             add_file_and_commit(test_repo, b1name)
-            
+
             if detach_head
                 checkout!(test_repo, tip(b2))
             else
@@ -146,14 +146,14 @@ for detach_head in (false,) #true XXX: detached head does not work (merge confli
             end
 
             @test is_head_detached(test_repo) == detach_head
-            
+
             status, cmmt = merge!(test_repo, tip(b1))
-            
+
             @test status === :fastforward
-            
+
             @test tip(b1) == cmmt
             @test tip(b1) == test_repo[head(test_repo)]
-            @test is_fully_merged(GitIndex(test_repo)) 
+            @test is_fully_merged(GitIndex(test_repo))
             @test is_head_detached(test_repo) == detach_head
             if !detach_head
                 # ensure HEAD is still attached and points to second branch
@@ -170,12 +170,12 @@ with_standard_test_repo(
 
     b1 = create_branch(test_repo, "FirstBranch")
     checkout!(b1)
-    
+
     # Commit with ONE new file to both first and second branch
     add_file_and_commit(test_repo, sbname)
-    
+
     b2 = create_branch(test_repo, "SecondBranch")
-    
+
     # Commit with ONE new file to first branch
     # first branch moves  forward as it is checked out
     # second branch stays back one
@@ -189,12 +189,12 @@ with_standard_test_repo(
     # that both have the same parent commit
     add_file_and_commit(test_repo, b2name)
     add_file_and_commit(test_repo, sbname, "The second branches comment")
-    
+
     status, cmmt = merge!(test_repo, tip(b1))
-    
+
     @test status == :conflicts
     @test is(cmmt, nothing)
-    
+
     idx = GitIndex(test_repo)
     @test has_conflicts(idx)
     @test length(conflicts(test_repo, idx)) == 1
@@ -218,9 +218,9 @@ with_standard_test_repo(
     # first branch moves forward as it is checked out,
     # second branch stays back one
     add_file_and_commit(test_repo, b1name)
-    # change file in first branch 
+    # change file in first branch
     add_file_and_commit(test_repo, sbname, "\0The first branches comment\0")
-    
+
     checkout!(b2)
     # commit with ONE new file to the second branch
     # b1 and b2 now point to separte commits that both have the same parent commit
@@ -230,7 +230,7 @@ with_standard_test_repo(
     status, cmmt = merge!(test_repo, tip(b1))
 
     @test status == :conflicts
-    
+
     idx = GitIndex(test_repo)
     @test has_conflicts(idx)
 
@@ -238,7 +238,7 @@ with_standard_test_repo(
     @test length(cs) == 1
 
     ancestor, ours, theirs = cs[1]
-    
+
     #TODO: this is not getting picked up as a binary delta
     #@test delta(diff(test_repo, ours.id, theirs.id)).isbinary == true
 end
@@ -246,7 +246,7 @@ end
 # test can ff commit
 for (detach_head, ffstrategy) in [(true, :default),
                                  (true, :fastforwardonly),
-                                 (false, :default), 
+                                 (false, :default),
                                  (false, :fastforwardonly)]
     with_merge_test_repo(
         "test can ff merge commit: $detach_head, $ffstrategy") do test_repo, _
@@ -254,13 +254,13 @@ for (detach_head, ffstrategy) in [(true, :default),
                 checkout!(test_repo, test_repo[head(test_repo)])
             end
             commit_to_merge = tip(lookup_branch(test_repo, "fast_forward"))
-            status, cmmt = merge!(test_repo, commit_to_merge, 
+            status, cmmt = merge!(test_repo, commit_to_merge,
                                   {:ffstrategy => ffstrategy})
             @test status === :fastforward
             @test Oid(cmmt) == Oid("4dfaa1500526214ae7b33f9b2c1144ca8b6b1f53")
             @test detach_head == is_head_detached(test_repo)
     end
-end 
+end
 
 for (detach_head, ffstrategy, estatus) in [(true, :default, :nonfastforward),
                                           (true, :nofastforward, :nonfastforward),
@@ -273,9 +273,9 @@ for (detach_head, ffstrategy, estatus) in [(true, :default, :nonfastforward),
             end
             commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
             status, cmmt = merge!(test_repo, commit_to_merge, {:ffstrategy => ffstrategy})
-            
+
             @test status === estatus
-            @test detach_head == is_head_detached(test_repo) 
+            @test detach_head == is_head_detached(test_repo)
     end
 end
 
@@ -287,7 +287,7 @@ with_merge_test_repo(
         was_called = true
     end}
     res = merge!(test_repo, commit_to_merge, opts)
-    @test was_called 
+    @test was_called
 end
 
 #TODO: progress works, notify does not
@@ -306,7 +306,7 @@ end
 
 with_merge_test_repo(
 "test ff merge reports checkout progress") do test_repo, _
-    commit_to_merge = tip(lookup_branch(test_repo, "fast_forward")) 
+    commit_to_merge = tip(lookup_branch(test_repo, "fast_forward"))
     was_called = false
     opts = {:progress => (args...) -> begin
         was_called = true
@@ -332,7 +332,7 @@ end
 #TODO: this does not work
 with_merge_test_repo(
 "test merge can detect renames") do test_repo, _
-    #= 
+    #=
     The environment is set up such that:
     file b.txt is edited in the "rename" branch and
     edited and renamed in the "rename_source" branch.
@@ -344,7 +344,7 @@ with_merge_test_repo(
     =#
     current_branch = checkout!(test_repo, "rename_source")
     @test current_branch != nothing
-    
+
     #run(`git --git-dir=$(path(test_repo)) branch`)
 
     branch_to_merge = lookup_branch(test_repo, "rename")
@@ -358,9 +358,9 @@ with_merge_test_repo(
 "test ff non ff merge throws") do test_repo, _
     commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
     #TODO: better errors
-    @test_throws ErrorException merge!(test_repo, commit_to_merge, 
+    @test_throws ErrorException merge!(test_repo, commit_to_merge,
                                        {:ffstrategy => :fastforwardonly})
-end 
+end
 
 with_merge_test_repo(
 "test can force ff merge through config") do test_repo, _
@@ -368,14 +368,14 @@ with_merge_test_repo(
     commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
     #TODO: better errors
     @test_throws ErrorException merge!(test_repo, commit_to_merge)
-end 
+end
 
 with_merge_test_repo(
 "test can merge and not commit") do test_repo, _
     commit_to_merge = tip(lookup_branch(test_repo, "normal_merge"))
-    
+
     status, cmmt = merge!(test_repo, commit_to_merge)
-    
+
     @test status === :nonfastforward
     @test is(cmmt, nothing)
 
@@ -387,9 +387,9 @@ end
 with_merge_test_repo(
 "test can force non ff merge") do test_repo, _
     commit_to_merge = tip(lookup_branch(test_repo,"fast_forward"))
-    opts = {:ffstrategy => :nofastforward} 
+    opts = {:ffstrategy => :nofastforward}
     status, cmmt = merge!(test_repo, commit_to_merge, opts)
-    @test status === :nonfastforward 
+    @test status === :nonfastforward
     #TODO: I don't see how we can ever get a non null commit here
     #@test cmmt == Oid("f58f780d5a0ae392efd4a924450b1bbdc0577d32")
     @test is_fully_merged(test_repo)
@@ -425,12 +425,12 @@ for (committish, strategy, estatus) in [
         status, cmmt  = merge!(test_repo, committish, {:ffstrategy => strategy})
         @test status === estatus
         @test is_fully_merged(test_repo)
-    end 
-end 
+    end
+end
 
 for (should_stage, strategy) in [(true, :fastforwardonly),
-                                 (false, :fastforwardonly), 
-                                 (true, :nofastforward), 
+                                 (false, :fastforwardonly),
+                                 (true, :nofastforward),
                                  (false, :nofastforward)]
     with_merge_test_repo(
     "test can merge with workdir conflicts throws: $should_stage, $strategy") do test_repo, _
@@ -440,7 +440,7 @@ for (should_stage, strategy) in [(true, :fastforwardonly),
         and then attempt to perform a merge. We expect the merge to fail
         due to merge conflicts.
         =#
-        committish_to_merge = "fast_forward" 
+        committish_to_merge = "fast_forward"
         touch_test(workdir(test_repo), "b.txt", "this is an alternate change")
         #TODO: the libgit2 sharp stage concept is much cleaner, we should steal that
         if should_stage
@@ -449,36 +449,36 @@ for (should_stage, strategy) in [(true, :fastforwardonly),
             write!(idx)
         end
         if strategy === :fastforwardonly
-            @test_throws LibGitError{:Checkout,:MergeConflict} merge!(test_repo, 
+            @test_throws LibGitError{:Checkout,:MergeConflict} merge!(test_repo,
                 committish_to_merge, {:ffstrategy => strategy})
         else
-            @test_throws LibGitError{:Merge,:MergeConflict} merge!(test_repo, 
+            @test_throws LibGitError{:Merge,:MergeConflict} merge!(test_repo,
                 committish_to_merge, {:ffstrategy => strategy})
         end
-    end 
+    end
 end
 
 for strategy in (:use_ours, :use_theirs)
     with_merge_test_repo(
         "test can specify conflict file strategy: $strategy") do test_repo, _
-        
+
         conflict_file  = "a.txt"
         conflict_branchname = "conflicts"
 
         branch = lookup_branch(test_repo, conflict_branchname)
         @test branch != nothing
-        
+
         opts = {:strategy => strategy}
         status, cmmt = merge!(test_repo, branch, opts)
-        
+
         @test status === :conflicts
-    
+
         idx = GitIndex(test_repo)
         cs = conflicts(test_repo, idx)
-        
+
         @test !isempty(cs)
         ancestor, ours, theirs= cs[1]
-        blob = nothing 
+        blob = nothing
         if strategy === :use_theirs
             blob = lookup_blob(test_repo, theirs.id)
         elseif strategy === :use_ours
@@ -486,41 +486,41 @@ for strategy in (:use_ours, :use_theirs)
         else
             error("unexpected strategy")
         end
-        @test blob != nothing 
+        @test blob != nothing
         @test bytestring(blob) == open(readall, joinpath(workdir(test_repo), conflict_file))
-    end 
+    end
 end
 
 for favor in (:favor_ours, :favor_theirs)
     with_merge_test_repo(
         "test merge can specify merge file flavor option") do test_repo, _
-        
+
         conflict_file  = "a.txt"
         conflict_branchname = "conflicts"
-        
+
         branch = lookup_branch(test_repo, conflict_branchname)
-        
+
         @test branch != nothing
-        
+
         opts = {:automerge => favor}
         status, _ = merge!(test_repo, branch, opts)
         reload!(test_repo)
 
         @test status === :nonfastforward
         @test is_fully_merged(test_repo)
-        
+
         idx = GitIndex(test_repo)
 
-        blob = nothing 
+        blob = nothing
         if favor == :favor_theirs
             blob = lookup(test_repo, Oid("3dd9738af654bbf1c363f6c3bbc323bacdefa179"))
         elseif favor == :favor_ours
             blob = lookup(test_repo, Oid("610b16886ca829cebd2767d9196f3c4378fe60b5"))
         else
             error("unexpeted merge file test error")
-        end 
+        end
         @test blob != nothing
-        
+
         entry = idx[conflict_file]
         @test entry != nothing
 
@@ -532,14 +532,14 @@ end
 for (branchname, strategy, estatus) in [
     ("refs/heads/normal_merge", :default, :nonfastforward),
     ("fast_forward", :default, :fastforward)]
-    
+
     with_merge_test_repo(
     "test can merge branch: $branchname, $strategy, $estatus") do test_repo, _
         status, cmmt= merge!(test_repo, branchname, {:ffstrategy => strategy})
         @test status === estatus
         @test is_fully_merged(test_repo)
-    end 
-end 
+    end
+end
 
 #=
 with_merge_test_repo(
@@ -552,7 +552,7 @@ with_merge_test_repo(
     #assert that we have an empty working directory
     @test length(idx) == 0
     #run(`git --git-dir=$(path(test_repo)) status`)
-    #merge!(test_repo, "master") 
+    #merge!(test_repo, "master")
 end
 =#
 
@@ -569,8 +569,8 @@ sandboxed_test("merge-resolve", "test merge has conflicts") do test_repo, path
     theirs = revparse(test_repo, "trivial-4-branch")
     base   = revparse(test_repo, merge_base(test_repo, ours, theirs))
     idx = merge!(test_repo, GitTree(ours), GitTree(theirs), GitTree(base))
-    @test has_conflicts(idx) 
+    @test has_conflicts(idx)
     @test sum(entry -> entry.stage > 0, idx) == 2
-    @test idx["new-and-different.txt", 2] != nothing 
+    @test idx["new-and-different.txt", 2] != nothing
     @test idx["new-and-different.txt", 3] != nothing
 end

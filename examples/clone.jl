@@ -20,16 +20,16 @@ using ArgParse
 # from the git-clone man page:
 # Clones a repository into a newly created directory, creates remote-tracking
 # branches for each branch in the cloned repository (visible using git branch -r),
-# and creates and checks out an initial branch that is forked from the cloned 
+# and creates and checks out an initial branch that is forked from the cloned
 # repository's currently active branch.
 
 function parse_commandline()
     settings = ArgParseSettings(autofix_names=true)
     @add_arg_table settings begin
-        "repo-url" 
+        "repo-url"
         help = "repo url"
         required = true
-        
+
         "directory"
         help = ""
     end

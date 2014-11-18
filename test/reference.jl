@@ -6,11 +6,11 @@ context("test create / lookup ref") do
     repo = create_test_repo(test_path)
     try
         cid, tid = seed_test_repo(repo)
-        
+
         _ = create_ref(repo, "refs/tags/tree", tid, force=true)
         tag = lookup_ref(repo, "refs/tags/tree")
         @test isa(tag, GitReference{Oid})
-        
+
         ref = lookup_ref(repo, "HEAD")
         @test isa(ref, GitReference{Sym})
 
@@ -24,13 +24,13 @@ context("test create / lookup ref") do
         _ = rename(tag, "refs/tags/renamed", force=false)
         tag = lookup_ref(repo, "refs/tags/renamed")
         @test isa(tag, GitReference{Oid})
-    finally 
+    finally
         close(repo)
         LibGit2.free!(repo)
         Base.gc()
         rm(test_path, recursive=true)
     end
-end 
+end
 
 #=
 context() do
@@ -46,14 +46,14 @@ context() do
 
         message = "This is a commit\n"
         tree = lookup_tree(repo, tid)
-      
+
         cid = commit(repo, "HEAD", sig, sig, message, tree)
 
         _ = create_ref(repo, "refs/heads/one",   cid, force=true)
         _ = create_ref(repo, "refs/heads/two",   cid, force=true)
         _ = create_ref(repo, "refs/heads/three", cid, force=true)
 
-        expected = [join(["refs/heads", x], "/") 
+        expected = [join(["refs/heads", x], "/")
                     for x in ["master","one","two","three"]]
         test_names = String[]
         for r in iter_refs(repo)
@@ -75,7 +75,7 @@ context() do
         for (exp, tst) in zip(expected, test_names)
             @test exp == tst
         end
-    finally 
+    finally
         close(repo)
         LibGit2.free!(repo)
         Base.gc()
@@ -88,34 +88,34 @@ end
 # Tests adapted from Ruby's Rugged Library
 # -----------------------------------------
 with_repo_access() do test_repo, path
-    context("test reference validity") do 
+    context("test reference validity") do
         valid = "refs/foobar"
         invalid = "refs/nope^*"
         @test is_valid_ref(valid) == true
-        @test is_valid_ref(invalid) == false 
+        @test is_valid_ref(invalid) == false
     end
 
     # test can handle exceptions
 
-    context("test list references") do 
+    context("test list references") do
         tmp = map((r) -> replace(name(r), "refs/", ""), foreach(GitReference, test_repo))
         @test join(sort(tmp), ":") == "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0"
     end
-    
+
     context("test can filter refs with regex") do
         tmp = map((r) -> replace(name(r), "refs/", ""), foreach(GitReference, test_repo, "refs/tags/*"))
         refs = join(sort(tmp), ":")
         @test refs == "tags/v0.9:tags/v1.0"
     end
 
-    context("test can filter refs with string") do 
+    context("test can filter refs with string") do
         tmp = map((r) -> replace(name(r), "refs/", ""), foreach(GitReference, test_repo, "*0.9*"))
         refs = join(sort(tmp), ":")
         @test refs == "tags/v0.9"
     end
 end
 
-with_repo_access() do test_repo, path 
+with_repo_access() do test_repo, path
 
   context("test can open reference") do
     ref = lookup_ref(test_repo, "refs/heads/master")
@@ -153,7 +153,7 @@ with_repo_access() do test_repo, path
       @test isa(entry.committer, Signature)
       @test email(entry.committer) == "schacon@gmail.com"
   end
-  
+
   context("test reference exists") do
     @test exists(test_repo, "refs/heads/master") == true
     @test exists(test_repo, "lol/wut") == false
@@ -185,10 +185,10 @@ with_repo_access() do test_repo, path
 end
 
 with_tmp_repo_access("test create ref") do test_repo, path
-    create_ref(test_repo, 
+    create_ref(test_repo,
                "refs/heads/unit_test",
                "refs/heads/master")
-    
+
     create_ref(test_repo,
                "refs/heads/unit_test",
                "refs/heads/master",
@@ -211,10 +211,10 @@ end
 
 with_tmp_repo_access("test name ref") do test_repo, path
     @test realpath(workdir(test_repo)) == realpath(path)
-   
+
     o = Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     ref = create_ref(test_repo, "refs/heads/unit_test", o)
-   
+
     @test o == target(ref)
     @test isa(ref, GitReference{Oid})
     @test name(ref) == "refs/heads/unit_test"
@@ -265,7 +265,7 @@ with_tmp_repo_access("test reflog") do test_repo, path
     rlog = GitReflog(ref)
     # TODO: this fails for travis (cannot reproduce in local tests)
     # travis states that length(rlog) == 3 with fist reflog entry
-    # containing no information (unknown user/email) 
+    # containing no information (unknown user/email)
     @test length(rlog) == 3
 
     #@test rlog[2].id_old == Oid("0000000000000000000000000000000000000000")
@@ -287,20 +287,20 @@ with_tmp_repo_access("test ref log with config") do test_repo, path
                      Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
     testname = "Julia User"
     testemail = "user@julia.com"
-    
+
     cfg = GitConfig(test_repo)
     cfg["user.name"] = testname
     cfg["user.email"] = testemail
 
     log!(ref)
     log!(ref, "commit: bla bla")
-    
+
     rlog = GitReflog(ref)
     # TODO: this fails for travis (cannot reproduce in local tests)
     # travis states that length(rlog) == 3 with fist reflog entry
-    # containing no information (unknown user/email) 
+    # containing no information (unknown user/email)
     @test length(rlog) == 3
-    
+
     #@test rlog[end-1].id_old == Oid("0000000000000000000000000000000000000000")
     @test rlog[2].id_old == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     @test rlog[2].id_new == Oid("36060c58702ed4c2a40832c51758d5344201d89a")

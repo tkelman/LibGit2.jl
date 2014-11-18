@@ -31,14 +31,14 @@ end
 
 with_tmp_repo_access("test writing a tag") do test_repo, path
    sig = Signature("Julia", "julia@julia.com")
-   tid = tag!(test_repo, 
+   tid = tag!(test_repo,
               name="tag",
               message="test tag message\n",
               target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"),
               tagger=sig)
    t = lookup(test_repo, tid)
    @test isa(t, GitTag)
-   @test target_id(t) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644") 
+   @test target_id(t) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
    @test target_id(t) == Oid(target(t))
    @test message(t) == "test tag message\n"
    @test name(tagger(t)) == "Julia"
@@ -50,8 +50,8 @@ with_tmp_repo_access("test writing a tag without a signature") do test_repo, pat
     testemail = "julia@julia.com"
     GitConfig(test_repo)["user.name"] = testname
     GitConfig(test_repo)["user.email"] = testemail
-    id = tag!(test_repo, 
-              name="tag", 
+    id = tag!(test_repo,
+              name="tag",
               message="test tag message\n",
               target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     @test isa(id, Oid)
@@ -63,8 +63,8 @@ end
 with_tmp_repo_access("test invalid message type") do test_repo, path
     sig = Signature("Julia", "julia@julia.com")
     @test_throws TypeError tag!(
-                              test_repo, 
-                              name="tag", 
+                              test_repo,
+                              name="tag",
                               message=:error,
                               target=Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"),
                               tagger=sig)

@@ -24,10 +24,10 @@ if !has_git()
     warn("Skipping remote clone => test clone over git")
 else
     dir = mktempdir()
-    try 
+    try
         repo = repo_clone(ENV["GITTEST_REMOTE_GIT_URL"], dir)
         @test isa(repo, GitRepo)
-    finally 
+    finally
         rm(dir, recursive=true)
     end
 end
@@ -58,7 +58,7 @@ else
     end
 end
 
-context("test clone callback args without username") do 
+context("test clone callback args without username") do
     dir = mktempdir()
     gurl, gusername, gallowed_types = nothing, nothing, nothing
     #TODO: better error

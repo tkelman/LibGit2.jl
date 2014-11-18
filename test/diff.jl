@@ -8,7 +8,7 @@ sandboxed_test("attr", "test with oid string") do test_repo, path
   d = diff(test_repo, "605812a", "370fe9ec22",
            {:context_lines=>1, :interhunk_lines=>1})
   @test isa(d, GitDiff)
-  
+
   ds = deltas(d)
   ps = patches(d)
 
@@ -23,7 +23,7 @@ sandboxed_test("attr", "test with oid string") do test_repo, path
       end
   end
   ls = vcat([lines(h) for h in hs]...)
-   
+
   @test length(d) == 5
   @test length(ds) == 5
   @test length(ps) == 5
@@ -57,7 +57,7 @@ sandboxed_test("attr", "test with nothing on right side") do test_repo, path
 
   ds = deltas(d)
   ps = patches(d)
-  
+
   hs = DiffHunk[]
   for p in ps
       hks = hunks(p)
@@ -69,7 +69,7 @@ sandboxed_test("attr", "test with nothing on right side") do test_repo, path
       end
   end
   ls = vcat([lines(h) for h in hs]...)
-  
+
   @test length(d) == 16
   @test length(ds) == 16
   @test length(ps) == 16
@@ -89,10 +89,10 @@ end
 sandboxed_test("attr", "test with nothing on left side") do test_repo, path
   d = diff(test_repo, nothing, "605812a", {:context_lines=>1, :interhunk_lines=>1})
   @test isa(d, GitDiff)
-  
+
   ds = deltas(d)
   ps = patches(d)
-  
+
   hs = DiffHunk[]
   for p in ps
       hks = hunks(p)
@@ -104,7 +104,7 @@ sandboxed_test("attr", "test with nothing on left side") do test_repo, path
       end
   end
   ls = vcat([lines(h) for h in hs]...)
-  
+
   @test length(d) == 16
   @test length(ds) == 16
   @test length(ps) == 16
@@ -114,7 +114,7 @@ sandboxed_test("attr", "test with nothing on left side") do test_repo, path
   @test sum(x -> x.status == :modified? 1 : 0, ds) == 0
 
   @test length(hs) == 15
-  
+
   @test length(ls) == 115
   @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 0
   @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 113
@@ -128,10 +128,10 @@ sandboxed_test("status", "test basic diff") do test_repo, path
               :interhunk_lines => 1,
               :include_ignored => true,
               :include_untracked => true})
-    
+
     ds = deltas(d)
     ps = patches(d)
-      
+
     hs = DiffHunk[]
     for p in ps
         hks = hunks(p)
@@ -143,8 +143,8 @@ sandboxed_test("status", "test basic diff") do test_repo, path
         end
     end
     ls = vcat([lines(h) for h in hs]...)
-      
-    @test length(ds) == 14 
+
+    @test length(ds) == 14
     @test length(ps) == 14
 
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
@@ -164,13 +164,13 @@ end
 sandboxed_test("attr", "test diff with parent") do test_repo, path
     c = lookup_commit(test_repo, "605812a")
     @test isa(c, GitCommit)
-    
+
     d = diff(test_repo, c, {:context_lines=>1, :interhunk_lines=>1})
     @test isa(d, GitDiff)
 
     ds = deltas(d)
     ps = patches(d)
-      
+
     hs = DiffHunk[]
     for p in ps
         hks = hunks(p)
@@ -182,9 +182,9 @@ sandboxed_test("attr", "test diff with parent") do test_repo, path
         end
     end
     ls = vcat([lines(h) for h in hs]...)
-    
+
     @test length(d)  == 5
-    @test length(ds) == 5 
+    @test length(ds) == 5
     @test length(ps) == 5
 
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
@@ -200,17 +200,17 @@ sandboxed_test("attr", "test diff with parent") do test_repo, path
 end
 
 sandboxed_test("attr", "test diff with parent for init commit") do test_repo, path
-    c = lookup_commit(test_repo, 
+    c = lookup_commit(test_repo,
                 Oid("6bab5c79cd5140d0f800917f550eb2a3dc32b0da"))
     @test isa(c, GitCommit)
-    
-    d = diff(test_repo, c, 
+
+    d = diff(test_repo, c,
         {:context_lines => 1, :interhunk_lines => 1, :reverse => true})
     @test isa(d, GitDiff)
-    
+
     ds = deltas(d)
     ps = patches(d)
-      
+
     hs = DiffHunk[]
     for p in ps
         hks = hunks(p)
@@ -222,11 +222,11 @@ sandboxed_test("attr", "test diff with parent for init commit") do test_repo, pa
         end
     end
     ls = vcat([lines(h) for h in hs]...)
-     
+
     @test length(d)  == 13
     @test length(ds) == 13
     @test length(ps) == 13
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 13
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 0
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 0
@@ -242,7 +242,7 @@ end
 sandboxed_test("status", "test commit to workdir basic diff") do test_repo, path
     c = lookup_commit(test_repo, "26a125ee1bf")
     @test isa(c, GitCommit)
-    
+
     d= diff_workdir(test_repo, c,
      {:context_lines => 3,
       :interhunk_lines => 1,
@@ -250,10 +250,10 @@ sandboxed_test("status", "test commit to workdir basic diff") do test_repo, path
       :include_untracked => true}
     )
     @test isa(d, GitDiff)
-    
+
     ds = deltas(d)
     ps = patches(d)
-      
+
     hs = DiffHunk[]
     for p in ps
         hks = hunks(p)
@@ -265,10 +265,10 @@ sandboxed_test("status", "test commit to workdir basic diff") do test_repo, path
         end
     end
     ls = vcat([lines(h) for h in hs]...)
-     
+
     @test length(ds) == 14
     @test length(ps) == 14
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 4
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 4
@@ -279,15 +279,15 @@ sandboxed_test("status", "test commit to workdir basic diff") do test_repo, path
 
     @test length(ls) == 13
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 4
-    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 5 
-    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4 
-end 
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 5
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4
+end
 
 sandboxed_test("status", "test tree to workdir basic diff") do test_repo, path
     c = lookup_commit(test_repo, "26a125ee1bf")
     t = GitTree(c)
     @test isa(t, GitTree)
-    
+
     d = diff_workdir(test_repo, t,
      {:context_lines => 3,
       :interhunk_lines => 1,
@@ -295,10 +295,10 @@ sandboxed_test("status", "test tree to workdir basic diff") do test_repo, path
       :include_untracked => true}
     )
     @test isa(d, GitDiff)
-    
+
     ds = deltas(d)
     ps = patches(d)
-      
+
     hs = DiffHunk[]
     for p in ps
         hks = hunks(p)
@@ -310,10 +310,10 @@ sandboxed_test("status", "test tree to workdir basic diff") do test_repo, path
         end
     end
     ls = vcat([lines(h) for h in hs]...)
-     
+
     @test length(ds) == 14
     @test length(ps) == 14
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 4
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 4
@@ -324,9 +324,9 @@ sandboxed_test("status", "test tree to workdir basic diff") do test_repo, path
 
     @test length(ls) == 13
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 4
-    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 5 
-    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4 
-end 
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 5
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 4
+end
 
 sandboxed_test("status", "test tree to workdir diff merge") do test_repo, path
     idx = GitIndex(test_repo)
@@ -334,15 +334,15 @@ sandboxed_test("status", "test tree to workdir diff merge") do test_repo, path
     t = GitTree(c)
 
     # merge diffs to simulate "git diff 26a125ee1bf"
-    diff1 = diff(test_repo, t, idx, 
+    diff1 = diff(test_repo, t, idx,
                 {:include_ignored=>true, :include_untracked=>true})
-    diff2 = diff(test_repo, idx, 
+    diff2 = diff(test_repo, idx,
                 {:include_ignored=>true, :include_untracked=>true})
     merge!(diff1, diff2)
 
     ds = deltas(diff1)
     ps = patches(diff1)
-      
+
     hs = DiffHunk[]
     for p in ps
         hks = hunks(p)
@@ -354,10 +354,10 @@ sandboxed_test("status", "test tree to workdir diff merge") do test_repo, path
         end
     end
     ls = vcat([lines(h) for h in hs]...)
-     
+
     @test length(ds) == 15
     @test length(ps) == 15
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 2
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 5
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 4
@@ -368,8 +368,8 @@ sandboxed_test("status", "test tree to workdir diff merge") do test_repo, path
 
     @test length(ls) == 17
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 4
-    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 8 
-    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 5 
+    @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 8
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 5
 end
 
 sandboxed_test("status", "test tree to workdir diff stats") do test_repo, path
@@ -378,14 +378,14 @@ sandboxed_test("status", "test tree to workdir diff stats") do test_repo, path
     t = GitTree(c)
 
     # merge diffs to simulate "git diff 26a125ee1bf"
-    diff1 = diff(test_repo, t, idx, 
+    diff1 = diff(test_repo, t, idx,
                 {:include_ignored=>true, :include_untracked=>true})
-    diff2 = diff(test_repo, idx, 
+    diff2 = diff(test_repo, idx,
                 {:include_ignored=>true, :include_untracked=>true})
     merge!(diff1, diff2)
     diff_stat = stat(diff1)
-    
-    @test diff_stat.files == 11 
+
+    @test diff_stat.files == 11
     @test diff_stat.adds  == 8
     @test diff_stat.dels  == 5
 
@@ -395,9 +395,9 @@ sandboxed_test("status", "test tree to workdir diff stats") do test_repo, path
       [ 1, 0, 2 ]
     }
 
-    i = 1 
+    i = 1
     for patch in patches(diff1)
-        s = delta(patch).status 
+        s = delta(patch).status
         if s == :unmodified || s == :ignored || s == :untracked
             continue
         end
@@ -408,11 +408,11 @@ sandboxed_test("status", "test tree to workdir diff stats") do test_repo, path
         expected_lines = expected_patch_stat[i][3]
 
         patch_stat = stat(patch)
-       
+
         @test expected_adds == patch_stat.adds
         @test expected_dels == patch_stat.dels
         @test nchanges(patch) == patch_stat.adds + patch_stat.dels
-        #@test expected_lines == nlines(patch) 
+        #@test expected_lines == nlines(patch)
         i += 1
     end
 end
@@ -440,17 +440,17 @@ sandboxed_test("attr", "test tree to tree basic diff") do test_repo, path
     @test length(d) == 5
     @test length(ds) == 5
     @test length(ps) == 5
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 2
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 1
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 2
-    
-    @test length(hs) == 5 
+
+    @test length(hs) == 5
 
     @test length(ls) == (7 + 24 + 1 + 6 + 6)
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
     @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == (24 + 1 + 5 + 5)
-    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1) 
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1)
 
     d = diff(test_repo, c, b, {:context_lines => 1, :interhunk_lines => 1})
     ds = deltas(d)
@@ -469,17 +469,17 @@ sandboxed_test("attr", "test tree to tree basic diff") do test_repo, path
 
     @test length(ds) == 2
     @test length(ps) == 2
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 0
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 2
-    
+
     @test length(hs) == 2
 
     @test length(ls) == (8 + 15)
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
     @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 1
-    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 14) 
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 14)
 end
 
 sandboxed_test("attr", "test tree to tree with empty tree") do test_repo, path
@@ -502,22 +502,22 @@ sandboxed_test("attr", "test tree to tree with empty tree") do test_repo, path
     @test length(d) == 16
     @test length(ds) == 16
     @test length(ps) == 16
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 16
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 0
-    
+
     @test length(hs) == 15
 
     @test length(ls) == 115
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 0
     @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == 0
-    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 113 
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == 113
 end
 
 sandboxed_test("attr", "test tree to tree with rev string") do test_repo, path
     a = GitTree(lookup_commit(test_repo, "605812a"))
-    d = diff(test_repo, a, "370fe9ec22", 
+    d = diff(test_repo, a, "370fe9ec22",
                 {:context_lines => 1, :interhunk_lines => 1})
     @test isa(d, GitDiff)
     ds = deltas(d)
@@ -537,17 +537,17 @@ sandboxed_test("attr", "test tree to tree with rev string") do test_repo, path
     @test length(d) == 5
     @test length(ds) == 5
     @test length(ps) == 5
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 2
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 1
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 2
-    
+
     @test length(hs) == 5
 
     @test length(ls) == (7 + 24 + 1 + 6 + 6)
     @test sum(x -> x.line_origin == :context? 1 : 0, ls) == 1
     @test sum(x -> x.line_origin == :addition? 1 : 0, ls) == (24 + 1 + 5 + 5)
-    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1) 
+    @test sum(x -> x.line_origin == :deletion? 1 : 0, ls) == (7 + 1)
 end
 
 sandboxed_test("attr", "test tree to tree with diff merge") do test_repo, path
@@ -558,7 +558,7 @@ sandboxed_test("attr", "test tree to tree with diff merge") do test_repo, path
     ab = diff(test_repo, a, b)
     cb = diff(test_repo, c, b)
     d  = merge!(ab, cb)
-    
+
     ds = deltas(d)
     ps = patches(d)
     hs = DiffHunk[]
@@ -576,11 +576,11 @@ sandboxed_test("attr", "test tree to tree with diff merge") do test_repo, path
     @test length(d) == 6
     @test length(ds) == 6
     @test length(ps) == 6
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 2
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 1
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 3
-    
+
     @test length(hs) == 6
 
     @test length(ls) == 59
@@ -601,7 +601,7 @@ sandboxed_test("unsymlinked.git", "test symlink blob mode changed to reg file") 
     @test length(d) == 3
     @test length(ds) == 3
     @test length(ps) == 3
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 1
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 2
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 0
@@ -620,12 +620,12 @@ sandboxed_test("unsymlinked.git", "test symlink blob mode changed to reg file as
     @test length(d) == 2
     @test length(ds) == 2
     @test length(ps) == 2
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 1
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 0
     @test sum(x -> x.status == :typechange? 1 : 0, ds) == 1
-end 
+end
 
 
 sandboxed_test("unsymlinked.git", "test regular blob mode change to exe file") do test_repo, path
@@ -640,12 +640,12 @@ sandboxed_test("unsymlinked.git", "test regular blob mode change to exe file") d
     @test length(d) == 1
     @test length(ds) == 1
     @test length(ps) == 1
-    
+
     @test sum(x -> x.status == :added? 1 : 0, ds) == 0
     @test sum(x -> x.status == :deleted? 1 : 0, ds) == 0
     @test sum(x -> x.status == :modified? 1 : 0, ds) == 1
     @test sum(x -> x.status == :typechange? 1 : 0, ds) == 0
-end 
+end
 
 sandboxed_test("diff", "test size") do test_repo, path
     a = lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69"))
@@ -662,8 +662,8 @@ sandboxed_test("diff", "test each delta") do test_repo, path
     d = diff(test_repo, GitTree(a), GitTree(b))
     ds = deltas(d)
 
-    @test length(d) == 2 
-    
+    @test length(d) == 2
+
     @test ds[1].old_file.path == "another.txt"
     @test ds[1].new_file.path == "another.txt"
 
@@ -679,7 +679,7 @@ sandboxed_test("diff", "test diff treats files bigger than max size as binary") 
     a = lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69"))
     b = lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10"))
     d = diff(test_repo, GitTree(a), GitTree(b), {:max_size=>10})
-    @test length(patches(d)) == 2 
+    @test length(patches(d)) == 2
     @test patch(d) == replace("diff --git a/another.txt b/another.txt
 index 3e5bcba..546c735 100644
 Binary files a/another.txt and b/another.txt differ
@@ -692,7 +692,7 @@ end
 sandboxed_test("diff", "test constraining paths") do test_repo, path
     a = GitTree(lookup(test_repo, Oid("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")))
     b = GitTree(lookup(test_repo, Oid("7a9e0b02e63179929fed24f0a3e0f19168114d10")))
-    
+
     d = diff(test_repo, a, b, {:paths => ["readme.txt"]})
     @test "M\treadme.txt\n" == patch(d, format=:name_status)
 
@@ -751,7 +751,7 @@ index 7b808f7..29ab705 100644
 -it.
 +it.!
 \\ No newline at end of file
-", "\r\n", "\n") 
+", "\r\n", "\n")
 end
 
 sandboxed_test("diff", "test iteration") do test_repo, path
@@ -760,13 +760,13 @@ sandboxed_test("diff", "test iteration") do test_repo, path
     d = diff(test_repo, a, b)
 
     ps = patches(d)
-    @test length(ps) == 2 
+    @test length(ps) == 2
 
     @test "another.txt" == delta(ps[1]).old_file.path
     @test "another.txt" == delta(ps[1]).new_file.path
 
     @test delta(ps[1]).isbinary == false
-    
+
     hs = hunks(ps[1])
     @test length(hs) == 3
 
@@ -780,14 +780,14 @@ sandboxed_test("diff", "test iteration") do test_repo, path
     @test delta(ps[2]).isbinary == false
 
     hs = hunks(ps[2])
-    @test length(hs) == 3 
+    @test length(hs) == 3
 
     @test beginswith(hs[1].header, "@@ -1,4 +1,4 @@")
     @test beginswith(hs[2].header, "@@ -7,10 +7,6 @@")
     @test beginswith(hs[3].header, "@@ -24,12 +20,9 @@")
 
     ls = lines(hs[1])
-    @test length(ls) == 5 
+    @test length(ls) == 5
 
     @test :deletion == ls[1].line_origin
     @test "The Git feature that really makes it stand apart from nearly every other SCM\n" == ls[1].content

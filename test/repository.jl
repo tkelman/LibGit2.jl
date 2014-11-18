@@ -22,22 +22,22 @@ end
 # ------------------------------------
 # Tests adapted from Git2Go Library
 # ------------------------------------
-context("test creating bare repository") do 
+context("test creating bare repository") do
     tmp_repo(test_repo_path) do
         init_repo(test_repo_path; bare=true)
         repo = GitRepo(test_repo_path)
-        try 
+        try
             @test isa(repo, GitRepo)
             @test isbare(repo)
             @test isempty(repo)
         finally
             close(repo)
             LibGit2.free!(repo)
-        end 
+        end
     end
-end 
+end
 
-context("test creating repository") do 
+context("test creating repository") do
     tmp_repo(test_repo_path) do
         init_repo(test_repo_path)
         repo = GitRepo(test_repo_path)
@@ -55,8 +55,8 @@ context("test creating repository") do
             # empty repo has no commits
             @test isempty(commits(repo))
             # empty repo has no references
-            @test isempty(references(repo)) 
-            
+            @test isempty(references(repo))
+
             @test isa(GitConfig(repo), GitConfig)
             @test isa(GitTreeBuilder(repo), GitTreeBuilder)
         finally
@@ -73,8 +73,8 @@ sandboxed_test("testrepo.git", "test fails to open repos that dont' exist") do t
     @test_throws LibGitError{:OS,:NotFound} GitRepo("fakepath/123")
     @test_throws LibGitError{:OS,:NotFound} GitRepo("test")
 end
-   
-sandboxed_test("testrepo.git", "test can check if object exist") do test_repo, path 
+
+sandboxed_test("testrepo.git", "test can check if object exist") do test_repo, path
     @test Oid("8496071c1b46c854b31185ea97743be6a8774479") in test_repo
     @test exists(test_repo, Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") in test_repo
@@ -98,7 +98,7 @@ sandboxed_test("testrepo.git", "test can read object headers") do test_repo, pat
     @test h[:nbytes] == 172
 end
 
-sandboxed_test("testrepo.git", "test check reads rail on missing objs") do test_repo, path 
+sandboxed_test("testrepo.git", "test check reads rail on missing objs") do test_repo, path
     @test_throws LibGitError{:Odb,:NotFound} read(test_repo, Oid("a496071c1b46c854b31185ea97743be6a8774471"))
 end
 
@@ -143,7 +143,7 @@ sandboxed_test("testrepo.git", "test return all ref names") do test_repo, path
     @test length(rnames) == 21
 end
 
-sandboxed_test("testrepo.git", "test return all tags") do test_repo, path 
+sandboxed_test("testrepo.git", "test return all tags") do test_repo, path
     ts = tags(test_repo)
     @test length(ts) == 7
 end
@@ -193,10 +193,10 @@ end
 sandboxed_test("testrepo.git", "test load alternates") do test_repo, _
     alt_path = joinpath(pwd(), "fixtures", "alternate", "objects")
     repo = GitRepo(path(test_repo), alternates=[alt_path])
-    try 
+    try
       @test count(x->true, repo) == 1690
       @test read(repo, Oid("146ae76773c91e3b1d00cf7a338ec55ae58297e2")) != nothing
-    finally 
+    finally
       close(repo)
     end
 end
@@ -240,16 +240,16 @@ sandboxed_test("testrepo.git", "test ahead behind with ids") do test_repo, path
       Oid("a4a7dce85cf63874e984719f4fdd239f5145052f"),
       Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
     )
-    @test ahead == 2 
+    @test ahead == 2
     @test behind == 1
 end
 
 sandboxed_test("testrepo.git", "test ahead behind with commits") do test_repo, path
-    ahead, behind = ahead_behind(test_repo, 
+    ahead, behind = ahead_behind(test_repo,
       test_repo[Oid("a4a7dce85cf63874e984719f4fdd239f5145052f")],
       test_repo[Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")]
     )
-    @test ahead == 2 
+    @test ahead == 2
     @test behind == 1
 end
 
@@ -264,7 +264,7 @@ sandboxed_test("merge-resolve", "test merge commits") do test_repo, path
     #TODO: BUG very rarely the length of the index is reported as 6??
     @test length(index) == 8
 
-    @test (Oid("233c0919c998ed110a4b6ff36f353aec8b713487") == 
+    @test (Oid("233c0919c998ed110a4b6ff36f353aec8b713487") ==
             Oid(index["added-in-master.txt", 0]))
     @test (Oid("f2e1550a0c9e53d5811175864a29536642ae3821") ==
             Oid(index["automergeable.txt", 0]))
@@ -273,16 +273,16 @@ sandboxed_test("merge-resolve", "test merge commits") do test_repo, path
     @test (Oid("11deab00b2d3a6f5a3073988ac050c2d7b6655e2") ==
             Oid(index["changed-in-master.txt", 0]))
 
-    @test (Oid("d427e0b2e138501a3d15cc376077a3631e15bd46") == 
+    @test (Oid("d427e0b2e138501a3d15cc376077a3631e15bd46") ==
             Oid(index["conflicting.txt", 1]))
     @test (Oid("4e886e602529caa9ab11d71f86634bd1b6e0de10") ==
             Oid(index["conflicting.txt", 2]))
-    @test (Oid("2bd0a343aeef7a2cf0d158478966a6e587ff3863") == 
+    @test (Oid("2bd0a343aeef7a2cf0d158478966a6e587ff3863") ==
             Oid(index["conflicting.txt", 3]))
 
     @test (Oid("c8f06f2e3bb2964174677e91f0abead0e43c9e5d") ==
             Oid(index["unchanged.txt", 0]))
-    @test has_conflicts(index) 
+    @test has_conflicts(index)
 end
 
 #---------------------------
@@ -298,12 +298,12 @@ end
 with_tmp_repo_access("test shallow repo write") do test_repo, path
     TEST_CONTENT = "my test data\n"
 
-    context("test can hash data") do 
+    context("test can hash data") do
         id = hash_data(GitBlob, TEST_CONTENT)
         @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
     end
 
-    context("test write to odb") do 
+    context("test write to odb") do
         id = write!(GitBlob, test_repo, TEST_CONTENT)
         @test id == Oid("76b1b55ab653581d6f2c7230d34098e837197674")
         @test Oid("76b1b55ab653581d6f2c7230d34098e837197674") in test_repo
@@ -313,7 +313,7 @@ with_tmp_repo_access("test shallow repo write") do test_repo, path
         info = revparse(test_repo, "HEAD")
         @test isa(info, GitCommit)
         sig = Signature("test", "test@test.com")
-        #baseless = commit(test_repo, "null", sig, sig, "", 
+        #baseless = commit(test_repo, "null", sig, sig, "",
         #@test merge_base(test_repo, "HEAD", baseless) == nothing
     end
 
@@ -337,7 +337,7 @@ function discover_test(f::Function)
     tmpdir = mktempdir()
     mkdir(joinpath(tmpdir, "foo"))
     try
-        f(tmpdir) 
+        f(tmpdir)
     finally
         teardown_dir(tmpdir)
     end
@@ -355,7 +355,7 @@ end
 discover_test("test discover true") do tmpdir
     repo = init_repo(tmpdir, bare=true)
     root = repo_discover(tmpdir)
-    try 
+    try
         @test isbare(root) == true
         @test path(root) == path(repo)
     finally
@@ -367,7 +367,7 @@ end
 discover_test("test discover nested true") do tmpdir
     repo = init_repo(tmpdir, bare=true)
     root = repo_discover(joinpath(tmpdir, "foo"))
-    try 
+    try
         @test isbare(root) == true
         @test path(root) == path(repo)
     finally
@@ -389,7 +389,7 @@ function repo_init_test(f::Function)
 end
 repo_init_test(f::Function, s::String) = (println(s); repo_init_test(f))
 
-repo_init_test("test init bare false") do tmpdir 
+repo_init_test("test init bare false") do tmpdir
     repo = init_repo(tmpdir, bare=false)
     try
         @test isbare(repo) == false
@@ -400,7 +400,7 @@ end
 
 repo_init_test("test init bare true") do tmpdir
     repo = init_repo(tmpdir, bare=true)
-    try 
+    try
         @test isbare(repo) == true
     finally
         close
@@ -424,15 +424,15 @@ repo_clone_test("basic repo clone") do source, dest
     @show source, dest
     repo = repo_clone(source, dest)
     try
-      @test isa(repo, GitRepo) 
+      @test isa(repo, GitRepo)
       #@test open(readline, joinpath(tmppath, "README")) |> chomp == "hey"
-      @test (target(head(repo)) 
+      @test (target(head(repo))
                 == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-      @test (target(lookup_ref(repo, "refs/heads/master")) 
+      @test (target(lookup_ref(repo, "refs/heads/master"))
                 == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
       @test (target(lookup_ref(repo, "refs/remotes/origin/master"))
                 == Oid("36060c58702ed4c2a40832c51758d5344201d89a"))
-      @test (target(lookup_ref(repo, "refs/remotes/origin/packed")) 
+      @test (target(lookup_ref(repo, "refs/remotes/origin/packed"))
                 == Oid("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9"))
     finally
       close(repo)
@@ -513,7 +513,7 @@ end
 
 sandboxed_test("testrepo.git", "test empty namespace") do test_repo, path
     set_namespace!(test_repo, "foo")
-    @test isempty(ref_names(test_repo)) 
+    @test isempty(ref_names(test_repo))
 end
 
 #---------------------------
@@ -523,15 +523,15 @@ sandboxed_clone_test("testrepo.git", "test repo push") do test_repo, remote_repo
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    result = push!(test_repo, "origin", 
+    result = push!(test_repo, "origin",
                 ["refs/heads/master",
-                "refs/heads/master:refs/heads/foobar", 
+                "refs/heads/master:refs/heads/foobar",
                 "refs/heads/unit_test"])
     @test isempty(result)
     @test (target(lookup_ref(remote_repo, "refs/heads/foobar"))
                 == Oid("a65fedf39aefe402d3bb6e24df4d4f5fe4547750"))
     @test (target(lookup_ref(remote_repo, "refs/heads/unit_test"))
-                == Oid("8496071c1b46c854b31185ea97743be6a8774479")) 
+                == Oid("8496071c1b46c854b31185ea97743be6a8774479"))
 end
 
 sandboxed_clone_test("testrepo.git", "test push to non bare raise err") do test_repo, remote_repo, path
@@ -540,7 +540,7 @@ sandboxed_clone_test("testrepo.git", "test push to non bare raise err") do test_
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
     try
         push!(test_repo, "origin", ["refs/heads/master"])
-        @test false 
+        @test false
     except
         @test true
     end
@@ -566,10 +566,10 @@ sandboxed_clone_test("testrepo.git", "test push non ff raise error") do test_rep
     create_ref(test_repo,
         "refs/heads/unit_test",
         Oid("8496071c1b46c854b31185ea97743be6a8774479"))
-    result = push!(test_repo, "origin", 
+    result = push!(test_repo, "origin",
                    ["+refs/heads/unit_test:refs/heads/master"])
-    @test isempty(result) 
-    @test (target(lookup_ref(remote_repo, "refs/heads/master")) 
+    @test isempty(result)
+    @test (target(lookup_ref(remote_repo, "refs/heads/master"))
                == Oid("8496071c1b46c854b31185ea97743be6a8774479"))
 end
 
@@ -589,7 +589,7 @@ sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, 
 
     checkout_tree!(test_repo, "refs/heads/subtrees", {:strategy => :safe})
     set_head!(test_repo, "refs/heads/subtrees")
-    
+
     @test isfile(joinpath(workdir(test_repo), "README"))
     @test isfile(joinpath(workdir(test_repo), "branch_file.txt"))
     @test isfile(joinpath(workdir(test_repo), "new.txt"))
@@ -597,7 +597,7 @@ sandboxed_checkout_test("test checkout tree with revspec string") do test_repo, 
     @test isfile(joinpath(workdir(test_repo), "ab","c", "3.txt"))
     @test isfile(joinpath(workdir(test_repo), "ab","de","2.txt"))
     @test isfile(joinpath(workdir(test_repo), "ab","de","fgh","1.txt"))
-    
+
     @test isdir(joinpath(workdir(test_repo), "a")) == false
 end
 
@@ -613,7 +613,7 @@ end
 
 sandboxed_checkout_test("test checkout tree subdir") do test_repo, test_clone, test_bare
     @test isfile(joinpath(workdir(test_repo), "ab")) == false
-    checkout_tree!(test_repo, "refs/heads/subtrees", 
+    checkout_tree!(test_repo, "refs/heads/subtrees",
                    {:strategy => :safe, :paths => "ab/de/"})
 
     @test isdir(joinpath(workdir(test_repo)), "ab")

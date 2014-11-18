@@ -10,7 +10,7 @@ context(f::Function, s::String) = (println(s); context(f))
 
 cleanup_dir(p) = begin
     if isdir(p)
-        rm(p, recursive=true) 
+        rm(p, recursive=true)
     end
 end
 
@@ -21,7 +21,7 @@ function cleanup!(repo::GitRepo, dir::String)
     rm(dir, recursive=true)
 end
 
-function remote_transport_test(f::Function) 
+function remote_transport_test(f::Function)
     tmp_dir = mktempdir()
     test_repo = init_repo(tmp_dir, bare=false)
     test_repo_dir = joinpath(TESTDIR, joinpath("fixtures", "testrepo.git", "."))
@@ -31,7 +31,7 @@ function remote_transport_test(f::Function)
     finally
         cleanup!(test_repo, tmp_dir)
     end
-end 
+end
 remote_transport_test(f::Function, s::String) =
     (println(s); remote_transport_test(f))
 
@@ -49,9 +49,9 @@ copy_recur(path::String, dest::String) = begin
         elseif isdir(pc)
             isdir(dc) || mkdir(dc)
             copy_recur(pc, dc)
-        end 
-    end 
-end 
+        end
+    end
+end
 
 function repo_clone_test(f::Function)
     tmp_dir = mktempdir()
@@ -61,7 +61,7 @@ function repo_clone_test(f::Function)
     finally
         cleanup_dir(tmp_dir)
     end
-end 
+end
 repo_clone_test(f::Function, s::String) = (println(s); repo_clone_test(f))
 
 function with_test_index(f::Function)
@@ -71,7 +71,7 @@ function with_test_index(f::Function)
         f(test_index, test_index_path)
     finally
     end
-end 
+end
 with_test_index(f::Function, s::String) =
     (println(s); with_test_index(f))
 
@@ -133,7 +133,7 @@ function sandboxed_test(f::Function, reponame::String)
         cleanup!(repo, tmp_dir)
     end
 end
-sandboxed_test(f::Function, reponame::String, s::String) = (println(s); 
+sandboxed_test(f::Function, reponame::String, s::String) = (println(s);
                                                             sandboxed_test(f, reponame))
 
 function sandboxed_clone_test(f::Function, reponame::String)
@@ -146,8 +146,8 @@ function sandboxed_clone_test(f::Function, reponame::String)
         cleanup!(repo, tmp_dir1)
         cleanup!(remote, tmp_dir2)
     end
-end 
-sandboxed_clone_test(f::Function, reponame::String, s::String) = 
+end
+sandboxed_clone_test(f::Function, reponame::String, s::String) =
     (println(s); sandboxed_clone_test(f, reponame))
 
 function sandboxed_checkout_test(f::Function)
@@ -177,7 +177,7 @@ function with_repo_access(f::Function)
         Base.gc()
     end
 end
-with_repo_access(f::Function, s::String) = 
+with_repo_access(f::Function, s::String) =
     (println(s); with_repo_access(f))
 
 function with_tmp_repo_access(f::Function)
@@ -191,7 +191,7 @@ function with_tmp_repo_access(f::Function)
         cleanup!(repo, tmp_dir)
     end
 end
-with_tmp_repo_access(f::Function, s::String) = 
+with_tmp_repo_access(f::Function, s::String) =
     (println(s); with_tmp_repo_access(f))
 
 function with_new_repo(f::Function; bare=false)
@@ -203,7 +203,7 @@ function with_new_repo(f::Function; bare=false)
         cleanup!(repo, tmp_dir)
     end
 end
-with_new_repo(f::Function, s::String; bare::Bool=false) = 
+with_new_repo(f::Function, s::String; bare::Bool=false) =
     (println(s); with_new_repo(f; bare=bare))
 
 touch_test(parent::String, file::String, content=nothing) = begin
@@ -212,7 +212,7 @@ touch_test(parent::String, file::String, content=nothing) = begin
     isdir(dr) ||  mkdir(dr)
     open(fp, "w") do fh
         if content != nothing
-            write(fh, content) 
+            write(fh, content)
         end
     end
     return fp
@@ -225,7 +225,7 @@ with_test_repo(f::Function, reponame::String, clone::Bool=false) = begin
         run(`git clone --quiet -- $fixture_dir $tmp_dir`)
     else
         copy_recur(fixture_dir, tmp_dir)
-    end 
+    end
     rename_git_files!(tmp_dir)
     repo = GitRepo(tmp_dir)
     try
@@ -236,14 +236,14 @@ with_test_repo(f::Function, reponame::String, clone::Bool=false) = begin
 end
 
 with_standard_test_repo(f::Function, clone::Bool) = with_test_repo(f, "testrepo_wd", clone)
-with_standard_test_repo(f::Function, s::String) =  
+with_standard_test_repo(f::Function, s::String) =
     (println(s); with_standard_test_repo(f, false))
 
 with_merged_test_repo(f::Function, clone::Bool) = with_test_repo(f, "mergedrepo_wd", clone)
-with_merged_test_repo(f::Function, s::String) = 
+with_merged_test_repo(f::Function, s::String) =
     (println(s); with_merged_test_repo(f, false))
 
-with_merge_test_repo(f::Function, clone::Bool) = 
+with_merge_test_repo(f::Function, clone::Bool) =
     with_test_repo(f, "merge_testrepo_wd", false)
-with_merge_test_repo(f::Function, s::String) = 
+with_merge_test_repo(f::Function, s::String) =
     (println(s); with_merge_test_repo(f, false))

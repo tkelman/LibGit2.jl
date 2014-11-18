@@ -11,7 +11,7 @@ with_tmp_repo_access() do test_repo, path
     context("test list only local branches") do
         @test ["master"] == sort(branch_names(test_repo, :local))
     end
-    
+
     context("test list only remote branches") do
        @test [
            "origin/HEAD",
@@ -28,12 +28,12 @@ with_tmp_repo_access() do test_repo, path
 
     context("test lookup local branch") do
        b = lookup_branch(test_repo, "master")
-       @test b != nothing 
+       @test b != nothing
        @test name(b) == "master"
        @test canonical_name(b) == "refs/heads/master"
        @test Oid(tip(b)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
     end
-    
+
     context("test lookup remote branches") do
        b = lookup_branch(test_repo, "origin/packed", :remote)
        @test b != nothing
@@ -47,7 +47,7 @@ with_tmp_repo_access() do test_repo, path
         b1 = lookup_branch(test_repo, "master")
         b2 = lookup_branch(test_repo, "master")
         @test b1 == b2
-        
+
         b1 = lookup_branch(test_repo, "master")
         b2 = lookup_branch(test_repo, "origin/packed", :remote)
         @test b1 != b2
@@ -55,7 +55,7 @@ with_tmp_repo_access() do test_repo, path
 end
 
 with_tmp_repo_access("test lookup unicode branch name") do test_repo, path
-    new_branch = create_branch(test_repo, "Ångström", 
+    new_branch = create_branch(test_repo, "Ångström",
         Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     @test new_branch != nothing
 
@@ -86,7 +86,7 @@ with_tmp_repo_access("test rename branch") do test_repo, path
 end
 
 with_tmp_repo_access("test create new branch") do test_repo, path
-    new_branch = create_branch(test_repo, "test_branch", 
+    new_branch = create_branch(test_repo, "test_branch",
         Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
 
     @test new_branch != nothing
@@ -94,7 +94,7 @@ with_tmp_repo_access("test create new branch") do test_repo, path
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
-    @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644") 
+    @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
@@ -123,7 +123,7 @@ with_tmp_repo_access("test create branch short sha") do test_repo, path
 
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    
+
     @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
@@ -136,52 +136,52 @@ with_tmp_repo_access("test create branch from tag") do test_repo, path
 
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    
+
     @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch from head") do test_repo, path
     new_branch = create_branch(test_repo, "test_branch")
-    
+
     @test new_branch != nothing
     @test name(new_branch) ==  "test_branch"
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    
+
     @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch explicit head") do test_repo, path
     new_branch = create_branch(test_repo, "test_branch", "HEAD")
-    
+
     @test new_branch != nothing
     @test name(new_branch) ==  "test_branch"
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("36060c58702ed4c2a40832c51758d5344201d89a")
-    
+
     @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch from commit") do test_repo, path
     new_branch = create_branch(test_repo, "test_branch",
       lookup_commit(test_repo, Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")))
-    
+
     @test new_branch != nothing
     @test name(new_branch) ==  "test_branch"
     @test canonical_name(new_branch) == "refs/heads/test_branch"
 
     @test tip(new_branch) != nothing
     @test Oid(tip(new_branch)) == Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    
+
     @test any(b -> name(b) == "test_branch", foreach(GitBranch, test_repo))
 end
 
 with_tmp_repo_access("test create branch from unknown ref fails") do test_repo, path
-    @test_throws LibGitError{:Ref,:NotFound} create_branch(test_repo, 
+    @test_throws LibGitError{:Ref,:NotFound} create_branch(test_repo,
                                                     "test_branch", "i_do_not_exist")
 end
 
@@ -191,12 +191,12 @@ with_tmp_repo_access("test create branch from unknown commit fails") do test_rep
 end
 
 with_tmp_repo_access("test create branch from non canonical fails") do test_repo, path
-    @test_throws LibGitError{:Ref,:NotFound} create_branch(test_repo, 
+    @test_throws LibGitError{:Ref,:NotFound} create_branch(test_repo,
                                                            "test_branch", "packed")
 end
 
 with_tmp_repo_access("test remote branch") do test_repo, path
-    @test "origin" == (lookup_branch(test_repo, "origin/master", :remote) 
+    @test "origin" == (lookup_branch(test_repo, "origin/master", :remote)
                        |> remote |> name)
 end
 
@@ -208,7 +208,7 @@ end
 with_tmp_repo_access("test branch remote local non-tracking") do test_repo, path
         b = create_branch(test_repo, "test_branch",
                 Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
-        @test remote(b) == nothing 
+        @test remote(b) == nothing
 end
 
 with_tmp_repo_access("test branch upstream") do test_repo, path
@@ -236,7 +236,7 @@ with_tmp_repo_access("test branch set upstream with reference") do test_repo, pa
 end
 
 with_tmp_repo_access("test branch set upstream with tag reference") do test_repo, path
-    b = create_branch(test_repo, "test_branch", 
+    b = create_branch(test_repo, "test_branch",
             Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
     r = lookup_ref(test_repo, "refs/tags/v1.0")
     @test_throws LibGitError{:Invalid,:Error} set_upstream!(b, r)
@@ -245,7 +245,7 @@ end
 with_tmp_repo_access("test branch set upstream local") do test_repo, path
     b = create_branch(test_repo, "test_branch",
                 Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
-    
+
     set_upstream!(b, lookup_branch(test_repo, "master", :local))
     @test (upstream(b) |> name) == "master"
 end
@@ -268,5 +268,5 @@ with_tmp_repo_access("test branch set upstream on remote branch") do test_repo, 
     b1 = lookup_branch(test_repo, "origin/master", :remote)
     b2 = create_branch(test_repo, "test_branch",
                       Oid("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
-    @test_throws LibGitError{:Invalid,:Error} set_upstream!(b1, b2)        
+    @test_throws LibGitError{:Invalid,:Error} set_upstream!(b1, b2)
 end

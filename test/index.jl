@@ -1,11 +1,11 @@
 # ------------------------------------
 # Tests adapted from Git2Go Library
-# ------------------------------------ 
+# ------------------------------------
 context("test lookup tree") do
     test_path = joinpath(pwd(), "testrepo")
     repo = create_test_repo(test_path)
     try
-        @test isdir(workdir(repo)) 
+        @test isdir(workdir(repo))
         idx = GitIndex(repo)
         @test isa(idx, GitIndex)
         push!(idx, "README")
@@ -21,13 +21,13 @@ context("test lookup tree") do
         @test tree.ptr != C_NULL
         @test isa(Oid(tree), Oid)
         @test isa(hex(tree), ASCIIString)
-    finally 
+    finally
         close(repo)
         LibGit2.free!(repo)
         Base.gc()
-        rm(test_path, recursive=true) 
+        rm(test_path, recursive=true)
     end
-end 
+end
 
 # -----------------------------------------
 # Tests adapted from Ruby's Rugged Library
@@ -76,12 +76,12 @@ end
 
 with_test_index("test get entry data") do test_index, path
     entry = test_index[1]
-    @test "README" == entry.path 
+    @test "README" == entry.path
     @test Oid("1385f264afb75a56a5bec74243be9b367ba4ca08") == Oid(entry)
     @test 1273360380 == int(entry.mtime)
     @test 1273360380 == int(entry.ctime)
     @test 4 == entry.file_size
-    
+
     @test 234881026 == entry.dev
     @test 6674088 == entry.ino
     @test 33188 == entry.mode
@@ -109,7 +109,7 @@ with_test_index("test update entries") do test_index, path
     entry.file_size = 1000
     entry.dev = 234881027
     entry.ino = 88888
-    entry.mode = 33188 
+    entry.mode = 33188
     entry.uid = 502
     entry.gid = 502
     entry.stage = 3
@@ -167,11 +167,11 @@ context("test adding a path") do
         close(test_repo)
         LibGit2.free!(test_repo)
         Base.gc()
-        rm(tmp_path, recursive=true) 
+        rm(tmp_path, recursive=true)
     end
 end
 
-context("test reloading index") do 
+context("test reloading index") do
     tmp_path = mktempdir()
     test_repo = init_repo(tmp_path, bare=false)
     try
@@ -208,7 +208,7 @@ with_tmp_repo_access("test idempotent read write") do test_repo, path
     tree = GitTree(lookup(test_repo, head_id))
     index = GitIndex(test_repo)
     read_tree!(index, tree)
-    
+
     index_tree_id = write_tree!(index)
     index_tree = test_repo[index_tree_id]
     @test Oid(index_tree) == Oid(tree)
@@ -228,7 +228,7 @@ with_tmp_repo_access("test build tree from index") do test_repo, path
 end
 
 # --------------------
-# test index all 
+# test index all
 # --------------------
 
 # test add all lifecycle
@@ -255,7 +255,7 @@ sandboxed_test("testrepo.git") do _, path
         end
 
         index = GitIndex(test_repo)
-        
+
         add_all!(index, "file.*")
         @test index["file.foo"]  == nothing
         @test index["file.bar"]  != nothing
@@ -305,7 +305,7 @@ sandboxed_test("testrepo.git") do _, path
         end
         update_all!(index, "file.*")
 
-        @test index["file.bar"] != nothing 
+        @test index["file.bar"] != nothing
         @test test_repo[Oid(index["file.bar"])] |> bytestring == "new content for file"
 
         @test index["other.zzz"] == nothing
@@ -344,11 +344,11 @@ sandboxed_test("testrepo.git") do _, path
         end
 
         index = GitIndex(test_repo)
-        
+
         add_all!(index, "file.*")
         remove_all!(index, "*.zzz")
 
-        @test index["file.bar"] != nothing 
+        @test index["file.bar"] != nothing
         @test index["file.zzz"] == nothing
     end
     close(test_repo)

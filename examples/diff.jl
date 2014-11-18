@@ -126,18 +126,18 @@ function parse_commandline()
           dest_name = "new_prefix"
         =#
     end
-    
+
     diff_flags = (:raw, :patch, :name_only, :name_status)
     diff_format = :patch
 
-    args = Dict() 
-    for (k,v) in parse_args(settings) 
+    args = Dict()
+    for (k,v) in parse_args(settings)
         is(v, nothing) && continue
         args[symbol(k)] = v
         if k in diff_flags
             diff_flags = v
         end
-    end 
+    end
     return args, diff_format
 end
 
@@ -158,7 +158,7 @@ function diff_print_shortstat(d::GitDiff)
     end
 end
 
-function diff_print_numstat(d::GitDiff) 
+function diff_print_numstat(d::GitDiff)
     p = LibGit2.patches(d)
     is(p, nothing) && return
     for p in patches
@@ -171,7 +171,7 @@ end
 function color_printer(d)
     color, last_color = :reset, nothing
     for p in LibGit2.patches(d)
-        for h in LibGit2.hunks(p) 
+        for h in LibGit2.hunks(p)
             # color only text between `@@`
             idx = search(h.header,"@@", 3)
             print(COLORS[:cyan],  h.header[1:idx[end]],
@@ -226,9 +226,9 @@ function main()
     elseif haskey(o, :treeish1) && o[:cached]
         println("diff tree to index")
         d = LibGit2.diff(repo, o[:treeish1], GitIndex(repo), o)
-    elseif haskey(o, :treeish1) 
+    elseif haskey(o, :treeish1)
         println("diff tree to working directory")
-        d = LibGit2.diff_workdir(repo, o[:treeish1], o) 
+        d = LibGit2.diff_workdir(repo, o[:treeish1], o)
     elseif haskey(o, :cached)
         println("diff head to index")
         d = LibGit2.diff(repo, "HEAD", GitIndex(repo), o)
