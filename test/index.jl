@@ -117,7 +117,7 @@ with_test_index("test update entries") do test_index, path
     newentry = test_index[entry.path, 3]
     @test isa(newentry, GitIndexEntry)
     #TODO: rounding in times causes this test to fail
-    #@test newentry == entry
+    @test newentry == entry
 end
 
 with_test_index("test add new entries") do test_index, path

@@ -103,7 +103,8 @@ immutable IndexTimeStruct
     seconds::GitTimeT
     nanoseconds::Cuint
 end
-IndexTimeStruct() = IndexTimeStruct(0, 0)
+IndexTimeStruct()  = IndexTimeStruct(0, 0)
+IndexTimeStruct(s) = IndexTimeStruct(s, 0)
 
 immutable IndexEntryStruct
     ctime::IndexTimeStruct
@@ -140,8 +141,8 @@ IndexEntryStruct(entry::GitIndexEntry) = begin
     flags |= (uint16(entry.stage) << GitConst.IDXENTRY_STAGESHIFT) & GitConst.IDXENTRY_STAGEMASK
     flags &= ~GitConst.IDXENTRY_VALID
     entry.valid && (flags |= GitConst.IDXENTRY_VALID)
-    ctime = IndexTimeStruct(ifloor(entry.ctime), 0) #TODO (rounding): ifloor(entry.ctime - floor(entry.ctime) * 1e3))
-    mtime = IndexTimeStruct(ifloor(entry.mtime), 0) #TODO (rounding): ifloor(entry.mtime - floor(entry.mtime) * 1e3))
+    ctime = IndexTimeStruct(ifloor(entry.ctime), ifloor((entry.ctime - floor(entry.ctime)) * 1000))
+    mtime = IndexTimeStruct(ifloor(entry.mtime), ifloor((entry.mtime - floor(entry.mtime)) * 1000))
     return IndexEntryStruct(ctime,
                             ctime,
                             entry.dev,
@@ -160,8 +161,8 @@ function GitIndexEntry(ptr::Ptr{IndexEntryStruct})
     @assert ptr != C_NULL
     entry = unsafe_load(ptr)
     path  = bytestring(entry.path)
-    ctime = entry.ctime.seconds + (entry.ctime.nanoseconds / 1e3)
-    mtime = entry.mtime.seconds + (entry.mtime.nanoseconds / 1e3)
+    ctime = entry.ctime.seconds + (entry.ctime.nanoseconds / 1000)
+    mtime = entry.mtime.seconds + (entry.mtime.nanoseconds / 1000)
     dev   = int(entry.dev)
     ino   = int(entry.ino)
     mode  = int(entry.mode)
