@@ -12,8 +12,7 @@ function __init__()
     err = ccall((:git_threads_init, libgit2), Cint, ())
     err == 0 || error("error initializing LibGit2 module")
     atexit() do
-        err = ccall((:git_threads_shutdown, libgit2), Cint, ()) 
-        err == 0 || error("error uninitalizing LibGit2 module")
+        ccall((:git_threads_shutdown, libgit2), Cint, ()) 
     end
 end
 
