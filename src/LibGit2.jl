@@ -12,7 +12,7 @@ function __init__()
     err = ccall((:git_threads_init, libgit2), Cint, ())
     err == 0 || error("error initializing LibGit2 module")
     atexit() do
-        ccall((:git_threads_shutdown, libgit2), Cint, ()) 
+        ccall((:git_threads_shutdown, libgit2), Cint, ())
     end
 end
 
@@ -42,7 +42,7 @@ include("walker.jl")
 # debug tracing / this needs libgit to be built with tracing support
 function cb_trace(level::Cint, msg::Ptr{Uint8})
     println("LibGit2.jl Trace [$level] => $(bytestring(msg))")
-    return 
+    return
 end
 
 const c_cb_trace = cfunction(cb_trace, Void, (Cint, Ptr{Uint8}))
@@ -52,7 +52,7 @@ function set_trace(level::Symbol)
         level === :fatal ? 1 :
         level === :error ? 2 :
         level === :warn  ? 3 :
-        level === :info  ? 4 : 
+        level === :info  ? 4 :
         level === :debug ? 5 :
         level === :trace ? 6 :
         throw(ArgumentError("unknown trace level :$level"))

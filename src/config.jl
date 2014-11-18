@@ -1,6 +1,6 @@
 export GitConfig, lookup, set!, global_config
 
-type GitConfig 
+type GitConfig
     ptr::Ptr{Void}
 
     function GitConfig(ptr::Ptr{Void})
@@ -13,14 +13,14 @@ end
 
 GitConfig(path::String) = begin
     cfg_ptr = Ptr{Void}[0]
-    @check ccall((:git_config_open_ondisk, libgit2), Cint, 
+    @check ccall((:git_config_open_ondisk, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}), cfg_ptr, path)
     return GitConfig(cfg_ptr[1])
 end
 
 GitConfig(r::GitRepo) = begin
     cfg_ptr = Ptr{Void}[0]
-    @check ccall((:git_repository_config, libgit2), Cint, 
+    @check ccall((:git_repository_config, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}), cfg_ptr, r)
     return GitConfig(cfg_ptr[1])
 end
@@ -76,7 +76,7 @@ Base.keys(c::GitConfig) = begin
 end
 
 Base.values(c::GitConfig) = begin
-    @task ccall((:git_config_foreach, libgit2), Cint, 
+    @task ccall((:git_config_foreach, libgit2), Cint,
                 (Ptr{Void}, Ptr{Void}, Ptr{Void}), c, c_cb_each_val, C_NULL)
 end
 
@@ -135,7 +135,7 @@ end
 function set!(::Type{Int32}, c::GitConfig, name::String, value::Int32)
     @check ccall((:git_config_set_int32, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Int32), c, name, value)
-    return c 
+    return c
 end
 
 function lookup(::Type{Int64}, c::GitConfig, name::String)
@@ -154,11 +154,11 @@ end
 function set!(::Type{Int64}, c::GitConfig, name::String, value::Int64)
     @check ccall((:git_config_set_int64, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Int64), c, name, value)
-    return c 
+    return c
 end
 
 function lookup{T<:String}(::Type{T}, c::GitConfig, name::String)
-    out = Ptr{Uint8}[0] 
+    out = Ptr{Uint8}[0]
     err = ccall((:git_config_get_string, libgit2), Cint,
                 (Ptr{Ptr{Uint8}}, Ptr{Void}, Ptr{Uint8}), out, c, name)
     if err == GitErrorConst.GIT_OK
@@ -173,5 +173,5 @@ end
 function set!{T<:String}(::Type{T}, c::GitConfig, name::String, value::String)
     @check ccall((:git_config_set_string, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}), c, name, value)
-    return c 
+    return c
 end

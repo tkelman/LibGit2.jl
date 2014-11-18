@@ -24,7 +24,7 @@ Base.convert(::Type{Ptr{Void}}, idx::GitIndex) = idx.ptr
 
 GitIndex(path::String) = begin
     idxptr = Ptr{Void}[0]
-    @check ccall((:git_index_open, libgit2), Cint, 
+    @check ccall((:git_index_open, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}), idxptr, path)
     return GitIndex(idxptr[1])
 end
@@ -36,7 +36,7 @@ GitIndex(r::GitRepo) = begin
     return GitIndex(idxptr[1])
 end
 
-has_conflicts(idx::GitIndex) = 
+has_conflicts(idx::GitIndex) =
     bool(ccall((:git_index_has_conflicts, libgit2), Cint, (Ptr{Void},), idx))
 
 has_conflicts(idx::GitRepo) = has_conflicts(GitIndex(repo))
@@ -51,15 +51,15 @@ end
 clear!(repo::GitRepo) = clear!(GitIndex(repo))
 
 function reload!(idx::GitIndex)
-    @check ccall((:git_index_read, libgit2), Cint, (Ptr{Void}, Cint), idx, zero(Cint)) 
+    @check ccall((:git_index_read, libgit2), Cint, (Ptr{Void}, Cint), idx, Cint(0))
     return idx
 end
 reload!(repo::GitRepo) = reload!(GitIndex(repo))
 
 function write!(idx::GitIndex)
-    @check ccall((:git_index_write, libgit2), Cint, (Ptr{Void},), idx) 
+    @check ccall((:git_index_write, libgit2), Cint, (Ptr{Void},), idx)
     return idx
-end 
+end
 write!(repo::GitRepo) = write!(GitIndex(repo))
 
 function remove!(idx::GitIndex, path::String, stage::Integer=0)
@@ -74,12 +74,12 @@ function removedir!(idx::GitIndex, path::String, stage::Integer=0)
     return idx
 end
 
-Base.length(idx::GitIndex) = 
+Base.length(idx::GitIndex) =
     int(ccall((:git_index_entrycount, libgit2), Cint, (Ptr{Void},), idx))
 
 function write_tree!(idx::GitIndex)
     id_ptr = [Oid()]
-    @check ccall((:git_index_write_tree, libgit2), Cint, 
+    @check ccall((:git_index_write_tree, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}), id_ptr, idx)
     return id_ptr[1]
 end
@@ -121,22 +121,22 @@ immutable IndexEntryStruct
     path::Ptr{Uint8}
 end
 
-IndexEntryStruct() = IndexEntryStruct(IndexTimeStruct(), 
-                                      IndexTimeStruct(), 
-                                      zero(Cuint), 
-                                      zero(Cuint), 
-                                      zero(Cuint), 
-                                      zero(Cuint), 
-                                      zero(Cuint), 
-                                      zero(GitOffT),  
-                                      Oid(), 
-                                      zero(Cushort),  
-                                      zero(Cushort),  
-                                      zero(Ptr{Uint8})) 
+IndexEntryStruct() = IndexEntryStruct(IndexTimeStruct(),
+                                      IndexTimeStruct(),
+                                      Cuint(0),
+                                      Cuint(0),
+                                      Cuint(0),
+                                      Cuint(0),
+                                      Cuint(0),
+                                      GitOffT(0),
+                                      Oid(),
+                                      Cushort(0),
+                                      Cushort(0),
+                                      Ptr{Uint8}(0))
 Oid(entry::GitIndexEntry) = entry.id
 
 IndexEntryStruct(entry::GitIndexEntry) = begin
-    flags = uint16(0x0)
+    flags = 0x0000
     flags &= ~GitConst.IDXENTRY_STAGEMASK
     flags |= (uint16(entry.stage) << GitConst.IDXENTRY_STAGESHIFT) & GitConst.IDXENTRY_STAGEMASK
     flags &= ~GitConst.IDXENTRY_VALID
@@ -199,7 +199,7 @@ end
 
 Base.getindex(idx::GitIndex, path::String, stage::Integer=0) = begin
     entryptr = ccall((:git_index_get_bypath, libgit2), Ptr{IndexEntryStruct},
-                      (Ptr{Void}, Ptr{Uint8}, Cint), idx, path, stage) 
+                      (Ptr{Void}, Ptr{Uint8}, Cint), idx, path, stage)
     entryptr == C_NULL && return nothing
     return GitIndexEntry(entryptr)
 end
@@ -207,15 +207,15 @@ end
 Base.(:(==))(e1::GitIndexEntry, e2::GitIndexEntry) = begin
     return e1.path  == e2.path &&
            e1.id == e2.id &&
-           e1.ctime == e2.ctime && 
+           e1.ctime == e2.ctime &&
            e1.mtime == e2.mtime &&
            e1.file_size == e2.file_size &&
-           e1.dev  == e2.dev && 
+           e1.dev  == e2.dev &&
            e1.ino  == e2.ino &&
            e1.mode == e2.mode &&
            e1.uid  == e2.uid &&
            e1.gid  == e2.gid &&
-           e1.valid == e2.valid && 
+           e1.valid == e2.valid &&
            e1.stage == e2.stage
 end
 Base.isequal(e1::GitIndexEntry, e2::GitIndexEntry) = e1 == e2
@@ -247,8 +247,8 @@ function add_all!(idx::GitIndex, pathspec::String;
                  force::Bool=false,
                  disable_pathsepc_match::Bool=false,
                  check_pathspec::Bool=false)
-    return add_all!(idx, [pathspec], 
-                    force=force, 
+    return add_all!(idx, [pathspec],
+                    force=force,
                     disable_pathsepc_match=disable_pathsepc_match,
                     check_pathspec=check_pathspec)
 end
@@ -313,19 +313,19 @@ conflicts(r::GitRepo, idx::GitIndex) = begin
     current_path = nothing
     res = {}
     for entry in idx
-        if entry.stage == 0 # staged 
+        if entry.stage == 0 # staged
             continue
         end
         if current_path != nothing && entry.path != current_path
             push!(res, (ancestor, ours, theirs))
-            ancestor, ours, theirs = nothing, nothing, nothing 
+            ancestor, ours, theirs = nothing, nothing, nothing
         end
         current_path = entry.path
         if entry.stage == 1 # ancestor
             ancestor = entry
-        elseif  entry.stage == 2 # ours 
+        elseif  entry.stage == 2 # ours
             ours = entry
-        elseif entry.stage == 3 # theirs 
+        elseif entry.stage == 3 # theirs
             theirs = entry
         else
             error("entry $entry has unexpected stage level $(entry.stage)")

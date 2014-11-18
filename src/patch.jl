@@ -2,7 +2,7 @@ export GitPatch, lines, nlines, DiffHunk, hunks, nchanges, delta
 
 type GitPatch
     ptr::Ptr{Void}
-    
+
     function GitPatch(ptr::Ptr{Void})
         @assert ptr != C_NULL
         p = new(ptr)
@@ -21,7 +21,8 @@ end
 Base.convert(::Type{Ptr{Void}}, p::GitPatch) = p.ptr
 
 Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
-    old_path_ptr, new_path_ptr = zero(Ptr{Uint8}), zero(Ptr{Uint8})
+    new_path_ptr = Ptr{Uint8}(0)
+    old_path_ptr = Ptr{Uint8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
             old_path = convert(Ptr{Uint8}, opts[:old_path]::String)
@@ -39,7 +40,8 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
 end
 
 Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts::MaybeDict=nothing) = begin
-    old_path_ptr, new_path_ptr = zero(Ptr{Uint8}), zero(Ptr{Uint8})
+    new_path_ptr = Ptr{Uint8}(0)
+    old_path_ptr = Ptr{Uint8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
             old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::String)
@@ -57,7 +59,8 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts::MaybeDict=nothing)
 end
 
 Base.diff(repo::GitRepo, blob::GitBlob, other::String, opts::MaybeDict=nothing) = begin
-    old_path_ptr, new_path_ptr = zero(Ptr{Uint8}), zero(Ptr{Uint8}) 
+    old_path_ptr = Ptr{Uint8}(0)
+    new_path_ptr = Ptr{Uint8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
             old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::String)
@@ -98,7 +101,7 @@ type DiffHunk
     hunk_index::Int
     old_start::Int
     old_lines::Int
-    new_start::Int 
+    new_start::Int
     new_lines::Int
 
     function DiffHunk(p::GitPatch, ptr::Ptr{DiffHunkStruct}, idx::Integer, lc::Integer)
@@ -118,14 +121,14 @@ type DiffHunk
                    h.new_start,
                    h.new_lines)
     end
-end 
+end
 
 function hunks(p::GitPatch)
     nhunks = ccall((:git_patch_num_hunks, libgit2), Csize_t, (Ptr{Void},), p)
     if nhunks == 0
         return nothing
     end
-    err = zero(Cint)
+    err = Cint(0)
     hunk_ptr  = Ptr{DiffHunkStruct}[0]
     lines_ptr = Csize_t[0]
     hs = DiffHunk[]
@@ -149,7 +152,7 @@ function line_origin_to_symbol(o)
     o == GitConst.DIFF_LINE_ADD_EOFNL && return :eof_newline_added
     o == GitConst.DIFF_LINE_DEL_EOFNL && return :eof_newline_removed
     o == GitConst.DIFF_LINE_CONTEXT_EOFNL && return :eof_no_newline
-    throw(ArgumentError("Unknown line origin constant $o")) 
+    throw(ArgumentError("Unknown line origin constant $o"))
 end
 
 type DiffLine
@@ -173,8 +176,8 @@ type DiffLine
                    l.old_lineno,
                    l.new_lineno,
                    l.content_offset == -1 ? nothing : l.content_offset)
-    end 
-end 
+    end
+end
 
 function lines(h::DiffHunk)
     err::Cint = 0
@@ -204,7 +207,7 @@ function cb_patch_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
        l.origin == GitConst.DIFF_LINE_ADDITION ||
        l.origin == GitConst.DIFF_LINE_DELETION
        add_origin = true
-    end 
+    end
     prev_len = length(s)
     if add_origin
         resize!(s, prev_len + l.content_len + 1)

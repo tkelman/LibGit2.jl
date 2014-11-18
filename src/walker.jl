@@ -15,7 +15,7 @@ end
 GitRevWalker(r::GitRepo) = begin
     wptr = Ptr{Void}[0]
     @check ccall((:git_revwalk_new, libgit2), Cint,
-                  (Ptr{Ptr{Void}}, Ptr{Void}), wptr, r) 
+                  (Ptr{Ptr{Void}}, Ptr{Void}), wptr, r)
     return GitRevWalker(r, wptr[1])
 end
 
@@ -56,7 +56,7 @@ end
 Base.push!(w::GitRevWalker, cid::Oid) = begin
     @check ccall((:git_revwalk_push, libgit2), Cint,
                  (Ptr{Void}, Ptr{Oid}), w, &cid)
-    return w 
+    return w
 end
 
 function sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false)
@@ -66,24 +66,24 @@ function sortby!(w::GitRevWalker, sort_mode::Symbol; rev::Bool=false)
         throw(ArgumentError("unknown git sort flag :$s"))
     rev && (s |= GitConst.SORT_REVERSE)
     sortby!(w, s)
-    return 
+    return
 end
 
 function sortby!(w::GitRevWalker, sort_mode::Cint)
     ccall((:git_revwalk_sorting, libgit2), Void,
            (Ptr{Void}, Cint), w, sort_mode)
-    return w 
+    return w
 end
 
 function hide!(w::GitRevWalker, id::Oid)
     @check ccall((:git_revwalk_hide, libgit2), Cint,
                  (Ptr{Void}, Ptr{Oid}), w, &id)
-    return w 
+    return w
 end
 
 function reset!(w::GitRevWalker)
     ccall((:git_revwalk_reset, libgit2), Void, (Ptr{Void},), w)
-    return w 
+    return w
 end
 
 function walk(r::GitRepo, from::Oid, sort_mode::Symbol=:date, rev::Bool=false)
@@ -101,9 +101,9 @@ end
 function walk(f::Function, r::GitRepo, from::Oid, sort_mode::Symbol=:date, rev::Bool=false)
     walker = GitRevWalker(r)
     sortby!(walker, sort_mode, rev=rev)
-    push!(walker, from) 
+    push!(walker, from)
     for c in walker
         f(c)
     end
-    return 
+    return
 end

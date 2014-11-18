@@ -13,14 +13,14 @@ type Odb
     end
 end
 
-free!(o::Odb) = begin 
-    if o.ptr != C_NULL 
+free!(o::Odb) = begin
+    if o.ptr != C_NULL
         ccall((:git_odb_free, libgit2), Void, (Ptr{Void},), o.ptr)
         o.ptr = C_NULL
     end
 end
 
-Base.convert(::Type{Ptr{Void}}, o::Odb) = o.ptr 
+Base.convert(::Type{Ptr{Void}}, o::Odb) = o.ptr
 
 exists(o::Odb, id::Oid)  = bool(ccall((:git_odb_exists, libgit2), Cint, (Ptr{Void}, Ptr{Oid}), o, &id))
 Base.in(id::Oid, o::Odb) = exists(o, id)
@@ -69,8 +69,8 @@ abstract OdbIO
 
 free!(os::OdbIO) = begin
     if os.ptr != C_NULL
-        #TODO: close before gc? 
-        ccall((:git_odb_stream_free, libgit2), Void, (Ptr{Void},), os.ptr) 
+        #TODO: close before gc?
+        ccall((:git_odb_stream_free, libgit2), Void, (Ptr{Void},), os.ptr)
         os.ptr = C_NULL
     end
 end
@@ -89,7 +89,7 @@ type OdbWrite <: OdbIO
     end
 end
 
-Base.convert(::Type{Ptr{Void}}, o::OdbWrite) = o.ptr 
+Base.convert(::Type{Ptr{Void}}, o::OdbWrite) = o.ptr
 
 Oid(odbw::OdbWrite) = odbw.id
 
@@ -97,22 +97,22 @@ function open_wstream{T<:GitObject}(::Type{T}, odb::Odb, len::Int)
     @assert odb.ptr != C_NULL
     @assert len > 0
     gtype = git_otype(T)
-    stream_ptr = Ptr{Void}[0] 
-    @check ccall((:git_odb_open_wstream, libgit2), Cint, 
+    stream_ptr = Ptr{Void}[0]
+    @check ccall((:git_odb_open_wstream, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t, Cint), stream_ptr, odb, len, gtype)
     return OdbWrite(stream_ptr[1])
 end
 
 #=
-Base.isreadable(io::OdbWrite)  = false 
+Base.isreadable(io::OdbWrite)  = false
 Base.iswriteable(io::OdbWrite) = true
 =#
 
 #TODO: this needs to be reworked
-Base.write(io::OdbWrite, buffer::ByteString) = begin 
+Base.write(io::OdbWrite, buffer::ByteString) = begin
     len = length(buffer)
-    @check ccall((:git_odb_stream_write, libgit2), Cint, 
-                 (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len) 
+    @check ccall((:git_odb_stream_write, libgit2), Cint,
+                 (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len)
     return len
 end
 
@@ -121,7 +121,7 @@ Base.write{T}(io::OdbWrite, buffer::Array{T}) = begin
     @assert isbits(T)
     ptr = convert(Ptr{Uint8}, b)
     len = convert(Csize_t, div(length(b) * sizeof(T), sizeof(Uint8)))
-    @check ccall((:git_odb_stream_write, libgit2), Cint, 
+    @check ccall((:git_odb_stream_write, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len)
     return io
 end
@@ -129,14 +129,14 @@ end
 Base.close(io::OdbWrite) = begin
     ioid = Oid(io)
     @check ccall((:git_odb_stream_finalize_write, libgit2), Cint, (Ptr{Oid}, Ptr{Void}), &ioid, io)
-    return io 
+    return io
 end
 
 type OdbRead <: OdbIO
     ptr::Ptr{Void}
 end
 
-Base.convert(::Type{Ptr{Void}}, o::OdbRead) = o.ptr 
+Base.convert(::Type{Ptr{Void}}, o::OdbRead) = o.ptr
 #=
 Base.isreadable(io::OdbRead)  = true
 Base.iswriteable(io::OdbRead) = false

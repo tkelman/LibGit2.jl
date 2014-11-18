@@ -2,30 +2,30 @@ export LibGitError
 
 module GitErrorConst
     import ..cint
-    import ..cuint 
+    import ..cuint
 
     const GIT_OK          = cint(0)
-    const ERROR           = cint(-01)  
-    const ENOTFOUND       = cint(-03)  
-    const EEXISTS         = cint(-04) 
-    const EAMBIGUOUS      = cint(-05) 
-    const EBUFS           = cint(-06) 
-    const EUSER           = cint(-07) 
-    const EBAREREPO       = cint(-08) 
-    const EUNBORNBRANCH   = cint(-09) 
-    const EUNMERGED       = cint(-10) 
-    const ENONFASTFORWARD = cint(-11) 
-    const EINVALIDSPEC    = cint(-12) 
-    const EMERGECONFLICT  = cint(-13) 
-    const ELOCKED         = cint(-14) 
-    const PASSTHROUGH     = cint(-30) 
+    const ERROR           = cint(-01)
+    const ENOTFOUND       = cint(-03)
+    const EEXISTS         = cint(-04)
+    const EAMBIGUOUS      = cint(-05)
+    const EBUFS           = cint(-06)
+    const EUSER           = cint(-07)
+    const EBAREREPO       = cint(-08)
+    const EUNBORNBRANCH   = cint(-09)
+    const EUNMERGED       = cint(-10)
+    const ENONFASTFORWARD = cint(-11)
+    const EINVALIDSPEC    = cint(-12)
+    const EMERGECONFLICT  = cint(-13)
+    const ELOCKED         = cint(-14)
+    const PASSTHROUGH     = cint(-30)
     const ITEROVER        = cint(-31)
 end
 
 const git_error_code = (Int => Symbol)[
      00 => :OK,             # no error
-    -01 => :Error,          # generic error 
-    -03 => :NotFound,       # requested object could not be found 
+    -01 => :Error,          # generic error
+    -03 => :NotFound,       # requested object could not be found
     -04 => :Exists,         # object exits preventing op
     -05 => :Ambiguous,      # more than one object matches
     -06 => :Bufs,           # output buffer too small to hold data
@@ -77,14 +77,14 @@ immutable ErrorStruct
     class::Cint
 end
 
-immutable LibGitError{Class, Code} 
+immutable LibGitError{Class, Code}
     msg::UTF8String
 end
 
 function last_error()
     err = ccall((:giterr_last, libgit2), Ptr{ErrorStruct}, ())
     err_obj   = unsafe_load(err)
-    err_class = git_error_class[int(err_obj.class)] 
+    err_class = git_error_class[int(err_obj.class)]
     err_msg   = bytestring(err_obj.message)
     return (err_class, err_msg)
 end

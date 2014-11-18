@@ -1,18 +1,18 @@
-export GitCredential, PlainTextCred, SSHKeyCred, SSHAgentCred, DefaultCred 
+export GitCredential, PlainTextCred, SSHKeyCred, SSHAgentCred, DefaultCred
 
 abstract GitCredential
 
 type PlainTextCred <: GitCredential
     ptr::Ptr{Void}
-    
+
     PlainTextCred(ptr::Ptr{Void}) = begin
-        @assert ptr != C_NULL 
+        @assert ptr != C_NULL
         cred = new(ptr)
         return cred
     end
-end 
+end
 
-PlainTextCred(;username::MaybeString=nothing, 
+PlainTextCred(;username::MaybeString=nothing,
                password::MaybeString=nothing) = begin
     is(username, nothing) && throw(ArgumentError("username must be defined"))
     cred_ptr = Ptr{Void}[0]
@@ -30,7 +30,7 @@ type SSHKeyCred <: GitCredential
         cred = new(ptr)
         return cred
     end
-end 
+end
 
 SSHKeyCred(;username::MaybeString=nothing,
             publickey::MaybeString=nothing,
@@ -42,8 +42,8 @@ SSHKeyCred(;username::MaybeString=nothing,
     @check ccall((:git_cred_ssh_key_new, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}, Ptr{Uint8}),
                  cred,
-                 username, 
-                 publickey != nothing ? publickey : C_NULL, 
+                 username,
+                 publickey != nothing ? publickey : C_NULL,
                  privatekey,
                  passphrase != nothing ? passphrase : C_NULL)
     return SSHKeyCred(cred_ptr[1])

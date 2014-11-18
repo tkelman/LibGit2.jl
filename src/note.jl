@@ -1,4 +1,4 @@
-export message, GitNote 
+export message, GitNote
 
 type GitNote
     id::Oid

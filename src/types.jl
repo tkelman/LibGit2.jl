@@ -13,7 +13,7 @@ immutable TimeStruct
     time::GitTimeT # time in seconds from epoch
     offset::Cint   # timezone offset in minutes
 end
-TimeStruct() = TimeStruct(zero(GitTimeT), zero(Cint))
+TimeStruct() = TimeStruct(GitTimeT(0), Cint(0))
 
 # an action signature (committers, taggers, etc)
 immutable SignatureStruct
@@ -21,8 +21,8 @@ immutable SignatureStruct
     email::Ptr{Uint8} # email of the author
     when::TimeStruct  # time when the action happened
 end
-SignatureStruct() = SignatureStruct(zero(Ptr{Uint8}),
-                                    zero(Ptr{Uint8}),
+SignatureStruct() = SignatureStruct(Ptr{Uint8}(0),
+                                    Ptr{Uint8}(0),
                                     TimeStruct())
 immutable BufferStruct
     ptr::Ptr{Uint8}
@@ -42,13 +42,9 @@ immutable TransferProgressStruct
     indexed_deltas::Cuint
     received_bytes::Csize_t
 end
-TransferProgressStruct() = TransferProgressStruct(zero(Cuint),
-                                                  zero(Cuint),
-                                                  zero(Cuint),
-                                                  zero(Cuint),
-                                                  zero(Cuint),
-                                                  zero(Cuint),
-                                                  zero(Csize_t))
+TransferProgressStruct() =
+    TransferProgressStruct(Cuint(0),Cuint(0),Cuint(0),Cuint(0),
+                           Cuint(0),Cuint(0),Csize_t(0))
 
 # pointers to string data must not be valid references
 # for the entire lifetime of the ccall
@@ -56,7 +52,7 @@ immutable StrArrayStruct
    strings::Ptr{Ptr{Uint8}}
    count::Csize_t
 end
-StrArrayStruct() = StrArrayStruct(zero(Ptr{Uint8}), zero(Csize_t))
+StrArrayStruct() = StrArrayStruct(Ptr{Uint8}(0),Csize_t(0))
 
 StrArrayStruct{T<:String}(strs::Vector{T}) = begin
     count = length(strs)
@@ -66,7 +62,7 @@ StrArrayStruct{T<:String}(strs::Vector{T}) = begin
         in_ptr  = convert(Ptr{Uint8}, bytestring(strs[i]))
         out_ptr = convert(Ptr{Uint8}, Base.c_malloc(sizeof(Uint8) * (len + 1)))
         unsafe_copy!(out_ptr, in_ptr, len)
-        unsafe_store!(out_ptr, zero(Uint8), len + 1) # NULL byte
+        unsafe_store!(out_ptr, Uint8(0), len + 1) # NULL byte
         unsafe_store!(strings, out_ptr, i)
     end
     return StrArrayStruct(strings, count)
@@ -98,7 +94,7 @@ typealias DiffDeltaT Cint
 
 @eval begin
     $(Expr(:type, false, :HeaderStruct,
-        Expr(:block, 
+        Expr(:block,
             [Expr(:(::), symbol("c$i"), :Uint8) for i=1:128]...)))
 end
 
@@ -119,7 +115,7 @@ immutable DiffFileStruct
     mode::Uint16
 end
 
-immutable DiffDeltaStruct 
+immutable DiffDeltaStruct
     status::DiffDeltaT
     flags::Uint32
     similarity::Uint16
@@ -142,7 +138,7 @@ end
 # git diff option struct
 immutable DiffOptionsStruct
     version::Cuint
-    flags::Uint32 
+    flags::Uint32
 
     # options controlling which files are in the diff
     ignore_submodules::Cint
@@ -157,19 +153,19 @@ immutable DiffOptionsStruct
     max_size::Coff_t
     old_prefix::Ptr{Uint8}
     new_prefix::Ptr{Uint8}
-end 
+end
 DiffOptionsStruct() = DiffOptionsStruct(GitConst.DIFF_OPTIONS_VERSION,
-                                        zero(Uint32),
-                                        GitConst.SUBMODULE_IGNORE_DEFAULT, 
+                                        Uint32(0),
+                                        GitConst.SUBMODULE_IGNORE_DEFAULT,
                                         StrArrayStruct(),
-                                        zero(Ptr{Void}),
-                                        zero(Ptr{Void}),
-                                        convert(Uint16, 3),
-                                        zero(Uint16),
-                                        zero(Uint16),
-                                        zero(Coff_t),
-                                        zero(Ptr{Uint8}),
-                                        zero(Ptr{Uint8}))
+                                        Ptr{Void}(0),
+                                        Ptr{Void}(0),
+                                        Uint16(3),
+                                        Uint16(0),
+                                        Uint16(0),
+                                        Coff_t(0),
+                                        Ptr{Uint8}(0),
+                                        Ptr{Uint8}(0))
 immutable RemoteHeadStruct
     islocal::Cint
     id::Oid
@@ -186,13 +182,10 @@ immutable MergeTreeOptsStruct
     automerge_flags::Cint
 end
 
-MergeTreeOptsStruct() = MergeTreeOptsStruct(one(Cuint),
-                                            zero(Cint),
-                                            zero(Cuint),
-                                            zero(Cuint),
-                                            zero(Ptr{Void}),
-                                            zero(Cint))
-                                            
+MergeTreeOptsStruct() =
+    MergeTreeOptsStruct(Cuint(1), Cint(0), Cuint(0),
+                        Cuint(0), Ptr{Void}(0), Cint(0))
+
 immutable DiffFileStruct
     id::Oid
     path::Ptr{Uint8}
@@ -220,24 +213,24 @@ immutable CheckoutOptionsStruct
     our_label::Ptr{Uint8}
     their_label::Ptr{Uint8}
 end
-CheckoutOptionsStruct() = CheckoutOptionsStruct(one(Cuint), 
+CheckoutOptionsStruct() = CheckoutOptionsStruct(Cuint(1),
                                                 GitConst.CHECKOUT_SAFE_CREATE,
-                                                zero(Cint),
-                                                zero(Cuint),
-                                                zero(Cuint),
-                                                zero(Cint),
-                                                zero(Cuint),
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Void}),
+                                                Cint(0),
+                                                Cuint(0),
+                                                Cuint(0),
+                                                Cint(0),
+                                                Cuint(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0),
                                                 StrArrayStruct(),
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Uint8}),
-                                                zero(Ptr{Uint8}),
-                                                zero(Ptr{Uint8}),
-                                                zero(Ptr{Uint8}))
-immutable RemoteCallbacksStruct 
+                                                Ptr{Void}(0),
+                                                Ptr{Uint8}(0),
+                                                Ptr{Uint8}(0),
+                                                Ptr{Uint8}(0),
+                                                Ptr{Uint8}(0))
+immutable RemoteCallbacksStruct
     version::Cuint
     sideband_progress::Ptr{Void}
     completion::Ptr{Void}
@@ -246,13 +239,13 @@ immutable RemoteCallbacksStruct
     update_tips::Ptr{Void}
     payload::Ptr{Void}
 end
-RemoteCallbacksStruct() = RemoteCallbacksStruct(one(Cuint),
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Void}), 
-                                                zero(Ptr{Void}),
-                                                zero(Ptr{Void}))
+RemoteCallbacksStruct() = RemoteCallbacksStruct(Cuint(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0),
+                                                Ptr{Void}(0))
 immutable CloneOptionsStruct
     version::Cuint
     checkout_opts::CheckoutOptionsStruct
@@ -265,15 +258,15 @@ immutable CloneOptionsStruct
     signature::Ptr{SignatureStruct}
 end
 
-CloneOptionsStruct() = CloneOptionsStruct(one(Cuint),
+CloneOptionsStruct() = CloneOptionsStruct(Cuint(1),
                                           CheckoutOptionsStruct(),
                                           RemoteCallbacksStruct(),
-                                          zero(Cint),
-                                          zero(Cint),
-                                          zero(Cint),
-                                          zero(Ptr{Uint8}),
-                                          zero(Ptr{Uint8}),
-                                          zero(Ptr{SignatureStruct}))
+                                          Cint(0),
+                                          Cint(0),
+                                          Cint(0),
+                                          Ptr{Uint8}(0),
+                                          Ptr{Uint8}(0),
+                                          Ptr{SignatureStruct}(0))
 # --------------
 # Git Signature
 # --------------
@@ -290,7 +283,7 @@ end
 # --------------
 type GitRepo
     ptr::Ptr{Void}
-    
+
     function GitRepo(ptr::Ptr{Void}, own::Bool=true)
         @assert ptr != C_NULL
         r = new(ptr)
@@ -301,7 +294,7 @@ end
 
 free!(r::GitRepo) = begin
     if r.ptr != C_NULL
-        try 
+        try
             close(r)
         finally
             ccall((:git_repository_free, libgit2), Void, (Ptr{Void},), r.ptr)
@@ -335,12 +328,12 @@ end
 
 type GitBlob <: GitObject
     ptr::Ptr{Void}
-    
+
     function GitBlob(ptr::Ptr{Void})
         @assert ptr != C_NULL
         this = new(ptr)
         finalizer(this, free!)
-        return this 
+        return this
     end
 end
 
@@ -363,14 +356,14 @@ type GitTag <: GitObject
     ptr::Ptr{Void}
 
     function GitTag(ptr::Ptr{Void})
-        @assert ptr != C_NULL 
+        @assert ptr != C_NULL
         this = new(ptr)
         finalizer(this, free!)
         return this
     end
 end
 
-Base.convert(::Type{Ptr{Void}}, o::GitTag) = o.ptr 
+Base.convert(::Type{Ptr{Void}}, o::GitTag) = o.ptr
 
 type GitTree <: GitObject
     ptr::Ptr{Void}
@@ -387,7 +380,7 @@ Base.convert(::Type{Ptr{Void}}, o::GitTree) = o.ptr
 
 git_otype(::Type{GitBlob})      = GitConst.OBJ_BLOB
 git_otype(::Type{GitCommit})    = GitConst.OBJ_COMMIT
-git_otype(::Type{GitTag})       = GitConst.OBJ_TAG 
+git_otype(::Type{GitTag})       = GitConst.OBJ_TAG
 git_otype(::Type{GitTree})      = GitConst.OBJ_TREE
 git_otype(::Type{GitAnyObject}) = GitConst.OBJ_ANY
 
@@ -396,7 +389,7 @@ git_otype{T<:GitObject}(o::T) = git_otype(T)
 # ---------------
 # Git Reftypes
 # ---------------
-immutable Sym end 
+immutable Sym end
 const RefType = Union(Oid, Sym)
 
 type GitReference{T<:RefType}
@@ -415,7 +408,7 @@ Base.convert(::Type{Ptr{Void}}, r::GitReference) = r.ptr
 # TODO: git branch should be a subtype of GitReference
 type GitBranch
     ptr::Ptr{Void}
-    
+
     function GitBranch(ptr::Ptr{Void})
         @assert ptr != C_NULL
         this = new(ptr)

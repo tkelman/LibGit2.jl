@@ -7,7 +7,7 @@ Base.delete!(b::GitBranch) = begin
 end
 
 Base.(:(==))(b1::GitBranch, b2::GitBranch) = canonical_name(b1) == canonical_name(b2)
-Base.isequal(b1::GitBranch, b2::GitBranch) = b1 == b2 
+Base.isequal(b1::GitBranch, b2::GitBranch) = b1 == b2
 
 tip(b::GitBranch) = lookup(owner(b), target(resolve(b)))
 
@@ -19,43 +19,43 @@ end
 
 function resolve(b::GitBranch)
     ref_ptr = Ptr{Void}[0]
-    @check ccall((:git_reference_resolve, libgit2), Cint, 
+    @check ccall((:git_reference_resolve, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, b)
     return GitReference(ref_ptr[1])
 end
 
 function name(b::GitBranch)
     name_ptr = Ptr{Uint8}[0]
-    @check ccall((:git_branch_name, libgit2), Cint, 
+    @check ccall((:git_branch_name, libgit2), Cint,
                  (Ptr{Ptr{Uint8}}, Ptr{Void}), name_ptr, b)
     return utf8(bytestring(name_ptr[1]))
 end
 
-ishead(b::GitBranch)  = 
+ishead(b::GitBranch)  =
     bool(ccall((:git_branch_is_head, libgit2), Cint, (Ptr{Void},), b))
 
-isremote(b::GitBranch) = 
+isremote(b::GitBranch) =
     bool(ccall((:git_reference_is_remote, libgit2), Cint, (Ptr{Void},), b))
 
-canonical_name(b::GitBranch) = 
+canonical_name(b::GitBranch) =
     utf8(bytestring(ccall((:git_reference_name, libgit2), Ptr{Uint8}, (Ptr{Void},), b)))
 
 function move(b::GitBranch, newname::String;
-              force::Bool=false, 
-              sig::Union(Nothing, Signature)=nothing, 
+              force::Bool=false,
+              sig::Union(Nothing, Signature)=nothing,
               logmsg::Union(Nothing, String)=nothing)
     branch_ptr = Ptr{Void}[0]
     if sig != nothing
         @check ccall((:git_branch_move, libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, 
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
                        Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
-                       branch_ptr, b, newname, force, sig, 
+                       branch_ptr, b, newname, force, sig,
                        logmsg != nothing ? logmsg : C_NULL)
     else
         @check ccall((:git_branch_move, libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, 
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
                        Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
-                       branch_ptr, b, newname, force, C_NULL, 
+                       branch_ptr, b, newname, force, C_NULL,
                        logmsg != nothing ? logmsg : C_NULL)
     end
     return GitBranch(branch_ptr[1])
@@ -64,9 +64,9 @@ end
 function remote_name(b::GitBranch)
     ref_ptr = Ptr{Void}[0]
     if isremote(b)
-        ref_ptr[1] = b.ptr 
+        ref_ptr[1] = b.ptr
     else
-        err = ccall((:git_branch_upstream, libgit2), Cint, 
+        err = ccall((:git_branch_upstream, libgit2), Cint,
                     (Ptr{Ptr{Void}}, Ptr{Void}), ref_ptr, b)
         if err == GitErrorConst.ENOTFOUND
             return nothing
@@ -103,13 +103,13 @@ function remote(b::GitBranch)
     return nothing
 end
 
-function upstream(b::GitBranch) 
+function upstream(b::GitBranch)
     isremote = ccall((:git_reference_is_remote, libgit2), Cint, (Ptr{Void},), b)
     if bool(isremote)
         return nothing
     end
     ubranch_ptr = Ptr{Void}[0]
-    err = ccall((:git_branch_upstream, libgit2), Cint, 
+    err = ccall((:git_branch_upstream, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), ubranch_ptr, b)
     if err == GitErrorConst.ENOTFOUND
         return nothing
@@ -120,21 +120,21 @@ function upstream(b::GitBranch)
 end
 
 function set_upstream!(b::GitBranch, target::Nothing)
-    @check ccall((:git_branch_set_upstream, libgit2), Cint, 
+    @check ccall((:git_branch_set_upstream, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}), b, C_NULL)
     return b
 end
 
 function set_upstream!(b::GitBranch, target::Union(GitBranch, GitReference))
     name_ptr = Ptr{Uint8}[0]
-    @check ccall((:git_branch_name, libgit2), Cint, 
+    @check ccall((:git_branch_name, libgit2), Cint,
                  (Ptr{Ptr{Uint8}}, Ptr{Void}), name_ptr, target)
-    @check ccall((:git_branch_set_upstream, libgit2), Cint, 
+    @check ccall((:git_branch_set_upstream, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}), b, name_ptr[1])
     return b
-end 
+end
 
-function rename(b::GitBranch, new_name::String; 
+function rename(b::GitBranch, new_name::String;
                 force::Bool=false, sig=nothing, logmsg=nothing)
     return move(b, new_name, force=force, sig=sig, logmsg=logmsg)
-end 
+end

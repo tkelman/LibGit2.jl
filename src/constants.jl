@@ -18,7 +18,7 @@ module GitConst
     const SORT_REVERSE = cint(1) << cint(2)
 
     const REF_INVALID = cint(0)
-    const REF_OID = cint(1)    
+    const REF_OID = cint(1)
     const REF_SYMBOLIC = cint(2)
     const REF_LISTALL = REF_OID | REF_SYMBOLIC
 
@@ -69,10 +69,10 @@ module GitConst
 
     # git_submodule_ignore_t
     const SUBMODULE_IGNORE_RESET     = cint(-1)
-    const SUBMODULE_IGNORE_NONE      = cint(1)  
-    const SUBMODULE_IGNORE_UNTRACKED = cint(2)  
-    const SUBMODULE_IGNORE_DIRTY     = cint(3)  
-    const SUBMODULE_IGNORE_ALL       = cint(4) 
+    const SUBMODULE_IGNORE_NONE      = cint(1)
+    const SUBMODULE_IGNORE_UNTRACKED = cint(2)
+    const SUBMODULE_IGNORE_DIRTY     = cint(3)
+    const SUBMODULE_IGNORE_ALL       = cint(4)
     const SUBMODULE_IGNORE_DEFAULT   = cint(0)
 
     const TREEWALK_PRE  = cint(0)
@@ -142,7 +142,7 @@ module GitConst
     const DIFF_LINE_HUNK_HDR  = cchar('H')
     const DIFF_LINE_BINARY    = cchar('B')
 
-    # index 
+    # index
     const IDXENTRY_NAMEMASK   = (0x0fff)
     const IDXENTRY_STAGEMASK  = (0x3000)
     const IDXENTRY_EXTENDED   = (0x4000)
@@ -183,13 +183,13 @@ module GitConst
 
     const MERGE_NO_FASTFORWARD = cint(1)
     const MERGE_FASTFORWARD_ONLY = cint(2)
-	
+
     const GIT_MERGE_ANALYSIS_NONE = 0,
 	const GIT_MERGE_ANALYSIS_NORMAL = (1 << 0)
 	const GIT_MERGE_ANALYSIS_UP_TO_DATE = (1 << 1)
 	const GIT_MERGE_ANALYSIS_FASTFORWARD = (1 << 2)
 	const GIT_MERGE_ANALYSIS_UNBORN = (1 << 3)
-	
+
     const GIT_MERGE_PREFERENCE_NONE = 0
 	const GIT_MERGE_PREFERENCE_NO_FASTFORWARD = (1 << 0)
 	const GIT_MERGE_PREFERENCE_FASTFORWARD_ONLY = (1 << 1)

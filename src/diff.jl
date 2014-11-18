@@ -79,11 +79,11 @@ end
 DiffFile(struct::DiffFileStruct) = begin
     DiffFile(Oid(string(struct.id)),
              bytestring(struct.path),
-             struct.size, 
+             struct.size,
              struct.flags,
              struct.mode)
 end
-    
+
 function delta_status_symbol(s::Integer)
     s == GitConst.DELTA_UNMODIFIED && return :unmodified
     s == GitConst.DELTA_ADDED      && return :added
@@ -94,7 +94,7 @@ function delta_status_symbol(s::Integer)
     s == GitConst.DELTA_IGNORED    && return :ignored
     s == GitConst.DELTA_UNTRACKED  && return :untracked
     s == GitConst.DELTA_TYPECHANGE && return :typechange
-    throw(ArgumentError("Unknown status symbol :$s")) 
+    throw(ArgumentError("Unknown status symbol :$s"))
 end
 
 type DiffDelta
@@ -128,14 +128,14 @@ end
 Base.length(d::GitDiff) = int(ccall((:git_diff_num_deltas, libgit2), Csize_t, (Ptr{Void},), d))
 
 function deltas(d::GitDiff)
-    ndelta = length(d) 
+    ndelta = length(d)
     if ndelta == 0
         return nothing
     end
     ds = Array(DiffDelta, ndelta)
     for i in 1:ndelta
-        delta_ptr = ccall((:git_diff_get_delta, libgit2), Ptr{DiffDeltaStruct}, 
-                          (Ptr{Void}, Csize_t), d, i-1) 
+        delta_ptr = ccall((:git_diff_get_delta, libgit2), Ptr{DiffDeltaStruct},
+                          (Ptr{Void}, Csize_t), d, i-1)
         ds[i] = DiffDelta(delta_ptr)
     end
     return ds
@@ -145,13 +145,13 @@ function patches(d::GitDiff)
     ndelta = length(d)
     if ndelta == 0
         return nothing
-    end 
+    end
     ps = GitPatch[]
     patch_ptr = Ptr{Void}[0]
-    err = zero(Cint) 
+    err = Cint(0)
     for i in 1:ndelta
         err = ccall((:git_patch_from_diff, libgit2), Cint,
-                    (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t), patch_ptr, d, i-1) 
+                    (Ptr{Ptr{Void}}, Ptr{Void}, Csize_t), patch_ptr, d, i-1)
         if err != GitErrorConst.GIT_OK
             break
         end
@@ -161,7 +161,7 @@ function patches(d::GitDiff)
         throw(GitError(err))
     end
     return ps
-end 
+end
 
 #TODO: memory leaks?
 function cb_diff_print(delta_ptr::Ptr{Void},
@@ -175,7 +175,7 @@ function cb_diff_print(delta_ptr::Ptr{Void},
        l.origin == GitConst.DIFF_LINE_ADDITION ||
        l.origin == GitConst.DIFF_LINE_DELETION
        add_origin = true
-    end 
+    end
     prev_len = length(s)
     if add_origin
         resize!(s, prev_len + l.content_len + 1)
@@ -195,7 +195,7 @@ end
 const c_cb_diff_print = cfunction(cb_diff_print, Cint, (Ptr{Void}, Ptr{Void}, Ptr{DiffLineStruct}, Ptr{Void}))
 
 function patch(d::GitDiff; format::Symbol=:patch)
-    cformat = zero(Cint)
+    cformat = Cint(0)
     if format === :name_status
         cformat = GitConst.DIFF_FORMAT_NAME_STATUS
     elseif format === :name_only
@@ -227,7 +227,7 @@ Base.diff(repo::GitRepo, left::MaybeString, right::MaybeString, opts::MaybeDict=
         return diff(repo, l, r, opts)
     elseif r != nothing
         opts = opts == nothing ? {} : opts
-        return diff(repo, l, r, 
+        return diff(repo, l, r,
                 merge(opts, {:reverse => !get(opts, :reverse, true)}))
     end
     return nothing
@@ -268,14 +268,14 @@ Base.diff(repo::GitRepo, left::MaybeGitTree, right::MaybeGitTree, opts::MaybeDic
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_tree_to_tree, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, 
-                  Ptr{Void}, 
-                  Ptr{Void}, 
-                  Ptr{Void}, 
+                 (Ptr{Ptr{Void}},
+                  Ptr{Void},
+                  Ptr{Void},
+                  Ptr{Void},
                   Ptr{DiffOptionsStruct}),
                  diff_ptr,
-                 repo, 
-                 left  != nothing ? left.ptr : C_NULL, 
+                 repo,
+                 left  != nothing ? left.ptr : C_NULL,
                  right != nothing ? right.ptr : C_NULL,
                  &gopts)
     free!(gopts.pathspec)
@@ -300,7 +300,7 @@ Base.diff(repo::GitRepo, left::GitTree, right::GitIndex, opts::MaybeDict=nothing
     @check ccall((:git_diff_tree_to_index, libgit2), Cint,
                  (Ptr{Ptr{Void}},
                   Ptr{Void},
-                  Ptr{Void}, 
+                  Ptr{Void},
                   Ptr{Void},
                   Ptr{DiffOptionsStruct}),
                  diff_ptr, repo, left, right, &gopts)
@@ -316,9 +316,9 @@ Base.diff(repo::GitRepo, idx::GitIndex, other::Nothing, opts::MaybeDict=nothing)
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_index_to_workdir, libgit2), Cint,
-                  (Ptr{Ptr{Void}}, 
-                   Ptr{Void}, 
-                   Ptr{Void}, 
+                  (Ptr{Ptr{Void}},
+                   Ptr{Void},
+                   Ptr{Void},
                    Ptr{DiffOptionsStruct}),
                   diff_ptr, repo, idx, &gopts)
     free!(gopts.pathspec)
@@ -335,8 +335,8 @@ Base.diff(repo::GitRepo, idx::GitIndex, other::GitTree, opts::MaybeDict=nothing)
     @check ccall((:git_diff_tree_to_index, libgit2), Cint,
                  (Ptr{Ptr{Void}},
                   Ptr{Void},
-                  Ptr{Void}, 
-                  Ptr{Void}, 
+                  Ptr{Void},
+                  Ptr{Void},
                   Ptr{DiffOptionsStruct}),
                   diff_ptr, repo, other, idx, &gopts)
     free!(gopts.pathspec)
@@ -353,8 +353,8 @@ function diff_workdir(repo::GitRepo, opts::MaybeDict=nothing)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_index_to_workdir, libgit2), Cint,
                  (Ptr{Ptr{Void}},
-                  Ptr{Void}, 
-                  Ptr{Void}, 
+                  Ptr{Void},
+                  Ptr{Void},
                   Ptr{DiffOptionsStruct}),
                  diff_ptr, repo, C_NULL, &gopts)
     free!(gopts.pathspec)
@@ -367,15 +367,15 @@ end
 
 function diff_workdir(repo::GitRepo, left::GitCommit, opts::MaybeDict=nothing)
     return diff_workdir(repo, GitTree(left), opts)
-end 
+end
 
 function diff_workdir(repo::GitRepo, left::GitTree, opts::MaybeDict=nothing)
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_tree_to_workdir, libgit2), Cint,
                  (Ptr{Ptr{Void}},
-                  Ptr{Void}, 
-                  Ptr{Void}, 
+                  Ptr{Void},
+                  Ptr{Void},
                   Ptr{DiffOptionsStruct}),
                  diff_ptr, repo, left, &gopts)
     free!(gopts.pathspec)
@@ -385,21 +385,21 @@ end
 parse_git_diff_options(o::Nothing) = DiffOptionsStruct()
 
 function parse_git_diff_options(opts::Dict)
-    max_size = zero(Coff_t)
+    max_size = Coff_t(0)
     if haskey(opts, :max_size)
         max_size = convert(Coff_t, opts[:max_size])
     end
-    context_lines = uint16(3)
+    context_lines = Uint16(3)
     if haskey(opts, :context_lines)
         @assert opts[:context_lines] <= typemax(Uint16)
         context_lines = convert(Uint16, opts[:context_lines])
     end
-    interhunk_lines = zero(Uint16)
+    interhunk_lines = Uint16(0)
     if haskey(opts, :interhunk_lines)
         @assert opts[:interhunk_lines] <= typemax(Uint16)
         interhunk_lines = convert(Uint16, opts[:interhunk_lines])
     end
-    flags = zero(Uint32) 
+    flags = Uint32(0)
     if get(opts, :reverse, false)
         flags |= GitConst.DIFF_REVERSE
     end
@@ -471,12 +471,12 @@ function parse_git_diff_options(opts::Dict)
                              flags,
                              GitConst.SUBMODULE_IGNORE_DEFAULT,
                              pathspec,
-                             C_NULL, 
-                             C_NULL, 
+                             C_NULL,
+                             C_NULL,
                              context_lines,  # defaults to 3
                              interhunk_lines,
                              0,
                              max_size,
                              C_NULL,
-                             C_NULL) 
+                             C_NULL)
 end

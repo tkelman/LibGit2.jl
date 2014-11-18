@@ -9,17 +9,17 @@ const OID_MINPREFIXLEN = 4
 #   id2::Uint8
 #   ...
 #   id20::Uint8
-# end 
+# end
 
 @eval begin
     $(Expr(:type, false, :Oid,
-        Expr(:block, 
+        Expr(:block,
             [Expr(:(::), symbol("id$i"), :Uint8) for i=1:OID_RAWSZ]...)))
 end
 
 # default Oid constructor (all zeros)
 Oid() = @eval begin
-    $(Expr(:call, :Oid, [:(zero(Uint8)) for _=1:OID_RAWSZ]...))
+    $(Expr(:call, :Oid, [:(0x00) for _=1:OID_RAWSZ]...))
 end
 
 Oid(ptr::Ptr{Oid}) = unsafe_load(ptr)::Oid
@@ -73,7 +73,7 @@ Base.show(io::IO, id::Oid) = print(io, "Oid($(string(id)))")
 
 Base.hash(id::Oid) = hash(hex(id))
 
-Base.cmp(id1::Oid, id2::Oid) = int(ccall((:git_oid_cmp, libgit2), Cint, 
+Base.cmp(id1::Oid, id2::Oid) = int(ccall((:git_oid_cmp, libgit2), Cint,
                                          (Ptr{Oid}, Ptr{Oid}), &id1, &id2))
 
 Base.(:(==))(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
@@ -81,9 +81,9 @@ Base.isequal(id1::Oid, id2::Oid) = cmp(id1, id2) == 0
 Base.isless(id1::Oid, id2::Oid)  = cmp(id1, id2) < 0
 
 iszero(id::Oid) = begin
-    bytes = raw(id) 
+    bytes = raw(id)
     for i=1:OID_RAWSZ
-        if bytes[i] != zero(Uint8)
+        if bytes[i] != 0x00
             return false
         end
     end
@@ -91,21 +91,21 @@ iszero(id::Oid) = begin
 end
 
 immutable Sha1
-    data::ASCIIString 
-    
+    data::ASCIIString
+
     Sha1(s::String) = begin
         bstr = bytestring(s)::ASCIIString
         if sizeof(bstr) != OID_HEXSZ
             throw(ArgumentError("invalid sha1 string length $(length(bstr))"))
         end
-        for c in bstr 
+        for c in bstr
             if !('0' <= c <= '9' || 'a' <= c <= 'f' || 'A' <= c <= 'F')
                 throw(ArgumentError("not a hexadecimal string: $(repr(s))"))
             end
         end
         return new(bstr)
     end
-end    
+end
 
 macro sha1_str(s)
     Sha1(s)

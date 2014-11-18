@@ -1,5 +1,5 @@
-export name, connected, disconnected, disconnect, url, set_url!, 
-       push_url, set_push_url!, fetch_refspecs, push_refspecs, 
+export name, connected, disconnected, disconnect, url, set_url!,
+       push_url, set_push_url!, fetch_refspecs, push_refspecs,
        add_fetch!, add_push!, clear_refspecs!, save!, rename!,
        update_tips!
 
@@ -42,7 +42,7 @@ Base.connect(r::GitRemote, direction::Symbol) = begin
           direction == :push  ? GitConst.DIRECTION_PUSH  :
           throw(ArgumentError("direction can be :fetch or :push, got :$direction"))
     @check ccall((:git_remote_connect, libgit2), Cint, (Ptr{Void}, Cint), r, dir)
-    return r 
+    return r
 end
 
 Base.connect(f::Function, r::GitRemote, direction::Symbol) = begin
@@ -76,7 +76,7 @@ function set_push_url!(r::GitRemote, url::String)
     return r
 end
 
-function fetch_refspecs(r::GitRemote) 
+function fetch_refspecs(r::GitRemote)
     sa_ptr = [StrArrayStruct()]
     @check ccall((:git_remote_get_fetch_refspecs, libgit2), Cint,
                   (Ptr{StrArrayStruct}, Ptr{Void}), sa_ptr, r)
@@ -101,7 +101,7 @@ function push_refspecs(r::GitRemote)
 end
 
 function add_push!(r::GitRemote, ref::String)
-    @check ccall((:git_remote_add_push, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, ref) 
+    @check ccall((:git_remote_add_push, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, ref)
     return r
 end
 
@@ -120,8 +120,8 @@ function save!(r::GitRemote)
     return r
 end
 
-function rename!(r::GitRemote, newname::String) 
-    sa_ptr = [StrArrayStruct()] 
+function rename!(r::GitRemote, newname::String)
+    sa_ptr = [StrArrayStruct()]
     @check ccall((:git_remote_rename, libgit2), Cint,
                   (Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Uint8}), sa_ptr, r, newname)
     sa = sa_ptr[1]
@@ -169,16 +169,16 @@ function update_tips!(r::GitRemote,
                      sig::MaybeSignature=nothing,
                      logmsg::MaybeString=nothing)
     @check ccall((:git_remote_update_tips, libgit2), Cint,
-                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), 
+                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
                  r, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r
 end
 
 function fetch(r::GitRemote, sig::MaybeSignature=nothing, logmsg::MaybeString=nothing)
     @check ccall((:git_remote_fetch, libgit2), Cint,
-                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}), 
+                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
                  r, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
-    return r 
+    return r
 end
 
 function default_branch(r::GitRemote)
@@ -188,4 +188,4 @@ function default_branch(r::GitRemote)
     name = utf8(bytestring(buf_ptr[1]))
     ccall((:git_buf_free, libgit2), Void, (Ptr{BufferStruct},), buf_ptr)
     return name
-end 
+end
