@@ -16,7 +16,7 @@ Signature(ptr::Ptr{SignatureStruct}) = begin
     sig   = unsafe_load(ptr)::SignatureStruct
     name  = utf8(bytestring(sig.name))
     email = utf8(bytestring(sig.email))
-    time   = sig.when.time
+    time  = sig.when.time
     offset = sig.when.offset
     return Signature(name, email, time, offset)
 end

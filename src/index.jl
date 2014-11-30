@@ -141,8 +141,10 @@ IndexEntryStruct(entry::GitIndexEntry) = begin
     flags |= (uint16(entry.stage) << GitConst.IDXENTRY_STAGESHIFT) & GitConst.IDXENTRY_STAGEMASK
     flags &= ~GitConst.IDXENTRY_VALID
     entry.valid && (flags |= GitConst.IDXENTRY_VALID)
-    ctime = IndexTimeStruct(ifloor(entry.ctime), ifloor((entry.ctime - floor(entry.ctime)) * 1000))
-    mtime = IndexTimeStruct(ifloor(entry.mtime), ifloor((entry.mtime - floor(entry.mtime)) * 1000))
+    ctime = IndexTimeStruct(floor(GitTimeT, entry.ctime),
+                            floor(Cuint, (entry.ctime - floor(entry.ctime)) * 1000))
+    mtime = IndexTimeStruct(floor(GitTimeT, entry.mtime),
+                            floor(Cuint, (entry.mtime - floor(entry.mtime)) * 1000))
     return IndexEntryStruct(ctime,
                             ctime,
                             entry.dev,

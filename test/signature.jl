@@ -17,7 +17,7 @@ context("test Signature constructor") do
         @test time_offset(sig) == test_offset
     end
 
-    let now = ifloor(time()), sig = Signature(test_name, test_email)
+    let now = floor(Integer, time()), sig = Signature(test_name, test_email)
         @test time(sig) == now
     end
 end
