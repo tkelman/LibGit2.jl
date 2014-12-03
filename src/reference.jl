@@ -17,7 +17,7 @@ end
 
 is_valid_ref(ref::AbstractString) = bool(ccall((:git_reference_is_valid_name, libgit2), Cint, (Ptr{UInt8},), ref))
 
-function set_symbolic_target(r::GitReference, target::String;
+function set_symbolic_target(r::GitReference, target::AbstractString;
                              sig::MaybeSignature=nothing,
                              logmsg::MaybeString=nothing)
     ref_ptr = Ptr{Void}[0]
@@ -48,7 +48,7 @@ function resolve(r::GitReference)
     return GitReference(ref_ptr[1])
 end
 
-function rename(r::GitReference, name::String;
+function rename(r::GitReference, name::AbstractString;
                 force::Bool=false,
                 sig::MaybeSignature=nothing,
                 logmsg::MaybeString=nothing)
@@ -160,7 +160,7 @@ end
 
 has_reflog(r::GitReference) = bool(ccall((:git_reference_has_log, libgit2), Cint, (Ptr{Void},), r.ptr))
 
-function log!(r::GitReference, msg::String="", committer::MaybeSignature=nothing)
+function log!(r::GitReference, msg::AbstractString="", committer::MaybeSignature=nothing)
     reflog_ptr = Ptr{Void}[0]
     repo_ptr = ccall((:git_reference_owner, libgit2), Ptr{Void}, (Ptr{Void},), r)
     name_ptr = ccall((:git_reference_name, libgit2), Ptr{UInt8}, (Ptr{Void},), r)

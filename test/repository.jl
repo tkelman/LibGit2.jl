@@ -390,7 +390,7 @@ function repo_init_test(f::Function)
         teardown_dir(tmpdir)
     end
 end
-repo_init_test(f::Function, s::String) = (println(s); repo_init_test(f))
+repo_init_test(f::Function, s::AbstractString) = (println(s); repo_init_test(f))
 
 repo_init_test("test init bare false") do tmpdir
     repo = init_repo(tmpdir, bare=false)
