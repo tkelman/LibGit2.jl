@@ -239,7 +239,7 @@ immutable RemoteCallbacksStruct
     update_tips::Ptr{Void}
     payload::Ptr{Void}
 end
-RemoteCallbacksStruct() = RemoteCallbacksStruct(Cuint(0),
+RemoteCallbacksStruct() = RemoteCallbacksStruct(Cuint(1),
                                                 Ptr{Void}(0),
                                                 Ptr{Void}(0),
                                                 Ptr{Void}(0),
