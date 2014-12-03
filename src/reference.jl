@@ -15,7 +15,7 @@ Base.show{T}(io::IO, ref::GitReference{T}) = begin
     write(io, "GitReference{$T}(\"$(name(ref))\")")
 end
 
-is_valid_ref(ref::String) = bool(ccall((:git_reference_is_valid_name, libgit2), Cint, (Ptr{Uint8},), ref))
+is_valid_ref(ref::AbstractString) = bool(ccall((:git_reference_is_valid_name, libgit2), Cint, (Ptr{Uint8},), ref))
 
 function set_symbolic_target(r::GitReference, target::String;
                              sig::MaybeSignature=nothing,

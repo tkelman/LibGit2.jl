@@ -22,7 +22,7 @@ end
 
 Base.convert(::Type{Ptr{Void}}, idx::GitIndex) = idx.ptr
 
-GitIndex(path::String) = begin
+GitIndex(path::AbstractString) = begin
     idxptr = Ptr{Void}[0]
     @check ccall((:git_index_open, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}), idxptr, path)
@@ -62,13 +62,13 @@ function write!(idx::GitIndex)
 end
 write!(repo::GitRepo) = write!(GitIndex(repo))
 
-function remove!(idx::GitIndex, path::String, stage::Integer=0)
+function remove!(idx::GitIndex, path::AbstractString, stage::Integer=0)
     @check ccall((:git_index_remove, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
                  idx, path, stage)
     return idx
 end
 
-function removedir!(idx::GitIndex, path::String, stage::Integer=0)
+function removedir!(idx::GitIndex, path::AbstractString, stage::Integer=0)
     @check ccall((:git_index_remove_directory, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
                   idx, path, stage)
     return idx
@@ -185,7 +185,7 @@ Base.push!(idx::GitIndex, entry::GitIndexEntry) = begin
     return idx
 end
 
-Base.push!(idx::GitIndex, path::String) = begin
+Base.push!(idx::GitIndex, path::AbstractString) = begin
     @check ccall((:git_index_add_bypath, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}), idx, path)
     return idx
@@ -199,7 +199,7 @@ Base.getindex(idx::GitIndex, i::Integer) = begin
     return GitIndexEntry(entryptr)
 end
 
-Base.getindex(idx::GitIndex, path::String, stage::Integer=0) = begin
+Base.getindex(idx::GitIndex, path::AbstractString, stage::Integer=0) = begin
     entryptr = ccall((:git_index_get_bypath, libgit2), Ptr{IndexEntryStruct},
                       (Ptr{Void}, Ptr{Uint8}, Cint), idx, path, stage)
     entryptr == C_NULL && return nothing
@@ -245,7 +245,7 @@ function read_tree!(idx::GitIndex, tree::GitTree)
     return idx
 end
 
-function add_all!(idx::GitIndex, pathspec::String;
+function add_all!(idx::GitIndex, pathspec::AbstractString;
                  force::Bool=false,
                  disable_pathsepc_match::Bool=false,
                  check_pathspec::Bool=false)
@@ -255,7 +255,7 @@ function add_all!(idx::GitIndex, pathspec::String;
                     check_pathspec=check_pathspec)
 end
 
-function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
+function add_all!{T<:AbstractString}(idx::GitIndex, pathspecs::Vector{T};
                              force::Bool=false,
                              disable_pathsepc_match::Bool=false,
                              check_pathspec::Bool=false)
@@ -281,7 +281,7 @@ function add_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T};
     return idx
 end
 
-function update_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
+function update_all!{T<:AbstractString}(idx::GitIndex, pathspecs::Vector{T})
     sa_ptr = [StrArrayStruct(pathspecs)]
     ex_ptr = Cint[0]
     @check ccall((:git_index_update_all, libgit2), Cint,
@@ -293,10 +293,10 @@ function update_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
     end
     return idx
 end
-update_all!(idx::GitIndex, pathspec::String) = update_all!(idx, [pathspec])
+update_all!(idx::GitIndex, pathspec::AbstractString) = update_all!(idx, [pathspec])
 update_all!(idx::GitIndex) = update_all!(idx, [""])
 
-function remove_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
+function remove_all!{T<:AbstractString}(idx::GitIndex, pathspecs::Vector{T})
     sa_ptr = [StrArrayStruct(pathspecs)]
     ex_ptr = Cint[0]
     @check ccall((:git_index_remove_all, libgit2), Cint,
@@ -308,7 +308,7 @@ function remove_all!{T<:String}(idx::GitIndex, pathspecs::Vector{T})
     end
     return idx
 end
-remove_all!(idx::GitIndex, pathspec::String) = remove_all!(idx, [pathspec])
+remove_all!(idx::GitIndex, pathspec::AbstractString) = remove_all!(idx, [pathspec])
 
 conflicts(r::GitRepo, idx::GitIndex) = begin
     ancestor, ours, theirs = nothing, nothing, nothing

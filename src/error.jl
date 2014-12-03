@@ -1,8 +1,7 @@
 export LibGitError
 
-module GitErrorConst
+baremodule GitErrorConst
     import ..cint
-    import ..cuint
 
     const GIT_OK          = cint(0)
     const ERROR           = cint(-01)

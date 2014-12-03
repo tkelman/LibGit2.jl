@@ -25,10 +25,10 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
     old_path_ptr = Ptr{Uint8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path = convert(Ptr{Uint8}, opts[:old_path]::String)
+            old_path = convert(Ptr{Uint8}, opts[:old_path]::AbstractString)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path = convert(Ptr{Uint8}, opts[:new_path]::String)
+            new_path = convert(Ptr{Uint8}, opts[:new_path]::AbstractString)
         end
     end
     gopts = parse_git_diff_options(opts)
@@ -44,10 +44,10 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts::MaybeDict=nothing)
     old_path_ptr = Ptr{Uint8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::String)
+            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::AbstractString)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::String)
+            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::AbstractString)
         end
     end
     gopts = parse_git_diff_options(opts)
@@ -58,15 +58,15 @@ Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts::MaybeDict=nothing)
     return GitPatch(patch_ptr[1])
 end
 
-Base.diff(repo::GitRepo, blob::GitBlob, other::String, opts::MaybeDict=nothing) = begin
+Base.diff(repo::GitRepo, blob::GitBlob, other::AbstractString, opts::MaybeDict=nothing) = begin
     old_path_ptr = Ptr{Uint8}(0)
     new_path_ptr = Ptr{Uint8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::String)
+            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::AbstractString)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::String)
+            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::AbstractString)
         end
     end
     gopts = parse_git_diff_options(opts)

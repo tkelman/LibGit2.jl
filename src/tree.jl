@@ -53,14 +53,14 @@ let
     end
 end
 
-function entry_byname(t::GitTree, filename::String)
+function entry_byname(t::GitTree, filename::AbstractString)
     eptr = ccall((:git_tree_entry_byname, libgit2), Ptr{Void},
                  (Ptr{Void}, Ptr{Uint8}), t, filename)
     return eptr == C_NULL ? nothing :
                             GitTreeEntry(eptr, false)
 end
 
-function entry_bypath(t::GitTree, path::String)
+function entry_bypath(t::GitTree, path::AbstractString)
     entry_ptr = Ptr{Void}[0]
     @check ccall((:git_tree_entry_bypath, libgit2), Cint,
                   (Ptr{Ptr{Void}}, Ptr{Uint8}), entry_ptr, path)
@@ -83,7 +83,7 @@ function entry_byid(t::GitTree, id::Oid)
 end
 
 Base.getindex(t::GitTree, entry::Integer) = entry_byindex(t, entry)
-Base.getindex(t::GitTree, entry::String)  = entry_byname(t, entry)
+Base.getindex(t::GitTree, entry::AbstractString)  = entry_byname(t, entry)
 Base.getindex(t::GitTree, entry::Oid)     = entry_byid(t, entry)
 
 Base.start(t::GitTree) = begin
@@ -190,7 +190,7 @@ Base.length(tb::GitTreeBuilder) = begin
 end
 
 # add / update an entry to the builder
-Base.insert!(tb::GitTreeBuilder, filename::String, id::Oid, filemode::Int) = begin
+Base.insert!(tb::GitTreeBuilder, filename::AbstractString, id::Oid, filemode::Int) = begin
     if !(id in tb.repo)
         throw(ArgumentError("OID $id does not exist in the Object Database"))
     end
@@ -201,7 +201,7 @@ Base.insert!(tb::GitTreeBuilder, filename::String, id::Oid, filemode::Int) = beg
 end
 
 # get an entry from the builder from its filename
-Base.getindex(tb::GitTreeBuilder, filename::String) = begin
+Base.getindex(tb::GitTreeBuilder, filename::AbstractString) = begin
     entry_ptr = ccall((:git_treebuilder_get, libgit2), Ptr{Void},
                       (Ptr{Void}, Ptr{Uint8}), tb, filename)
     return GitTreeEntry(ptr)

@@ -1,7 +1,7 @@
 using Base.Test
 using LibGit2
 
-context(f::Function, s::String) = (println(s); f())
+context(f::Function, s::AbstractString) = (println(s); f())
 
 has_ssh() = begin
     keys = ["URL", "USER", "KEY", "PUBKEY", "PASSPHRASE"]

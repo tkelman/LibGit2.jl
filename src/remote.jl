@@ -3,14 +3,14 @@ export name, connected, disconnected, disconnect, url, set_url!,
        add_fetch!, add_push!, clear_refspecs!, save!, rename!,
        update_tips!
 
-function check_valid_url(url::String)
+function check_valid_url(url::AbstractString)
     if !bool(ccall((:git_remote_valid_url, libgit2), Cint, (Ptr{Uint8},), url))
         throw(ArgumentError("Invalid URL : $url"))
     end
     return true
 end
 
-GitRemote(r::GitRepo, url::String) = begin
+GitRemote(r::GitRepo, url::AbstractString) = begin
     check_valid_url(url)
     remote_ptr = Ptr{Void}[0]
     @check ccall((:git_remote_create_anonymous, libgit2), Cint,
@@ -59,7 +59,7 @@ function url(r::GitRemote)
     return url_ptr != C_NULL ? bytestring(url_ptr) : nothing
 end
 
-function set_url!(r::GitRemote, url::String)
+function set_url!(r::GitRemote, url::AbstractString)
     check_valid_url(url)
     @check ccall((:git_remote_set_url, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, url)
     return r
@@ -70,7 +70,7 @@ function push_url(r::GitRemote)
     return url_ptr != C_NULL ? bytestring(url_ptr) : nothing
 end
 
-function set_push_url!(r::GitRemote, url::String)
+function set_push_url!(r::GitRemote, url::AbstractString)
     check_valid_url(url)
     @check ccall((:git_remote_set_pushurl, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, url)
     return r
@@ -100,12 +100,12 @@ function push_refspecs(r::GitRemote)
     return refs
 end
 
-function add_push!(r::GitRemote, ref::String)
+function add_push!(r::GitRemote, ref::AbstractString)
     @check ccall((:git_remote_add_push, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, ref)
     return r
 end
 
-function add_fetch!(r::GitRemote, ref::String)
+function add_fetch!(r::GitRemote, ref::AbstractString)
     @check ccall((:git_remote_add_fetch, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, ref)
     return r
 end
@@ -120,7 +120,7 @@ function save!(r::GitRemote)
     return r
 end
 
-function rename!(r::GitRemote, newname::String)
+function rename!(r::GitRemote, newname::AbstractString)
     sa_ptr = [StrArrayStruct()]
     @check ccall((:git_remote_rename, libgit2), Cint,
                   (Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Uint8}), sa_ptr, r, newname)

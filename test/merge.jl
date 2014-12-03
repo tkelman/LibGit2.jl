@@ -1,4 +1,4 @@
-function add_file_and_commit(repo::GitRepo, filename::String, content=nothing)
+function add_file_and_commit(repo::GitRepo, filename::AbstractString, content=nothing)
     idx, sig = GitIndex(repo), default_signature(repo)
     touch_test(workdir(repo), filename, content)
     push!(idx, filename)

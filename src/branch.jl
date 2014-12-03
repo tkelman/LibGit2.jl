@@ -40,10 +40,10 @@ isremote(b::GitBranch) =
 canonical_name(b::GitBranch) =
     utf8(bytestring(ccall((:git_reference_name, libgit2), Ptr{Uint8}, (Ptr{Void},), b)))
 
-function move(b::GitBranch, newname::String;
+function move(b::GitBranch, newname::AbstractString;
               force::Bool=false,
-              sig::Union(Nothing, Signature)=nothing,
-              logmsg::Union(Nothing, String)=nothing)
+              sig::MaybeSignature=nothing,
+              logmsg::MaybeString=nothing)
     branch_ptr = Ptr{Void}[0]
     if sig != nothing
         @check ccall((:git_branch_move, libgit2), Cint,
@@ -134,7 +134,7 @@ function set_upstream!(b::GitBranch, target::Union(GitBranch, GitReference))
     return b
 end
 
-function rename(b::GitBranch, new_name::String;
-                force::Bool=false, sig=nothing, logmsg=nothing)
+function rename(b::GitBranch, new_name::AbstractString;
+                force::Bool=false, sig::MaybeSignature=nothing, logmsg::MaybeString=nothing)
     return move(b, new_name, force=force, sig=sig, logmsg=logmsg)
 end

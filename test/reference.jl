@@ -55,7 +55,7 @@ context() do
 
         expected = [join(["refs/heads", x], "/")
                     for x in ["master","one","two","three"]]
-        test_names = String[]
+        test_names = AbstractString[]
         for r in iter_refs(repo)
             push!(test_names, name(r))
         end
@@ -66,7 +66,7 @@ context() do
         end
         # test glob
         expected = ["refs/heads/two", "refs/heads/three"]
-        test_names = String[]
+        test_names = AbstractString[]
         for r in iter_refs(repo, "refs/heads/t*")
             push!(test_names, name(r))
         end

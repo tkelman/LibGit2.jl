@@ -84,7 +84,7 @@ blob_from_buffer(r::GitRepo, buf::Vector{Uint8}) = blob_from_buffer(r::GitRepo, 
 blob_from_buffer(r::GitRepo, buf::ByteString)    = blob_from_buffer(r::GitRepo, buf.data)
 blob_from_buffer(r::GitRepo, buf::IOBuffer)      = blob_from_buffer(r::GitRepo, buf.data)
 
-function blob_from_workdir(r::GitRepo, path::String)
+function blob_from_workdir(r::GitRepo, path::AbstractString)
     id_ptr = [Oid()]
     @check ccall((:git_blob_create_fromworkdir, libgit2), Cint,
                   (Ptr{Oid}, Ptr{Void}, Ptr{Cchar}),
@@ -92,7 +92,7 @@ function blob_from_workdir(r::GitRepo, path::String)
     return id_ptr[1]
 end
 
-function blob_from_disk(r::GitRepo, path::String)
+function blob_from_disk(r::GitRepo, path::AbstractString)
     id_ptr = [Oid()]
     @check ccall((:git_blob_create_fromdisk, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Void}, Ptr{Uint8}), id_ptr, r, path)
@@ -118,7 +118,7 @@ end
 const c_cb_blob_get_chunk = cfunction(cb_blob_get_chunk, Cint,
                                       (Ptr{Uint8}, Csize_t, Ptr{Void}))
 
-function blob_from_stream(r::GitRepo, io::IO, hintpath::String="")
+function blob_from_stream(r::GitRepo, io::IO, hintpath::AbstractString="")
     id_ptr = [Oid()]
     payload = Any[io, nothing]
     err = ccall((:git_blob_create_fromchunks, libgit2), Cint,

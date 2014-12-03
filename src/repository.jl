@@ -14,10 +14,10 @@ export isbare, isempty, workdir, path, init_repo, head, exists,
        repo_clone, foreach, reset!, currentstate, remove_untracked!, branches
 
 typealias MaybeOid Union(Nothing, Oid)
-typealias MaybeString Union(Nothing, String)
+typealias MaybeString Union(Nothing, AbstractString)
 typealias MaybeSignature Union(Nothing, Signature)
 
-GitRepo(path::String; alternates=[]) = begin
+GitRepo(path::AbstractString; alternates=[]) = begin
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_open, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}), repo_ptr, path)
@@ -101,7 +101,7 @@ Base.getindex(r::GitRepo, o) = lookup(r, o)
 
 read_header(r::GitRepo, id::Oid) = read_header(Odb(r), id)
 
-exists(r::GitRepo, ref::String) = begin
+exists(r::GitRepo, ref::AbstractString) = begin
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_lookup, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, ref)
@@ -156,7 +156,7 @@ function path(r::GitRepo)
     return bytestring(cpath)[1:end-1]
 end
 
-function hash_data{T<:GitObject}(::Type{T}, content::String)
+function hash_data{T<:GitObject}(::Type{T}, content::AbstractString)
     id_ptr = [Oid()]
     @check ccall((:git_odb_hash, libgit2), Cint,
                  (Ptr{Oid}, Ptr{Uint8}, Csize_t, Cint),
@@ -177,7 +177,7 @@ function is_head_detached(r::GitRepo)
     return bool(ccall((:git_repository_head_detached, libgit2), Cint, (Ptr{Void},), r))
 end
 
-function init_repo(path::String; bare::Bool=false)
+function init_repo(path::AbstractString; bare::Bool=false)
     repo_ptr = Ptr{Void}[0]
     err = ccall((:git_repository_init, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Uint8}, Cint), repo_ptr, path, bare)
@@ -222,7 +222,7 @@ end
 Oid(r::GitRepo, val::GitObject) = Oid(val)
 Oid(r::GitRepo, val::Oid) = val
 
-function Oid(r::GitRepo, val::String)
+function Oid(r::GitRepo, val::AbstractString)
     if length(val) == OID_HEXSZ
         try
             return Oid(val)
@@ -231,7 +231,7 @@ function Oid(r::GitRepo, val::String)
     return revparse_oid(r, val)
 end
 
-function set_head!(r::GitRepo, ref::String;
+function set_head!(r::GitRepo, ref::AbstractString;
                    sig::MaybeSignature=nothing,
                    logmsg::MaybeString=nothing)
     @check ccall((:git_repository_set_head, libgit2), Cint,
@@ -280,7 +280,7 @@ function remote_names(r::GitRepo)
     return ns
 end
 
-function remote_add!(r::GitRepo, name::String, url::String)
+function remote_add!(r::GitRepo, name::AbstractString, url::AbstractString)
     check_valid_url(url)
     remote_ptr = Ptr{Void}[0]
     @check ccall((:git_remote_create, libgit2), Cint,
@@ -300,9 +300,9 @@ const c_cb_push_status = cfunction(cb_push_status, Cint,
                                    (Ptr{Uint8}, Ptr{Uint8}, Ptr{Void}))
 
 #TODO: better error messages
-Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T};
-                      sig::MaybeSignature=nothing,
-                      logmsg::MaybeString=nothing) = begin
+Base.push!{T<:AbstractString}(r::GitRepo, remote::GitRemote, refs::Vector{T};
+                              sig::MaybeSignature=nothing,
+                              logmsg::MaybeString=nothing) = begin
     push_ptr = Ptr{Void}[0]
     err = ccall((:git_push_new, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}), push_ptr, remote)
@@ -353,14 +353,14 @@ Base.push!{T<:String}(r::GitRepo, remote::GitRemote, refs::Vector{T};
     return result
 end
 
-Base.push!{T<:String}(r::GitRepo, remote::String, refs::Vector{T}) = begin
+Base.push!{T<:AbstractString}(r::GitRepo, remote::AbstractString, refs::Vector{T}) = begin
     remote_ptr = Ptr{Void}[0]
     @check ccall((:git_remote_load, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote)
     return push!(r, GitRemote(remote_ptr[1]), refs)
 end
 
-function lookup(::Type{GitRemote}, r::GitRepo, remote_name::String)
+function lookup(::Type{GitRemote}, r::GitRepo, remote_name::AbstractString)
     remote_ptr = Ptr{Void}[0]
     err = ccall((:git_remote_load, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), remote_ptr, r, remote_name)
@@ -375,10 +375,10 @@ function lookup(::Type{GitRemote}, r::GitRepo, remote_name::String)
     return GitRemote(remote_ptr[1])
 end
 
-lookup_remote(r::GitRepo, remote_name::String) = lookup(GitRemote, r, remote_name)
+lookup_remote(r::GitRepo, remote_name::AbstractString) = lookup(GitRemote, r, remote_name)
 lookup_tag(r::GitRepo, id::Oid) = lookup(GitTag, r, id)
 
-function tags(r::GitRepo, glob::String="")
+function tags(r::GitRepo, glob::AbstractString="")
     sa_ptr = [StrArrayStruct()]
     @check ccall((:git_tag_list_match, libgit2), Cint,
                  (Ptr{StrArrayStruct}, Ptr{Uint8}, Ptr{Void}), sa_ptr, glob, r)
@@ -393,8 +393,8 @@ function tags(r::GitRepo, glob::String="")
 end
 
 function tag!(r::GitRepo;
-              name::String="",
-              message::String="",
+              name::AbstractString="",
+              message::AbstractString="",
               target::MaybeOid=nothing,
               tagger::MaybeSignature=nothing,
               force::Bool=false)
@@ -415,7 +415,7 @@ function tag!(r::GitRepo;
 end
 
 function create_note!(
-               obj::GitObject, msg::String;
+               obj::GitObject, msg::AbstractString;
                committer::MaybeSignature=nothing,
                author::MaybeSignature=nothing,
                ref::MaybeString=nothing,
@@ -600,7 +600,7 @@ function is_descendant_of(r::GitRepo, prev::Oid, ances::Oid)
                       (Ptr{Void}, Ptr{Oid}, Ptr{Oid}), r, &prev, &ances))
 end
 
-function blob_at(r::GitRepo, rev::Oid, pth::String)
+function blob_at(r::GitRepo, rev::Oid, pth::AbstractString)
     tree = GitTree(lookup_commit(r, rev))
     local blob_entry::GitTreeEntry
     try
@@ -636,7 +636,7 @@ function write!{T<:GitObject}(::Type{T}, r::GitRepo, buf::ByteString)
 end
 
 
-function repo_discover(pth::String="", acrossfs::Bool=true)
+function repo_discover(pth::AbstractString="", acrossfs::Bool=true)
     isempty(pth) && (pth = pwd())
     brepo = zeros(Uint8, GitConst.GIT_PATH_MAX)
     buf_ptr = [BufferStruct()]
@@ -648,7 +648,7 @@ function repo_discover(pth::String="", acrossfs::Bool=true)
     return GitRepo(bstr)
 end
 
-function revparse(r::GitRepo, rev::String)
+function revparse(r::GitRepo, rev::AbstractString)
     obj_ptr = Ptr{Void}[0]
     @check ccall((:git_revparse_single, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), obj_ptr, r, rev)
@@ -675,7 +675,7 @@ function merge_base(r::GitRepo, args...)
 end
 
 revparse_oid(r::GitRepo, rev::Oid) = Oid(revparse(r, string(rev)))
-revparse_oid(r::GitRepo, rev::String) = Oid(revparse(r, rev))
+revparse_oid(r::GitRepo, rev::AbstractString) = Oid(revparse(r, rev))
 
 Odb(r::GitRepo) = begin
     odb_ptr = Ptr{Void}[0]
@@ -692,7 +692,7 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, id::Oid)
     return T(obj_ptr[1])
 end
 
-function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
+function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::AbstractString)
     len = length(oid)
     id_ptr  = [Oid()]
     obj_ptr = Ptr{Void}[0]
@@ -710,7 +710,7 @@ function lookup{T<:GitObject}(::Type{T}, r::GitRepo, oid::String)
     return T(obj_ptr[1])
 end
 lookup(r::GitRepo, id::Oid)    = lookup(GitAnyObject, r, id)
-lookup(r::GitRepo, id::String) = lookup(GitAnyObject, r, id)
+lookup(r::GitRepo, id::AbstractString) = lookup(GitAnyObject, r, id)
 
 lookup_blob(r::GitRepo, id)   = lookup(GitBlob, r, id)
 lookup_tree(r::GitRepo, id)   = lookup(GitTree, r, id)
@@ -718,9 +718,9 @@ lookup_commit(r::GitRepo, id) = lookup(GitCommit, r, id)
 
 lookup(r::GitRepo, o::GitReference) = lookup(GitReference, r, o)
 
-references(r::GitRepo, glob::String="") = collect(GitReference, foreach(GitReference, r, glob))
+references(r::GitRepo, glob::AbstractString="") = collect(GitReference, foreach(GitReference, r, glob))
 
-function lookup(::Type{GitReference}, r::GitRepo, name::String)
+function lookup(::Type{GitReference}, r::GitRepo, name::AbstractString)
     ref_ptr = Ptr{Void}[0]
     err = ccall((:git_reference_lookup, libgit2), Cint,
                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), ref_ptr, r, name)
@@ -733,13 +733,13 @@ function lookup(::Type{GitReference}, r::GitRepo, name::String)
 end
 lookup(::Type{GitReference}, r::GitRepo, ref::GitReference{Oid}) = lookup(r, target(ref))
 
-lookup_ref(r::GitRepo, name::String) = lookup(GitReference, r, name)
+lookup_ref(r::GitRepo, name::AbstractString) = lookup(GitReference, r, name)
 lookup_ref(r::GitRepo, ref::GitReference) = lookup(GitReference, r, ref)
 
-function create_ref(r::GitRepo, refname::String, id::Oid;
+function create_ref(r::GitRepo, refname::AbstractString, id::Oid;
                     force::Bool=false,
-                    sig::Union(Nothing,Signature)=nothing,
-                    logmsg::Union(Nothing,String)=nothing)
+                    sig::MaybeSignature=nothing,
+                    logmsg::MaybeString=nothing)
     ref_ptr = Ptr{Void}[0]
     @check ccall((:git_reference_create, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid},
@@ -750,12 +750,12 @@ function create_ref(r::GitRepo, refname::String, id::Oid;
     return GitReference(ref_ptr[1])
 end
 
-function create_ref(r::GitRepo, refname::String, target::String;
+function create_ref(r::GitRepo, refname::AbstractString, target::AbstractString;
                     force::Bool=false, sig=nothing, logmsg=nothing)
     create_sym_ref(r, refname, target; force=force, sig=sig, logmsg=logmsg)
 end
 
-function create_sym_ref(r::GitRepo, refname::String, target::String;
+function create_sym_ref(r::GitRepo, refname::AbstractString, target::AbstractString;
                         force::Bool=false, sig=sig, logmsg=logmsg)
     ref_ptr = Ptr{Void}[0]
     @check ccall((:git_reference_symbolic_create, libgit2), Cint,
@@ -768,8 +768,8 @@ function create_sym_ref(r::GitRepo, refname::String, target::String;
 end
 
 function commit(r::GitRepo,
-                refname::String,
-                msg::String,
+                refname::AbstractString,
+                msg::AbstractString,
                 author::Signature,
                 committer::Signature,
                 tree::GitTree,
@@ -788,7 +788,7 @@ function commit(r::GitRepo,
 end
 
 function commit(r::GitRepo,
-                msg::String,
+                msg::AbstractString,
                 author::Signature,
                 committer::Signature)
     idx = GitIndex(r)
@@ -815,19 +815,19 @@ function reset!(r::GitRepo, obj::Union(GitCommit,GitTag), typ::Symbol;
     return
 end
 
-function reset!(r::GitRepo, ref::String, typ::Symbol;
+function reset!(r::GitRepo, ref::AbstractString, typ::Symbol;
        sig::MaybeSignature=nothing,
        logmsg::MaybeString=nothing)
     reset!(r, revparse(r, ref), typ, sig=sig, logmsg=logmsg)
 end
 
-function set_workdir!(r::GitRepo, dir::String, update::Bool)
+function set_workdir!(r::GitRepo, dir::AbstractString, update::Bool)
     @check ccall((:git_repository_set_workdir, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Cint), r, dir, update)
     return r
 end
 # branch type can be :local or :remote
-function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type::Symbol=:local)
+function lookup(::Type{GitBranch}, r::GitRepo, branch_name::AbstractString, branch_type::Symbol=:local)
     git_branch_type = branch_type == :local  ? GitConst.BRANCH_LOCAL :
                       branch_type == :remote ? GitConst.BRANCH_REMOTE :
                       throw(ArgumentError("branch_type can be :local or :remote"))
@@ -844,17 +844,17 @@ function lookup(::Type{GitBranch}, r::GitRepo, branch_name::String, branch_type:
     end
 end
 
-lookup_branch(r::GitRepo, branch_name::String, branch_type=:local) =
+lookup_branch(r::GitRepo, branch_name::AbstractString, branch_type=:local) =
         lookup(GitBranch, r, branch_name, branch_type)
 
 lookup_branch(r::GitRepo, branch_id::Oid, branch_type=:local) =
         lookup(GitBranch, r, string(branch_id), branch_type)
 
 #TODO: give intelligent error msg when target does not exist
-function create_branch(r::GitRepo, bname::String, target::Oid;
+function create_branch(r::GitRepo, bname::AbstractString, target::Oid;
                        force::Bool=false,
-                       sig::Union(Nothing,Signature)=nothing,
-                       logmsg::Union(Nothing,String)=nothing)
+                       sig::MaybeSignature=nothing,
+                       logmsg::MaybeString=nothing)
     commit = lookup_commit(r, target)
     branch_ptr = Ptr{Void}[0]
     @check ccall((:git_branch_create, libgit2), Cint,
@@ -866,13 +866,13 @@ function create_branch(r::GitRepo, bname::String, target::Oid;
     return GitBranch(branch_ptr[1])
 end
 
-function create_branch(r::GitRepo, n::String, target::String="HEAD";
+function create_branch(r::GitRepo, n::AbstractString, target::AbstractString="HEAD";
                        force::Bool=false, sig=nothing, logmsg=nothing)
     id = revparse_oid(r, target)
     return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
 end
 
-function create_branch(r::GitRepo, n::String, target::GitCommit;
+function create_branch(r::GitRepo, n::AbstractString, target::GitCommit;
                        force::Bool=false, sig=nothing, logmsg=nothing)
     id = Oid(target)
     return create_branch(r, n, id, force=force, sig=sig, logmsg=logmsg)
@@ -1011,7 +1011,7 @@ merge_base(r::GitRepo, ids::Oid...) = begin
 end
 =#
 
-merge_analysis(r::GitRepo, their_commit::String) = begin
+merge_analysis(r::GitRepo, their_commit::AbstractString) = begin
     commit = revparse(r, revparse)
     if !isa(commit, GitCommit)
         throw(ArgumentError("reference string must point to a valid git commit"))
@@ -1101,7 +1101,7 @@ Base.merge!(r::GitRepo,
     return GitIndex(idx_ptr[1])
 end
 
-Base.merge!(r::GitRepo, b::String, opts=Dict()) = merge!(r, revparse(r, b), opts)
+Base.merge!(r::GitRepo, b::AbstractString, opts=Dict()) = merge!(r, revparse(r, b), opts)
 Base.merge!(r::GitRepo, id::Oid, opts=Dict()) = merge!(r, lookup(r, id), opts)
 
 Base.merge!(r::GitRepo, c::GitCommit, opts=Dict()) = begin
@@ -1191,7 +1191,7 @@ _normal_merge(r::GitRepo, mhead_ptr::Vector{Ptr{Void}}, opts=Dict()) = begin
     if is_fully_merged(idx)
         if haskey(opts, :commit_on_success)
             msg = opts[:commit_on_success]
-            if !isa(msg, String)
+            if !isa(msg, AbstractString)
                 throw(ArgumentError(":commit_on_success option value must be a string"))
             end
             # todo: Signature
@@ -1403,7 +1403,7 @@ parse_checkout_options(opts::Dict) = begin
     end
     target_directory = Ptr{Uint8}(0)
     if haskey(opts, :target_directory)
-        if !isa(opts[:target_directory], String)
+        if !isa(opts[:target_directory], AbstractString)
             throw(ArgumentError("checkout options :target_target must be a String"))
         end
         target_directory = convert(Ptr{Uint8}, bytestring(opts[:target_directory]))
@@ -1422,21 +1422,21 @@ parse_checkout_options(opts::Dict) = begin
     end
     ancestor_label = Ptr{Uint8}(0)
     if haskey(opts, :ancestor_label)
-        if !isa(opts[:ancestor_label], String)
+        if !isa(opts[:ancestor_label], AbstractString)
             throw(ArgumentError("checkout options :ancestor_label must be a String"))
         end
         ancestor_label = convert(Ptr{Uint8}, opts[:ancestor_label])
     end
     our_label = Ptr{Uint8}(0)
     if haskey(opts, :our_label)
-        if !isa(opts[:ancestor_label], String)
+        if !isa(opts[:ancestor_label], AbstractString)
             throw(ArgumentError("checkout options :our_label must be a String"))
         end
         our_label = convert(Ptr{Uint8}, opts[:our_label])
     end
     their_label = Ptr{Uint8}(0)
     if haskey(opts, :their_label)
-        if !isa(opts[:ancestor_label], String)
+        if !isa(opts[:ancestor_label], AbstractString)
             throw(ArgumentError("checkout options :their_label must be a String"))
         end
         their_label = convert(Ptr{Uint8}, opts[:their_label])
@@ -1476,7 +1476,7 @@ function remove_untracked!(r::GitRepo)
     return r
 end
 
-checkout_tree!(r::GitRepo, tree::String, opts::MaybeDict=nothing) =
+checkout_tree!(r::GitRepo, tree::AbstractString, opts::MaybeDict=nothing) =
     return checkout_tree!(r, revparse(r, tree), opts)
 
 function checkout_tree!(r::GitRepo, tree::Treeish, opts::MaybeDict=nothing)
@@ -1710,7 +1710,7 @@ function cb_remote_transfer(stats_ptr::Ptr{TransferProgressStruct}, payload_ptr:
     end
 end
 
-function repo_clone(url::String, localpath::String, opts::MaybeDict=nothing)
+function repo_clone(url::AbstractString, localpath::AbstractString, opts::MaybeDict=nothing)
     check_valid_url(url)
     payload = Dict()
     opts_struct = parse_clone_options(opts, payload)::CloneOptionsStruct
@@ -1752,7 +1752,7 @@ end
 
 Base.convert(::Type{Ptr{Void}}, it::ReferenceIterator) = it.ptr
 
-function foreach(::Type{GitReference}, r::GitRepo, glob::String="")
+function foreach(::Type{GitReference}, r::GitRepo, glob::AbstractString="")
     iter_ptr = Ptr{Void}[0]
     if isempty(glob)
         @check ccall((:git_reference_iterator_new, libgit2), Cint,
@@ -1795,4 +1795,4 @@ Base.next(it::ReferenceIterator, state) = begin
     end
     return (state, GitReference(ref_ptr[1]))
 end
-ref_names(r::GitRepo, glob::String="") = map(name, foreach(GitReference, r, glob))
+ref_names(r::GitRepo, glob::AbstractString="") = map(name, foreach(GitReference, r, glob))

@@ -254,7 +254,7 @@ Base.diff(repo::GitRepo, c::GitCommit, opts::MaybeDict=nothing) = begin
     end
 end
 
-Base.diff(repo::GitRepo, left::GitTree, right::String, opts::MaybeDict=nothing) = begin
+Base.diff(repo::GitRepo, left::GitTree, right::AbstractString, opts::MaybeDict=nothing) = begin
     return diff(repo, left, revparse(repo, right), opts)
 end
 
@@ -286,7 +286,7 @@ Base.diff(repo::GitRepo, left::Oid, right::Oid, opts::MaybeDict=nothing) = begin
     return diff(repo, lookup(repo, left), lookup(repo, right), opts)
 end
 
-Base.diff(repo::GitRepo, left::String, right::GitIndex, opts::MaybeDict=nothing) = begin
+Base.diff(repo::GitRepo, left::AbstractString, right::GitIndex, opts::MaybeDict=nothing) = begin
     return diff(repo, revparse(repo, left), right, opts)
 end
 
@@ -361,7 +361,7 @@ function diff_workdir(repo::GitRepo, opts::MaybeDict=nothing)
     return GitDiff(diff_ptr[1])
 end
 
-function diff_workdir(repo::GitRepo, left::String, opts::MaybeDict=nothing)
+function diff_workdir(repo::GitRepo, left::AbstractString, opts::MaybeDict=nothing)
     return diff_workdir(repo, revparse(repo, left), opts)
 end
 

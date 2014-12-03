@@ -5,7 +5,7 @@ typealias GitOffT Int64
 typealias GitTimeT Int64
 
 typealias MaybeDict Union(Nothing, Dict{Any,Any})
-typealias MaybeString Union(Nothing, String)
+typealias MaybeString Union(Nothing, AbstractString)
 
 # time in a signature
 
@@ -54,7 +54,7 @@ immutable StrArrayStruct
 end
 StrArrayStruct() = StrArrayStruct(Ptr{Uint8}(0),Csize_t(0))
 
-StrArrayStruct{T<:String}(strs::Vector{T}) = begin
+StrArrayStruct{T<:AbstractString}(strs::Vector{T}) = begin
     count = length(strs)
     strings = convert(Ptr{Ptr{Uint8}}, Base.c_malloc(sizeof(Ptr{Uint8}) * count))
     for i=1:count
@@ -67,7 +67,7 @@ StrArrayStruct{T<:String}(strs::Vector{T}) = begin
     end
     return StrArrayStruct(strings, count)
 end
-StrArrayStruct{T<:String}(str::T) = StrArrayStruct([str])
+StrArrayStruct{T<:AbstractString}(str::T) = StrArrayStruct([str])
 
 Base.convert(::Type{Vector{UTF8String}}, sa::StrArrayStruct) = begin
     arr = Array(UTF8String, sa.count)

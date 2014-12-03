@@ -334,7 +334,7 @@ end
 #---------------------------
 # Repo Discover Test
 #---------------------------
-teardown_dir(p::String) = rm(p, recursive=true)
+teardown_dir(p::AbstractString) = rm(p, recursive=true)
 
 function discover_test(f::Function)
     tmpdir = mktempdir()
@@ -345,7 +345,7 @@ function discover_test(f::Function)
         teardown_dir(tmpdir)
     end
 end
-discover_test(f::Function, s::String) = (println(s); discover_test(f))
+discover_test(f::Function, s::AbstractString) = (println(s); discover_test(f))
 
 discover_test("test discover false") do tmpdir
     @test_throws LibGitError{:Repo,:NotFound} repo_discover(tmpdir)

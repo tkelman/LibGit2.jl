@@ -11,7 +11,7 @@ type GitConfig
     end
 end
 
-GitConfig(path::String) = begin
+GitConfig(path::AbstractString) = begin
     cfg_ptr = Ptr{Void}[0]
     @check ccall((:git_config_open_ondisk, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}), cfg_ptr, path)
@@ -34,12 +34,12 @@ end
 
 Base.convert(::Type{Ptr{Void}}, cfg::GitConfig) = cfg.ptr
 
-typealias GitConfigType Union(Bool,Int32,Int64,String)
+typealias GitConfigType Union(Bool,Int32,Int64,AbstractString)
 
-Base.getindex(c::GitConfig, key::String) = lookup(String, c, key)
-Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::String) = set!(T, c, key, v)
+Base.getindex(c::GitConfig, key::AbstractString) = lookup(AbstractString, c, key)
+Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::AbstractString) = set!(T, c, key, v)
 
-Base.delete!(c::GitConfig, key::String) = begin
+Base.delete!(c::GitConfig, key::AbstractString) = begin
     err = ccall((:git_config_delete_entry, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), c, key)
     return err == GitErrorConst.ENOTFOUND ? false : true
 end
@@ -100,7 +100,7 @@ function global_config()
     return GitConfig(cfg_ptr[1])
 end
 
-function lookup(::Type{Bool}, c::GitConfig, name::String)
+function lookup(::Type{Bool}, c::GitConfig, name::AbstractString)
     out = Cint[0]
     @check ccall((:git_config_get_bool, libgit2), Cint,
                  (Ptr{Cint}, Ptr{Void}, Ptr{Uint8}), out, c, name)
@@ -113,13 +113,13 @@ function lookup(::Type{Bool}, c::GitConfig, name::String)
     end
 end
 
-function set!(::Type{Bool}, c::GitConfig, name::String, value::Bool)
+function set!(::Type{Bool}, c::GitConfig, name::AbstractString, value::Bool)
     @check ccall((:git_config_set_bool, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Cint), c, name, value)
     return c
 end
 
-function lookup(::Type{Int32}, c::GitConfig, name::String)
+function lookup(::Type{Int32}, c::GitConfig, name::AbstractString)
     out = Int32[0]
     err = ccall((:git_config_get_int32, libgit2), Cint,
                 (Ptr{Int32}, Ptr{Void}, Ptr{Uint8}), out, c, name)
@@ -132,13 +132,13 @@ function lookup(::Type{Int32}, c::GitConfig, name::String)
     end
 end
 
-function set!(::Type{Int32}, c::GitConfig, name::String, value::Int32)
+function set!(::Type{Int32}, c::GitConfig, name::AbstractString, value::Int32)
     @check ccall((:git_config_set_int32, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Int32), c, name, value)
     return c
 end
 
-function lookup(::Type{Int64}, c::GitConfig, name::String)
+function lookup(::Type{Int64}, c::GitConfig, name::AbstractString)
     out = Int64[0]
     err = ccall((:git_config_get_int64, libgit2), Cint,
                 (Ptr{Int64}, Ptr{Void}, Ptr{Uint8}), out, c, name)
@@ -151,13 +151,13 @@ function lookup(::Type{Int64}, c::GitConfig, name::String)
     end
 end
 
-function set!(::Type{Int64}, c::GitConfig, name::String, value::Int64)
+function set!(::Type{Int64}, c::GitConfig, name::AbstractString, value::Int64)
     @check ccall((:git_config_set_int64, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Int64), c, name, value)
     return c
 end
 
-function lookup{T<:String}(::Type{T}, c::GitConfig, name::String)
+function lookup{T<:AbstractString}(::Type{T}, c::GitConfig, name::AbstractString)
     out = Ptr{Uint8}[0]
     err = ccall((:git_config_get_string, libgit2), Cint,
                 (Ptr{Ptr{Uint8}}, Ptr{Void}, Ptr{Uint8}), out, c, name)
@@ -170,7 +170,7 @@ function lookup{T<:String}(::Type{T}, c::GitConfig, name::String)
     end
 end
 
-function set!{T<:String}(::Type{T}, c::GitConfig, name::String, value::String)
+function set!{T<:AbstractString}(::Type{T}, c::GitConfig, name::AbstractString, value::AbstractString)
     @check ccall((:git_config_set_string, libgit2), Cint,
                  (Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}), c, name, value)
     return c

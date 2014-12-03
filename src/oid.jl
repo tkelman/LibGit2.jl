@@ -18,8 +18,8 @@ const OID_MINPREFIXLEN = 4
 end
 
 # default Oid constructor (all zeros)
-Oid() = @eval begin
-    $(Expr(:call, :Oid, [:(0x00) for _=1:OID_RAWSZ]...))
+@eval begin
+    Oid() = $(Expr(:call, :Oid, [:(0x00) for _=1:OID_RAWSZ]...))
 end
 
 Oid(ptr::Ptr{Oid}) = unsafe_load(ptr)::Oid
@@ -40,7 +40,7 @@ Oid(id::Array{Uint8,1}) = begin
     return Oid(pointer(id))
 end
 
-Oid(id::String) = begin
+Oid(id::AbstractString) = begin
     bstr = bytestring(id)
     if sizeof(bstr) != OID_HEXSZ
         throw(ArgumentError("invalid hex size"))
@@ -93,7 +93,7 @@ end
 immutable Sha1
     data::ASCIIString
 
-    Sha1(s::String) = begin
+    Sha1(s::AbstractString) = begin
         bstr = bytestring(s)::ASCIIString
         if sizeof(bstr) != OID_HEXSZ
             throw(ArgumentError("invalid sha1 string length $(length(bstr))"))

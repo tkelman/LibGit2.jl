@@ -57,7 +57,7 @@ type SSHAgentCred <: GitCredential
     end
 end
 
-SSHAgentCred(username::String) = begin
+SSHAgentCred(username::AbstractString) = begin
     cred_ptr = Ptr{Void}[0]
     @check ccall((:git_cred_ssh_key_from_agent, libgit2), Cint,
                  (Ptr{Ptr{Void}}, Ptr{Uint8}), cred_ptr, username)

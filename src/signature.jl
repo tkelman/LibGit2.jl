@@ -3,7 +3,7 @@ export  name, email, time, time_offset
 typealias MaybeSignature Union(Nothing, Signature)
 
 #TODO: better date / time integration when this becomes available in Base
-Signature(name::String, email::String) = begin
+Signature(name::AbstractString, email::AbstractString) = begin
     sig_ptr = Ptr{SignatureStruct}[0]
     @check ccall((:git_signature_now, libgit2), Cint,
                  (Ptr{Ptr{SignatureStruct}}, Ptr{Uint8}, Ptr{Uint8}), sig_ptr, name, email)
