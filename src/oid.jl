@@ -1,4 +1,4 @@
-export Sha1, Oid, raw, iszero, @sha1_str
+export SHA1, PartialSHA1, Oid, raw, iszero, @sha1_str
 
 const OID_RAWSZ = 20
 const OID_HEXSZ = OID_RAWSZ * 2
@@ -90,25 +90,62 @@ iszero(id::Oid) = begin
     return true
 end
 
-immutable Sha1
+#throw(ArgumentError("not a hexadecimal string: $(repr(s))"))
+
+function allhexchar(s::ByteString)
+    for c in s
+        if !('0' <= c <= '9' || 'a' <= c <= 'f' || 'A' <= c <= 'F')
+            return false
+        end
+    end
+    return true
+end
+
+immutable PartialSHA1
     data::ASCIIString
 
-    Sha1(s::AbstractString) = begin
-        bstr = bytestring(s)::ASCIIString
-        if sizeof(bstr) != OID_HEXSZ
-            throw(ArgumentError("invalid sha1 string length $(length(bstr))"))
+    PartialSHA1(s::AbstractString) = begin
+        len = length(s)
+        if len == 0
+            throw(ArgumentError("PartialSHA1 string cannot be empty"))
+        elseif len >= OID_HEXSZ
+            throw(ArgumentError("PartialSHA1 string length must be <= $(OID_HEXSZ)"))
         end
-        for c in bstr
-            if !('0' <= c <= '9' || 'a' <= c <= 'f' || 'A' <= c <= 'F')
-                throw(ArgumentError("not a hexadecimal string: $(repr(s))"))
-            end
+        str = ASCIIString(s)
+        if !allhexchar(str)
+            throw(ArgumentError("SHA1 string is not a hexadecimal string: $(repr(str))"))
         end
-        return new(bstr)
+        return new(str)
+    end
+end
+
+immutable SHA1
+    data::ASCIIString
+
+    SHA1(s::AbstractString) = begin
+        len = length(s)
+        if len == 0
+            throw(ArgumentError("SHA1 string cannot be empty"))
+        elseif len < OID_HEXSZ
+            throw(ArgumentError("SHA1 string length < $(OID_HEXSZ)"))
+        elseif len > OID_HEXSZ
+            throw(ArgumentError("SHA1 string length > $(OID_HEXSZ)"))
+        end
+        str = ASCIIString(s)
+        if !allhexchar(str)
+            throw(ArgumentError("SHA1 string is not a hexadecimal string: $(repr(str))"))
+        end
+        return new(str)
     end
 end
 
 macro sha1_str(s)
-    Sha1(s)
+    len = length(s)
+    if len < OID_HEXSZ
+        :(PartialSHA1($s))
+    else
+        :(SHA1($s))
+    end
 end
 
-Oid(sha::Sha1) = Oid(hex2bytes(sha.data))
+Oid(sha::SHA1) = Oid(hex2bytes(sha.data))

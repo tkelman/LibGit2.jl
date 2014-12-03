@@ -53,10 +53,13 @@ end
 
 context("test SHA1") do
     sha = sha1"15b648aec6ed045b5ca6f57f8b7831a8b4757298"
+    psha = sha1"15b648aec6ed"
 
     #test sha1 constructors
-    @test isa(sha, Sha1)
+    @test isa(sha, SHA1)
+    @test isa(psha, PartialSHA1)
 
     # invalid string length
-    @test_throws ArgumentError Sha1("15b648aec6ed045b5ca6f57f8b7831a8b475729")
+    @test_throws ArgumentError SHA1("15b648aec6ed045b5ca6f57f8b7831a8b475729")
+
 end
