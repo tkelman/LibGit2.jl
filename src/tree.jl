@@ -20,12 +20,12 @@ Base.filemode(te::GitTreeEntry) = te.filemode
 
 let
     function tree_entry_name(ptr::Ptr{Void})
-        nptr = ccall((:git_tree_entry_name, libgit2), Ptr{Uint8}, (Ptr{Void},), ptr)
+        nptr = ccall((:git_tree_entry_name, libgit2), Ptr{UInt8}, (Ptr{Void},), ptr)
         return bytestring(nptr)
     end
 
     function tree_entry_oid(ptr::Ptr{Void})
-        idptr = ccall((:git_tree_entry_id, libgit2), Ptr{Uint8}, (Ptr{Void},), ptr)
+        idptr = ccall((:git_tree_entry_id, libgit2), Ptr{UInt8}, (Ptr{Void},), ptr)
         return Oid(idptr)
     end
 
@@ -55,7 +55,7 @@ end
 
 function entry_byname(t::GitTree, filename::AbstractString)
     eptr = ccall((:git_tree_entry_byname, libgit2), Ptr{Void},
-                 (Ptr{Void}, Ptr{Uint8}), t, filename)
+                 (Ptr{Void}, Ptr{UInt8}), t, filename)
     return eptr == C_NULL ? nothing :
                             GitTreeEntry(eptr, false)
 end
@@ -63,7 +63,7 @@ end
 function entry_bypath(t::GitTree, path::AbstractString)
     entry_ptr = Ptr{Void}[0]
     @check ccall((:git_tree_entry_bypath, libgit2), Cint,
-                  (Ptr{Ptr{Void}}, Ptr{Uint8}), entry_ptr, path)
+                  (Ptr{Ptr{Void}}, Ptr{UInt8}), entry_ptr, path)
     return entry_ptr[1] == C_NULL ? nothing :
                                     GitTreeEntry(entry_ptr[1], true)
 end
@@ -110,7 +110,7 @@ function foreach(::Type{GitTree}, t::GitTree)
     end
 end
 
-function cb_treewalk(root::Ptr{Uint8}, entry::Ptr{Void}, data::Ptr{Void})
+function cb_treewalk(root::Ptr{UInt8}, entry::Ptr{Void}, data::Ptr{Void})
     try
         produce(bytestring(root), GitTreeEntry(entry))
         return GitErrorConst.GIT_OK
@@ -120,7 +120,7 @@ function cb_treewalk(root::Ptr{Uint8}, entry::Ptr{Void}, data::Ptr{Void})
 end
 
 const c_cb_treewalk = cfunction(cb_treewalk, Cint,
-                                (Ptr{Uint8}, Ptr{Void}, Ptr{Void}))
+                                (Ptr{UInt8}, Ptr{Void}, Ptr{Void}))
 
 function walk(t::GitTree, order=:postorder)
     mode = order == :postorder ? GitConst.TREEWALK_POST :
@@ -195,7 +195,7 @@ Base.insert!(tb::GitTreeBuilder, filename::AbstractString, id::Oid, filemode::In
         throw(ArgumentError("OID $id does not exist in the Object Database"))
     end
     @check ccall((:git_treebuilder_insert, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}, Cint),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}, Ptr{Oid}, Cint),
                  C_NULL, tb, filename, &id, filemode)
     return tb
 end
@@ -203,7 +203,7 @@ end
 # get an entry from the builder from its filename
 Base.getindex(tb::GitTreeBuilder, filename::AbstractString) = begin
     entry_ptr = ccall((:git_treebuilder_get, libgit2), Ptr{Void},
-                      (Ptr{Void}, Ptr{Uint8}), tb, filename)
+                      (Ptr{Void}, Ptr{UInt8}), tb, filename)
     return GitTreeEntry(ptr)
 end
 

@@ -169,7 +169,7 @@ function cb_diff_print(delta_ptr::Ptr{Void},
                        line_ptr::Ptr{DiffLineStruct},
                        payload::Ptr{Void})
     l = unsafe_load(line_ptr)
-    s = unsafe_pointer_to_objref(payload)::Array{Uint8,1}
+    s = unsafe_pointer_to_objref(payload)::Array{UInt8,1}
     add_origin = false
     if l.origin == GitConst.DIFF_LINE_CONTEXT ||
        l.origin == GitConst.DIFF_LINE_ADDITION ||
@@ -209,7 +209,7 @@ function patch(d::GitDiff; format::Symbol=:patch)
     else
         throw(ArgumentError(("Unknown diff output format ($format)")))
     end
-    s = Uint8[]
+    s = UInt8[]
     ccall((:git_diff_print, libgit2), Cint,
            (Ptr{Void}, Cint, Ptr{Void}, Any), d, cformat, c_cb_diff_print, &s)
     return UTF8String(s)
@@ -389,17 +389,17 @@ function parse_git_diff_options(opts::Dict)
     if haskey(opts, :max_size)
         max_size = convert(Coff_t, opts[:max_size])
     end
-    context_lines = Uint16(3)
+    context_lines = UInt16(3)
     if haskey(opts, :context_lines)
-        @assert opts[:context_lines] <= typemax(Uint16)
-        context_lines = convert(Uint16, opts[:context_lines])
+        @assert opts[:context_lines] <= typemax(UInt16)
+        context_lines = convert(UInt16, opts[:context_lines])
     end
-    interhunk_lines = Uint16(0)
+    interhunk_lines = UInt16(0)
     if haskey(opts, :interhunk_lines)
-        @assert opts[:interhunk_lines] <= typemax(Uint16)
-        interhunk_lines = convert(Uint16, opts[:interhunk_lines])
+        @assert opts[:interhunk_lines] <= typemax(UInt16)
+        interhunk_lines = convert(UInt16, opts[:interhunk_lines])
     end
-    flags = Uint32(0)
+    flags = UInt32(0)
     if get(opts, :reverse, false)
         flags |= GitConst.DIFF_REVERSE
     end

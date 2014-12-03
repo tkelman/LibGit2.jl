@@ -12,9 +12,9 @@ Base.cmp(o1::GitObject, o2::GitObject) = cmp(Oid(o1), Oid(o2))
 Oid(o::GitObject) = Oid(ccall((:git_object_id, libgit2), Ptr{Oid}, (Ptr{Void},), o))
 
 Base.hex(o::GitObject) = begin
-    oid_ptr = ccall((:git_object_id, libgit2), Ptr{Uint8}, (Ptr{Void},), o)
-    hex_buff = Array(Uint8, OID_HEXSZ)
-    @check ccall((:git_oid_fmt, libgit2), Cint, (Ptr{Uint8}, Ptr{Uint8}), hex_buff, oid_ptr)
+    oid_ptr = ccall((:git_object_id, libgit2), Ptr{UInt8}, (Ptr{Void},), o)
+    hex_buff = Array(UInt8, OID_HEXSZ)
+    @check ccall((:git_oid_fmt, libgit2), Cint, (Ptr{UInt8}, Ptr{UInt8}), hex_buff, oid_ptr)
     return bytestring(hex_buff)
 end
 

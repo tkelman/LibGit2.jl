@@ -7,8 +7,8 @@ end
 
 GitNote(ptr::Ptr{Void}) = begin
     @assert ptr != C_NULL
-    id  = Oid(ccall((:git_note_id, libgit2), Ptr{Uint8}, (Ptr{Void},), ptr))
-    msg = utf8(bytestring(ccall((:git_note_message, libgit2), Ptr{Uint8}, (Ptr{Void},), ptr)))
+    id  = Oid(ccall((:git_note_id, libgit2), Ptr{UInt8}, (Ptr{Void},), ptr))
+    msg = utf8(bytestring(ccall((:git_note_message, libgit2), Ptr{UInt8}, (Ptr{Void},), ptr)))
     return GitNote(id, msg)
 end
 
@@ -22,7 +22,7 @@ function lookup_note(obj::GitObject, ref::MaybeString=nothing)
     note_ptr = Ptr{Void}[0]
     repo_ptr = ccall((:git_object_owner, libgit2), Ptr{Void}, (Ptr{Void},), obj)
     err = ccall((:git_note_read, libgit2), Cint,
-                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Oid}),
+                (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}, Ptr{Oid}),
                 note_ptr, repo_ptr, ref != nothing ? ref : C_NULL, &oid)
     if err == GitErrorConst.ENOTFOUND
         return nothing

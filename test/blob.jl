@@ -32,7 +32,7 @@ with_repo_access() do test_repo, path
         id = Oid("7771329dfa3002caf8c61a0ceb62a31d09023f37")
         b = lookup(test_repo, id)
         c =  rawcontent(b, 10)
-        @test c == convert(Vector{Uint8}, "# Rugged\n*")
+        @test c == convert(Vector{UInt8}, "# Rugged\n*")
         @test sizeof(c) == 10
     end
 

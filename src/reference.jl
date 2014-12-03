@@ -15,14 +15,14 @@ Base.show{T}(io::IO, ref::GitReference{T}) = begin
     write(io, "GitReference{$T}(\"$(name(ref))\")")
 end
 
-is_valid_ref(ref::AbstractString) = bool(ccall((:git_reference_is_valid_name, libgit2), Cint, (Ptr{Uint8},), ref))
+is_valid_ref(ref::AbstractString) = bool(ccall((:git_reference_is_valid_name, libgit2), Cint, (Ptr{UInt8},), ref))
 
 function set_symbolic_target(r::GitReference, target::String;
                              sig::MaybeSignature=nothing,
                              logmsg::MaybeString=nothing)
     ref_ptr = Ptr{Void}[0]
     @check ccall((:git_reference_set_symbolic_target, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}, Ptr{SignatureStruct}, Ptr{UInt8}),
                  ref_ptr, r, target,
                  sig != nothing ? sig : C_NULL,
                  msg != nothing ? msg : C_NULL)
@@ -34,7 +34,7 @@ function set_target(r::GitReference, id::Oid;
                     logmsg::MaybeString=nothing)
     ref_ptr = Ptr{Void}[0]
     @check ccall((:git_reference_set_target, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Oid}, Ptr{SignatureStruct}, Ptr{UInt8}),
                  ref_ptr, r, &id,
                  sig != nothing ? sig : C_NULL,
                  logmsg != nothing ? logmsg : C_NULL)
@@ -54,7 +54,7 @@ function rename(r::GitReference, name::String;
                 logmsg::MaybeString=nothing)
     ref_ptr = Ptr{Void}[0]
     @check ccall((:git_reference_rename, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}, Cint, Ptr{SignatureStruct}, Ptr{UInt8}),
                  ref_ptr, r, name, force,
                  sig != nothing ? sig : C_NULL,
                  logmsg != nothing ? logmsg : C_NULL)
@@ -70,14 +70,14 @@ function target(r::GitReference)
 end
 
 function symbolic_target(r::GitReference)
-    sym_ptr = ccall((:git_reference_symbolic_target, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    sym_ptr = ccall((:git_reference_symbolic_target, libgit2), Ptr{UInt8}, (Ptr{Void},), r)
     if sym_ptr == C_NULL
         return utf8("")
     end
     return utf8(bytestring(sym_ptr))
 end
 
-name(r::GitReference) = utf8(bytestring(ccall((:git_reference_name, libgit2), Ptr{Uint8}, (Ptr{Void},), r)))
+name(r::GitReference) = utf8(bytestring(ccall((:git_reference_name, libgit2), Ptr{UInt8}, (Ptr{Void},), r)))
 
 function peel{T}(r::GitReference{T})
     obj_ptr = Ptr{Void}[0]
@@ -135,7 +135,7 @@ function new_reflog_entry(entry_ptr::Ptr{Void})
     id_old  = Oid(ccall((:git_reflog_entry_id_old, libgit2), Ptr{Oid}, (Ptr{Void},), entry_ptr))
     id_new  = Oid(ccall((:git_reflog_entry_id_new, libgit2), Ptr{Oid}, (Ptr{Void},), entry_ptr))
     sig_ptr = ccall((:git_reflog_entry_committer, libgit2), Ptr{SignatureStruct}, (Ptr{Void},), entry_ptr)
-    msg_ptr = ccall((:git_reflog_entry_message, libgit2), Ptr{Uint8}, (Ptr{Void},), entry_ptr)
+    msg_ptr = ccall((:git_reflog_entry_message, libgit2), Ptr{UInt8}, (Ptr{Void},), entry_ptr)
     msg = msg_ptr == C_NULL ? utf8("") : utf8(bytestring(msg_ptr))
     sig = Signature(sig_ptr)
     return GitReflogEntry(id_old, id_new, sig, msg)
@@ -145,7 +145,7 @@ GitReflog(r::GitReference) = begin
     reflog_ptr = Ptr{Void}[0]
     owner_ptr = ccall((:git_reference_owner, libgit2), Ptr{Void}, (Ptr{Void},), r)
     @check ccall((:git_reflog_read, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), reflog_ptr, owner_ptr, name(r))
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}), reflog_ptr, owner_ptr, name(r))
     refcount = ccall((:git_reflog_entrycount, libgit2), Csize_t, (Ptr{Void},), reflog_ptr[1])
     entries = GitReflogEntry[]
     for i in 0:refcount-1
@@ -163,9 +163,9 @@ has_reflog(r::GitReference) = bool(ccall((:git_reference_has_log, libgit2), Cint
 function log!(r::GitReference, msg::String="", committer::MaybeSignature=nothing)
     reflog_ptr = Ptr{Void}[0]
     repo_ptr = ccall((:git_reference_owner, libgit2), Ptr{Void}, (Ptr{Void},), r)
-    name_ptr = ccall((:git_reference_name, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    name_ptr = ccall((:git_reference_name, libgit2), Ptr{UInt8}, (Ptr{Void},), r)
     @check ccall((:git_reflog_read, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}), reflog_ptr, repo_ptr, name_ptr)
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}), reflog_ptr, repo_ptr, name_ptr)
     local sig_ptr::Ptr{SignatureStruct}
     if committer == nothing
         ptr = Ptr{SignatureStruct}[0]
@@ -177,7 +177,7 @@ function log!(r::GitReference, msg::String="", committer::MaybeSignature=nothing
     end
     target_ptr = ccall((:git_reference_target, libgit2), Ptr{Void}, (Ptr{Void},), r)
     err = ccall((:git_reflog_append, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{SignatureStruct}, Ptr{UInt8}),
                  reflog_ptr[1], target_ptr, sig_ptr, msg)
     if err == GitErrorConst.GIT_OK
         err = ccall((:git_reflog_write, libgit2), Cint, (Ptr{Void},), reflog_ptr[1])

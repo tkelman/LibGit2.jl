@@ -22,7 +22,7 @@ context("test OID") do
     # constructors throw argument errors on invalid inputs
     @test_throws ArgumentError Oid(HEX1[2:end-1])
     @test_throws ArgumentError Oid(hex2bytes(HEX1)[1:end-1])
-    @test_throws ArgumentError Oid(convert(Ptr{Uint8}, C_NULL))
+    @test_throws ArgumentError Oid(convert(Ptr{UInt8}, C_NULL))
 
     # test raw
     @test bytes2hex(raw(Oid(HEX1))) == HEX1
@@ -48,7 +48,7 @@ context("test OID") do
     # Test iszero
     @test iszero(Oid()) == true
     @test iszero(oid1) == false
-    @test iszero(Oid(zeros(Uint8, 20))) == true
+    @test iszero(Oid(zeros(UInt8, 20))) == true
 end
 
 context("test SHA1") do

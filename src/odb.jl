@@ -57,10 +57,10 @@ end
 Base.convert(::Type{Ptr{Void}}, o::OdbObject) = o.ptr
 
 Base.sizeof(o::OdbObject) = int(ccall((:git_odb_object_size, libgit2), Csize_t, (Ptr{Void},), o))
-Base.length(o::OdbObject) = div(sizeof(o), sizeof(Uint8))
+Base.length(o::OdbObject) = div(sizeof(o), sizeof(UInt8))
 
 function data(o::OdbObject)
-    data_ptr = ccall((:git_odb_object_data, libgit2), Ptr{Uint8}, (Ptr{Void},), o)
+    data_ptr = ccall((:git_odb_object_data, libgit2), Ptr{UInt8}, (Ptr{Void},), o)
     @assert data_ptr != C_NULL
     return bytestring(data_ptr)
 end
@@ -112,17 +112,17 @@ Base.iswriteable(io::OdbWrite) = true
 Base.write(io::OdbWrite, buffer::ByteString) = begin
     len = length(buffer)
     @check ccall((:git_odb_stream_write, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len)
+                 (Ptr{Void}, Ptr{UInt8}, Csize_t), io, buffer, len)
     return len
 end
 
 #TODO: this is broken...
 Base.write{T}(io::OdbWrite, buffer::Array{T}) = begin
     @assert isbits(T)
-    ptr = convert(Ptr{Uint8}, b)
-    len = convert(Csize_t, div(length(b) * sizeof(T), sizeof(Uint8)))
+    ptr = convert(Ptr{UInt8}, b)
+    len = convert(Csize_t, div(length(b) * sizeof(T), sizeof(UInt8)))
     @check ccall((:git_odb_stream_write, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len)
+                 (Ptr{Void}, Ptr{UInt8}, Csize_t), io, buffer, len)
     return io
 end
 
@@ -141,11 +141,11 @@ Base.convert(::Type{Ptr{Void}}, o::OdbRead) = o.ptr
 Base.isreadable(io::OdbRead)  = true
 Base.iswriteable(io::OdbRead) = false
 =#
-Base.readbytes!(io::OdbRead, buffer::Vector{Uint8}, nb=length(b)) = begin
+Base.readbytes!(io::OdbRead, buffer::Vector{UInt8}, nb=length(b)) = begin
     @assert io.ptr != C_NULL
     len = convert(Csize_t, length(b))
     ret = @check ccall((:git_odb_stream_read, libgit2), Cint,
-                       (Ptr{Void}, Ptr{Uint8}, Csize_t), io, buffer, len)
+                       (Ptr{Void}, Ptr{UInt8}, Csize_t), io, buffer, len)
     @assert len > 0
     return len
 end

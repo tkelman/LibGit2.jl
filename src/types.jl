@@ -17,15 +17,15 @@ TimeStruct() = TimeStruct(GitTimeT(0), Cint(0))
 
 # an action signature (committers, taggers, etc)
 immutable SignatureStruct
-    name::Ptr{Uint8}  # full name of the author
-    email::Ptr{Uint8} # email of the author
+    name::Ptr{UInt8}  # full name of the author
+    email::Ptr{UInt8} # email of the author
     when::TimeStruct  # time when the action happened
 end
-SignatureStruct() = SignatureStruct(Ptr{Uint8}(0),
-                                    Ptr{Uint8}(0),
+SignatureStruct() = SignatureStruct(Ptr{UInt8}(0),
+                                    Ptr{UInt8}(0),
                                     TimeStruct())
 immutable BufferStruct
-    ptr::Ptr{Uint8}
+    ptr::Ptr{UInt8}
     asize::Csize_t
     size::Csize_t
 end
@@ -49,20 +49,20 @@ TransferProgressStruct() =
 # pointers to string data must not be valid references
 # for the entire lifetime of the ccall
 immutable StrArrayStruct
-   strings::Ptr{Ptr{Uint8}}
+   strings::Ptr{Ptr{UInt8}}
    count::Csize_t
 end
-StrArrayStruct() = StrArrayStruct(Ptr{Uint8}(0),Csize_t(0))
+StrArrayStruct() = StrArrayStruct(Ptr{UInt8}(0),Csize_t(0))
 
 StrArrayStruct{T<:AbstractString}(strs::Vector{T}) = begin
     count = length(strs)
-    strings = convert(Ptr{Ptr{Uint8}}, Base.c_malloc(sizeof(Ptr{Uint8}) * count))
+    strings = convert(Ptr{Ptr{UInt8}}, Base.c_malloc(sizeof(Ptr{UInt8}) * count))
     for i=1:count
         len = length(strs[i])
-        in_ptr  = convert(Ptr{Uint8}, bytestring(strs[i]))
-        out_ptr = convert(Ptr{Uint8}, Base.c_malloc(sizeof(Uint8) * (len + 1)))
+        in_ptr  = convert(Ptr{UInt8}, bytestring(strs[i]))
+        out_ptr = convert(Ptr{UInt8}, Base.c_malloc(sizeof(UInt8) * (len + 1)))
         unsafe_copy!(out_ptr, in_ptr, len)
-        unsafe_store!(out_ptr, Uint8(0), len + 1) # NULL byte
+        unsafe_store!(out_ptr, UInt8(0), len + 1) # NULL byte
         unsafe_store!(strings, out_ptr, i)
     end
     return StrArrayStruct(strings, count)
@@ -85,8 +85,8 @@ end
 
 # git config entry struct
 immutable ConfigEntryStruct
-    name::Ptr{Uint8}
-    value::Ptr{Uint8}
+    name::Ptr{UInt8}
+    value::Ptr{UInt8}
     level::Cint
 end
 
@@ -95,7 +95,7 @@ typealias DiffDeltaT Cint
 @eval begin
     $(Expr(:type, false, :HeaderStruct,
         Expr(:block,
-            [Expr(:(::), symbol("c$i"), :Uint8) for i=1:128]...)))
+            [Expr(:(::), symbol("c$i"), :UInt8) for i=1:128]...)))
 end
 
 immutable DiffHunkStruct
@@ -109,17 +109,17 @@ end
 
 immutable DiffFileStruct
     id::Oid
-    path::Ptr{Uint8}
+    path::Ptr{UInt8}
     size::Coff_t
-    flags::Uint32
-    mode::Uint16
+    flags::UInt32
+    mode::UInt16
 end
 
 immutable DiffDeltaStruct
     status::DiffDeltaT
-    flags::Uint32
-    similarity::Uint16
-    nfiles::Uint16
+    flags::UInt32
+    similarity::UInt16
+    nfiles::UInt16
     old_file::DiffFileStruct
     new_file::DiffFileStruct
 end
@@ -132,13 +132,13 @@ immutable DiffLineStruct
     content_len::Csize_t
     content_offset::Coff_t
     # pointer to diff text, ! this is not NULL byte terminated
-    content::Ptr{Uint8}
+    content::Ptr{UInt8}
 end
 
 # git diff option struct
 immutable DiffOptionsStruct
     version::Cuint
-    flags::Uint32
+    flags::UInt32
 
     # options controlling which files are in the diff
     ignore_submodules::Cint
@@ -147,30 +147,30 @@ immutable DiffOptionsStruct
     notify_payload::Ptr{Void}
 
     # options controlling how the diff text is generated
-    context_lines::Uint16
-    interhunk_lines::Uint16
-    id_abbrev::Uint16
+    context_lines::UInt16
+    interhunk_lines::UInt16
+    id_abbrev::UInt16
     max_size::Coff_t
-    old_prefix::Ptr{Uint8}
-    new_prefix::Ptr{Uint8}
+    old_prefix::Ptr{UInt8}
+    new_prefix::Ptr{UInt8}
 end
 DiffOptionsStruct() = DiffOptionsStruct(GitConst.DIFF_OPTIONS_VERSION,
-                                        Uint32(0),
+                                        UInt32(0),
                                         GitConst.SUBMODULE_IGNORE_DEFAULT,
                                         StrArrayStruct(),
                                         Ptr{Void}(0),
                                         Ptr{Void}(0),
-                                        Uint16(3),
-                                        Uint16(0),
-                                        Uint16(0),
+                                        UInt16(3),
+                                        UInt16(0),
+                                        UInt16(0),
                                         Coff_t(0),
-                                        Ptr{Uint8}(0),
-                                        Ptr{Uint8}(0))
+                                        Ptr{UInt8}(0),
+                                        Ptr{UInt8}(0))
 immutable RemoteHeadStruct
     islocal::Cint
     id::Oid
     lid::Oid
-    name::Ptr{Uint8}
+    name::Ptr{UInt8}
 end
 
 immutable MergeTreeOptsStruct
@@ -188,10 +188,10 @@ MergeTreeOptsStruct() =
 
 immutable DiffFileStruct
     id::Oid
-    path::Ptr{Uint8}
+    path::Ptr{UInt8}
     size::Coff_t
-    flags::Uint32
-    mode::Uint16
+    flags::UInt32
+    mode::UInt16
 end
 
 immutable CheckoutOptionsStruct
@@ -208,10 +208,10 @@ immutable CheckoutOptionsStruct
     progress_payload::Ptr{Void}
     paths::StrArrayStruct
     baseline::Ptr{Void}
-    target_directory::Ptr{Uint8}
-    ancestor_label::Ptr{Uint8}
-    our_label::Ptr{Uint8}
-    their_label::Ptr{Uint8}
+    target_directory::Ptr{UInt8}
+    ancestor_label::Ptr{UInt8}
+    our_label::Ptr{UInt8}
+    their_label::Ptr{UInt8}
 end
 CheckoutOptionsStruct() = CheckoutOptionsStruct(Cuint(1),
                                                 GitConst.CHECKOUT_SAFE_CREATE,
@@ -226,10 +226,10 @@ CheckoutOptionsStruct() = CheckoutOptionsStruct(Cuint(1),
                                                 Ptr{Void}(0),
                                                 StrArrayStruct(),
                                                 Ptr{Void}(0),
-                                                Ptr{Uint8}(0),
-                                                Ptr{Uint8}(0),
-                                                Ptr{Uint8}(0),
-                                                Ptr{Uint8}(0))
+                                                Ptr{UInt8}(0),
+                                                Ptr{UInt8}(0),
+                                                Ptr{UInt8}(0),
+                                                Ptr{UInt8}(0))
 immutable RemoteCallbacksStruct
     version::Cuint
     sideband_progress::Ptr{Void}
@@ -253,8 +253,8 @@ immutable CloneOptionsStruct
     bare::Cint
     ignore_cert_errors::Cint
     localclone::Cint # GitCloneLocalT
-    remote_name::Ptr{Uint8}
-    checkout_branch::Ptr{Uint8}
+    remote_name::Ptr{UInt8}
+    checkout_branch::Ptr{UInt8}
     signature::Ptr{SignatureStruct}
 end
 
@@ -264,8 +264,8 @@ CloneOptionsStruct() = CloneOptionsStruct(Cuint(1),
                                           Cint(0),
                                           Cint(0),
                                           Cint(0),
-                                          Ptr{Uint8}(0),
-                                          Ptr{Uint8}(0),
+                                          Ptr{UInt8}(0),
+                                          Ptr{UInt8}(0),
                                           Ptr{SignatureStruct}(0))
 # --------------
 # Git Signature

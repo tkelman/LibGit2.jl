@@ -4,16 +4,16 @@ Base.show(io::IO, t::GitTag) = begin
     write(io, "GitTag(\"$(name)\" @ $(target_id(t))")
 end
 
-name(t::GitTag) = bytestring(ccall((:git_tag_name, libgit2), Ptr{Uint8}, (Ptr{Void},), t))
+name(t::GitTag) = bytestring(ccall((:git_tag_name, libgit2), Ptr{UInt8}, (Ptr{Void},), t))
 
 function message(t::GitTag)
-    msgptr = ccall((:git_tag_message, libgit2), Ptr{Uint8}, (Ptr{Void},), t)
+    msgptr = ccall((:git_tag_message, libgit2), Ptr{UInt8}, (Ptr{Void},), t)
     msgptr == C_NULL && return nothing
     return bytestring(msgptr)
 end
 
 function target_id(t::GitTag)
-    idptr = ccall((:git_tag_target_id, libgit2), Ptr{Uint8}, (Ptr{Void},), t)
+    idptr = ccall((:git_tag_target_id, libgit2), Ptr{UInt8}, (Ptr{Void},), t)
     return Oid(idptr)
 end
 

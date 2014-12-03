@@ -4,7 +4,7 @@ export name, connected, disconnected, disconnect, url, set_url!,
        update_tips!
 
 function check_valid_url(url::AbstractString)
-    if !bool(ccall((:git_remote_valid_url, libgit2), Cint, (Ptr{Uint8},), url))
+    if !bool(ccall((:git_remote_valid_url, libgit2), Cint, (Ptr{UInt8},), url))
         throw(ArgumentError("Invalid URL : $url"))
     end
     return true
@@ -14,7 +14,7 @@ GitRemote(r::GitRepo, url::AbstractString) = begin
     check_valid_url(url)
     remote_ptr = Ptr{Void}[0]
     @check ccall((:git_remote_create_anonymous, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}), remote_ptr, r, url, C_NULL)
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}, Ptr{Void}), remote_ptr, r, url, C_NULL)
     return GitRemote(remote_ptr[1])
 end
 
@@ -23,7 +23,7 @@ Base.show(io::IO, r::GitRemote) = begin
 end
 
 function name(r::GitRemote)
-    name_ptr = ccall((:git_remote_name, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    name_ptr = ccall((:git_remote_name, libgit2), Ptr{UInt8}, (Ptr{Void},), r)
     return name_ptr != C_NULL ? bytestring(name_ptr) : nothing
 end
 
@@ -55,24 +55,24 @@ Base.connect(f::Function, r::GitRemote, direction::Symbol) = begin
 end
 
 function url(r::GitRemote)
-    url_ptr = ccall((:git_remote_url, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    url_ptr = ccall((:git_remote_url, libgit2), Ptr{UInt8}, (Ptr{Void},), r)
     return url_ptr != C_NULL ? bytestring(url_ptr) : nothing
 end
 
 function set_url!(r::GitRemote, url::AbstractString)
     check_valid_url(url)
-    @check ccall((:git_remote_set_url, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, url)
+    @check ccall((:git_remote_set_url, libgit2), Cint, (Ptr{Void}, Ptr{UInt8}), r, url)
     return r
 end
 
 function push_url(r::GitRemote)
-    url_ptr = ccall((:git_remote_pushurl, libgit2), Ptr{Uint8}, (Ptr{Void},), r)
+    url_ptr = ccall((:git_remote_pushurl, libgit2), Ptr{UInt8}, (Ptr{Void},), r)
     return url_ptr != C_NULL ? bytestring(url_ptr) : nothing
 end
 
 function set_push_url!(r::GitRemote, url::AbstractString)
     check_valid_url(url)
-    @check ccall((:git_remote_set_pushurl, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, url)
+    @check ccall((:git_remote_set_pushurl, libgit2), Cint, (Ptr{Void}, Ptr{UInt8}), r, url)
     return r
 end
 
@@ -101,12 +101,12 @@ function push_refspecs(r::GitRemote)
 end
 
 function add_push!(r::GitRemote, ref::AbstractString)
-    @check ccall((:git_remote_add_push, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, ref)
+    @check ccall((:git_remote_add_push, libgit2), Cint, (Ptr{Void}, Ptr{UInt8}), r, ref)
     return r
 end
 
 function add_fetch!(r::GitRemote, ref::AbstractString)
-    @check ccall((:git_remote_add_fetch, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), r, ref)
+    @check ccall((:git_remote_add_fetch, libgit2), Cint, (Ptr{Void}, Ptr{UInt8}), r, ref)
     return r
 end
 
@@ -123,7 +123,7 @@ end
 function rename!(r::GitRemote, newname::AbstractString)
     sa_ptr = [StrArrayStruct()]
     @check ccall((:git_remote_rename, libgit2), Cint,
-                  (Ptr{StrArrayStruct}, Ptr{Void}, Ptr{Uint8}), sa_ptr, r, newname)
+                  (Ptr{StrArrayStruct}, Ptr{Void}, Ptr{UInt8}), sa_ptr, r, newname)
     sa = sa_ptr[1]
     errs = UTF8String[]
     for i=1:sa.count
@@ -169,14 +169,14 @@ function update_tips!(r::GitRemote,
                      sig::MaybeSignature=nothing,
                      logmsg::MaybeString=nothing)
     @check ccall((:git_remote_update_tips, libgit2), Cint,
-                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{UInt8}),
                  r, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r
 end
 
 function fetch(r::GitRemote, sig::MaybeSignature=nothing, logmsg::MaybeString=nothing)
     @check ccall((:git_remote_fetch, libgit2), Cint,
-                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{Uint8}),
+                 (Ptr{Void}, Ptr{SignatureStruct}, Ptr{UInt8}),
                  r, sig != nothing ? sig : C_NULL, logmsg != nothing ? logmsg : C_NULL)
     return r
 end

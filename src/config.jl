@@ -14,7 +14,7 @@ end
 GitConfig(path::AbstractString) = begin
     cfg_ptr = Ptr{Void}[0]
     @check ccall((:git_config_open_ondisk, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Uint8}), cfg_ptr, path)
+                 (Ptr{Ptr{Void}}, Ptr{UInt8}), cfg_ptr, path)
     return GitConfig(cfg_ptr[1])
 end
 
@@ -40,7 +40,7 @@ Base.getindex(c::GitConfig, key::AbstractString) = lookup(AbstractString, c, key
 Base.setindex!{T<:GitConfigType}(c::GitConfig, v::T, key::AbstractString) = set!(T, c, key, v)
 
 Base.delete!(c::GitConfig, key::AbstractString) = begin
-    err = ccall((:git_config_delete_entry, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}), c, key)
+    err = ccall((:git_config_delete_entry, libgit2), Cint, (Ptr{Void}, Ptr{UInt8}), c, key)
     return err == GitErrorConst.ENOTFOUND ? false : true
 end
 
@@ -103,7 +103,7 @@ end
 function lookup(::Type{Bool}, c::GitConfig, name::AbstractString)
     out = Cint[0]
     @check ccall((:git_config_get_bool, libgit2), Cint,
-                 (Ptr{Cint}, Ptr{Void}, Ptr{Uint8}), out, c, name)
+                 (Ptr{Cint}, Ptr{Void}, Ptr{UInt8}), out, c, name)
     if err == GitErrorConst.GIT_OK
         return bool(out[1])
     elseif err == GitErrorConst.ENOTFOUND
@@ -115,14 +115,14 @@ end
 
 function set!(::Type{Bool}, c::GitConfig, name::AbstractString, value::Bool)
     @check ccall((:git_config_set_bool, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}, Cint), c, name, value)
+                 (Ptr{Void}, Ptr{UInt8}, Cint), c, name, value)
     return c
 end
 
 function lookup(::Type{Int32}, c::GitConfig, name::AbstractString)
     out = Int32[0]
     err = ccall((:git_config_get_int32, libgit2), Cint,
-                (Ptr{Int32}, Ptr{Void}, Ptr{Uint8}), out, c, name)
+                (Ptr{Int32}, Ptr{Void}, Ptr{UInt8}), out, c, name)
     if err == GitErrorConst.GIT_OK
         return out[1]
     elseif err == ENOTFOUND
@@ -134,14 +134,14 @@ end
 
 function set!(::Type{Int32}, c::GitConfig, name::AbstractString, value::Int32)
     @check ccall((:git_config_set_int32, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}, Int32), c, name, value)
+                 (Ptr{Void}, Ptr{UInt8}, Int32), c, name, value)
     return c
 end
 
 function lookup(::Type{Int64}, c::GitConfig, name::AbstractString)
     out = Int64[0]
     err = ccall((:git_config_get_int64, libgit2), Cint,
-                (Ptr{Int64}, Ptr{Void}, Ptr{Uint8}), out, c, name)
+                (Ptr{Int64}, Ptr{Void}, Ptr{UInt8}), out, c, name)
     if err == GitErrorConst.GIT_OK
         return out[1]
     elseif err == GitErrorConst.ENOTFOUND
@@ -153,14 +153,14 @@ end
 
 function set!(::Type{Int64}, c::GitConfig, name::AbstractString, value::Int64)
     @check ccall((:git_config_set_int64, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}, Int64), c, name, value)
+                 (Ptr{Void}, Ptr{UInt8}, Int64), c, name, value)
     return c
 end
 
 function lookup{T<:AbstractString}(::Type{T}, c::GitConfig, name::AbstractString)
-    out = Ptr{Uint8}[0]
+    out = Ptr{UInt8}[0]
     err = ccall((:git_config_get_string, libgit2), Cint,
-                (Ptr{Ptr{Uint8}}, Ptr{Void}, Ptr{Uint8}), out, c, name)
+                (Ptr{Ptr{UInt8}}, Ptr{Void}, Ptr{UInt8}), out, c, name)
     if err == GitErrorConst.GIT_OK
         return bytestring(out[1])
     elseif err == GitErrorConst.ENOTFOUND
@@ -172,6 +172,6 @@ end
 
 function set!{T<:AbstractString}(::Type{T}, c::GitConfig, name::AbstractString, value::AbstractString)
     @check ccall((:git_config_set_string, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}, Ptr{Uint8}), c, name, value)
+                 (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}), c, name, value)
     return c
 end

@@ -5,16 +5,16 @@ const OID_HEXSZ = OID_RAWSZ * 2
 const OID_MINPREFIXLEN = 4
 
 # immutable Oid
-#   id1::Uint8
-#   id2::Uint8
+#   id1::UInt8
+#   id2::UInt8
 #   ...
-#   id20::Uint8
+#   id20::UInt8
 # end
 
 @eval begin
     $(Expr(:type, false, :Oid,
         Expr(:block,
-            [Expr(:(::), symbol("id$i"), :Uint8) for i=1:OID_RAWSZ]...)))
+            [Expr(:(::), symbol("id$i"), :UInt8) for i=1:OID_RAWSZ]...)))
 end
 
 # default Oid constructor (all zeros)
@@ -24,16 +24,16 @@ end
 
 Oid(ptr::Ptr{Oid}) = unsafe_load(ptr)::Oid
 
-Oid(ptr::Ptr{Uint8}) = begin
+Oid(ptr::Ptr{UInt8}) = begin
     if ptr == C_NULL
         throw(ArgumentError("NULL pointer passed to Oid() constructor"))
     end
     oid_ptr = Oid[Oid()]
-    ccall((:git_oid_fromraw, libgit2), Void, (Ptr{Oid}, Ptr{Uint8}), oid_ptr, ptr)
+    ccall((:git_oid_fromraw, libgit2), Void, (Ptr{Oid}, Ptr{UInt8}), oid_ptr, ptr)
     return oid_ptr[1]
 end
 
-Oid(id::Array{Uint8,1}) = begin
+Oid(id::Array{UInt8,1}) = begin
     if length(id) != OID_RAWSZ
         throw(ArgumentError("invalid raw buffer size"))
     end
@@ -53,18 +53,18 @@ end
 
 Oid(id::Oid) = id
 
-Base.copy!(arr::Array{Uint8, 1}, id::Oid) = begin
-    unsafe_copy!(convert(Ptr{Uint8}, arr), convert(Ptr{Uint8},  hex2bytes(hex(id))), OID_RAWSZ)
+Base.copy!(arr::Array{UInt8, 1}, id::Oid) = begin
+    unsafe_copy!(convert(Ptr{UInt8}, arr), convert(Ptr{UInt8},  hex2bytes(hex(id))), OID_RAWSZ)
     return arr
 end
 
-raw(id::Oid) = copy!(Array(Uint8, OID_RAWSZ), id)
+raw(id::Oid) = copy!(Array(UInt8, OID_RAWSZ), id)
 
-const _hexstr = Array(Uint8, OID_HEXSZ)
+const _hexstr = Array(UInt8, OID_HEXSZ)
 Base.hex(id::Oid) = begin
     ccall((:git_oid_nfmt, libgit2), Void,
-          (Ptr{Uint8}, Csize_t, Ptr{Oid}), _hexstr, OID_HEXSZ, &id)
-    return bytestring(convert(Ptr{Uint8}, _hexstr), OID_HEXSZ)
+          (Ptr{UInt8}, Csize_t, Ptr{Oid}), _hexstr, OID_HEXSZ, &id)
+    return bytestring(convert(Ptr{UInt8}, _hexstr), OID_HEXSZ)
 end
 
 Base.string(id::Oid) = hex(id)

@@ -25,9 +25,9 @@ function resolve(b::GitBranch)
 end
 
 function name(b::GitBranch)
-    name_ptr = Ptr{Uint8}[0]
+    name_ptr = Ptr{UInt8}[0]
     @check ccall((:git_branch_name, libgit2), Cint,
-                 (Ptr{Ptr{Uint8}}, Ptr{Void}), name_ptr, b)
+                 (Ptr{Ptr{UInt8}}, Ptr{Void}), name_ptr, b)
     return utf8(bytestring(name_ptr[1]))
 end
 
@@ -38,7 +38,7 @@ isremote(b::GitBranch) =
     bool(ccall((:git_reference_is_remote, libgit2), Cint, (Ptr{Void},), b))
 
 canonical_name(b::GitBranch) =
-    utf8(bytestring(ccall((:git_reference_name, libgit2), Ptr{Uint8}, (Ptr{Void},), b)))
+    utf8(bytestring(ccall((:git_reference_name, libgit2), Ptr{UInt8}, (Ptr{Void},), b)))
 
 function move(b::GitBranch, newname::AbstractString;
               force::Bool=false,
@@ -47,14 +47,14 @@ function move(b::GitBranch, newname::AbstractString;
     branch_ptr = Ptr{Void}[0]
     if sig != nothing
         @check ccall((:git_branch_move, libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
-                       Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8},
+                       Cint, Ptr{SignatureStruct}, Ptr{UInt8}),
                        branch_ptr, b, newname, force, sig,
                        logmsg != nothing ? logmsg : C_NULL)
     else
         @check ccall((:git_branch_move, libgit2), Cint,
-                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
-                       Cint, Ptr{SignatureStruct}, Ptr{Uint8}),
+                      (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8},
+                       Cint, Ptr{SignatureStruct}, Ptr{UInt8}),
                        branch_ptr, b, newname, force, C_NULL,
                        logmsg != nothing ? logmsg : C_NULL)
     end
@@ -78,10 +78,10 @@ function remote_name(b::GitBranch)
         end
     end
     repo_ptr = ccall((:git_reference_owner, libgit2), Ptr{Void}, (Ptr{Void},), b)
-    refname_ptr = ccall((:git_reference_name,  libgit2), Ptr{Uint8}, (Ptr{Void},), ref_ptr[1])
+    refname_ptr = ccall((:git_reference_name,  libgit2), Ptr{UInt8}, (Ptr{Void},), ref_ptr[1])
     buf_ptr = [BufferStruct()]
     err = ccall((:git_branch_remote_name, libgit2), Cint,
-                (Ptr{BufferStruct}, Ptr{Void}, Ptr{Uint8}),
+                (Ptr{BufferStruct}, Ptr{Void}, Ptr{UInt8}),
                 buf_ptr, repo_ptr, refname_ptr)
     buf = buf_ptr[1]
     if err == GitErrorConst.GIT_OK
@@ -121,16 +121,16 @@ end
 
 function set_upstream!(b::GitBranch, target::Nothing)
     @check ccall((:git_branch_set_upstream, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}), b, C_NULL)
+                 (Ptr{Void}, Ptr{UInt8}), b, C_NULL)
     return b
 end
 
 function set_upstream!(b::GitBranch, target::Union(GitBranch, GitReference))
-    name_ptr = Ptr{Uint8}[0]
+    name_ptr = Ptr{UInt8}[0]
     @check ccall((:git_branch_name, libgit2), Cint,
-                 (Ptr{Ptr{Uint8}}, Ptr{Void}), name_ptr, target)
+                 (Ptr{Ptr{UInt8}}, Ptr{Void}), name_ptr, target)
     @check ccall((:git_branch_set_upstream, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}), b, name_ptr[1])
+                 (Ptr{Void}, Ptr{UInt8}), b, name_ptr[1])
     return b
 end
 

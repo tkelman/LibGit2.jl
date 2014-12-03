@@ -21,59 +21,59 @@ end
 Base.convert(::Type{Ptr{Void}}, p::GitPatch) = p.ptr
 
 Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
-    new_path_ptr = Ptr{Uint8}(0)
-    old_path_ptr = Ptr{Uint8}(0)
+    new_path_ptr = Ptr{UInt8}(0)
+    old_path_ptr = Ptr{UInt8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path = convert(Ptr{Uint8}, opts[:old_path]::AbstractString)
+            old_path = convert(Ptr{UInt8}, opts[:old_path]::AbstractString)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path = convert(Ptr{Uint8}, opts[:new_path]::AbstractString)
+            new_path = convert(Ptr{UInt8}, opts[:new_path]::AbstractString)
         end
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
     @check ccall((:git_patch_from_blobs, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}, Ptr{Void}, Ptr{UInt8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, C_NULL, new_path_ptr, &gopts)
     return GitPatch(patch_ptr[1])
 end
 
 Base.diff(repo::GitRepo, blob::GitBlob, other::GitBlob, opts::MaybeDict=nothing) = begin
-    new_path_ptr = Ptr{Uint8}(0)
-    old_path_ptr = Ptr{Uint8}(0)
+    new_path_ptr = Ptr{UInt8}(0)
+    old_path_ptr = Ptr{UInt8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::AbstractString)
+            old_path_ptr = convert(Ptr{UInt8}, opts[:old_path]::AbstractString)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::AbstractString)
+            new_path_ptr = convert(Ptr{UInt8}, opts[:new_path]::AbstractString)
         end
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
     @check ccall((:git_patch_from_blobs, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8}, Ptr{Void}, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8}, Ptr{Void}, Ptr{UInt8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, other, new_path_ptr, &gopts)
     return GitPatch(patch_ptr[1])
 end
 
 Base.diff(repo::GitRepo, blob::GitBlob, other::AbstractString, opts::MaybeDict=nothing) = begin
-    old_path_ptr = Ptr{Uint8}(0)
-    new_path_ptr = Ptr{Uint8}(0)
+    old_path_ptr = Ptr{UInt8}(0)
+    new_path_ptr = Ptr{UInt8}(0)
     if opts != nothing
         if get(opts, :old_path, nothing) != nothing
-            old_path_ptr = convert(Ptr{Uint8}, opts[:old_path]::AbstractString)
+            old_path_ptr = convert(Ptr{UInt8}, opts[:old_path]::AbstractString)
         end
         if get(opts, :new_path, nothing) != nothing
-            new_path_ptr = convert(Ptr{Uint8}, opts[:new_path]::AbstractString)
+            new_path_ptr = convert(Ptr{UInt8}, opts[:new_path]::AbstractString)
         end
     end
     gopts = parse_git_diff_options(opts)
     patch_ptr = Ptr{Void}[0]
     @check ccall((:git_patch_from_blob_and_buffer, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{Uint8},
-                  Ptr{Uint8}, Csize_t, Ptr{Uint8}, Ptr{DiffOptionsStruct}),
+                 (Ptr{Ptr{Void}}, Ptr{Void}, Ptr{UInt8},
+                  Ptr{UInt8}, Csize_t, Ptr{UInt8}, Ptr{DiffOptionsStruct}),
                  patch_ptr, blob, old_path_ptr, buffer, length(buffer), new_path_ptr, &gopts)
     return GitPatch(patch_ptr[1])
 end
@@ -107,13 +107,13 @@ type DiffHunk
     function DiffHunk(p::GitPatch, ptr::Ptr{DiffHunkStruct}, idx::Integer, lc::Integer)
         @assert ptr != C_NULL
         h = unsafe_load(ptr)::DiffHunkStruct
-        head_arr = zeros(Uint8, 128)
+        head_arr = zeros(UInt8, 128)
         #TODO: get rid of this ugly hack
         for i=1:128
             head_arr[i] = getfield(h.header, symbol("c$i"))
         end
         return new(p,
-                   utf8(bytestring(convert(Ptr{Uint8}, head_arr))),
+                   utf8(bytestring(convert(Ptr{UInt8}, head_arr))),
                    lc,
                    idx,
                    h.old_start,
@@ -166,13 +166,13 @@ type DiffLine
     function DiffLine(h::DiffHunk, ptr::Ptr{DiffLineStruct})
         @assert ptr != C_NULL
         l = unsafe_load(ptr)::DiffLineStruct
-        c = Array(Uint8, l.content_len)
+        c = Array(UInt8, l.content_len)
         for i in 1:l.content_len
             c[i] = unsafe_load(l.content, i)
         end
         return new(h,
                    line_origin_to_symbol(l.origin),
-                   bytestring(convert(Ptr{Uint8}, c), l.content_len),
+                   bytestring(convert(Ptr{UInt8}, c), l.content_len),
                    l.old_lineno,
                    l.new_lineno,
                    l.content_offset == -1 ? nothing : l.content_offset)
@@ -201,7 +201,7 @@ end
 function cb_patch_print(delta_ptr::Ptr{Void}, hunk_ptr::Ptr{Void},
                         line_ptr::Ptr{DiffLineStruct}, payload::Ptr{Void})
     l = unsafe_load(line_ptr)::DiffLineStruct
-    s = unsafe_pointer_to_objref(payload)::Vector{Uint8}
+    s = unsafe_pointer_to_objref(payload)::Vector{UInt8}
     add_origin = false
     if l.origin == GitConst.DIFF_LINE_CONTEXT ||
        l.origin == GitConst.DIFF_LINE_ADDITION ||
@@ -228,10 +228,10 @@ const c_cb_patch_print = cfunction(cb_patch_print, Cint,
                                   (Ptr{Void}, Ptr{Void}, Ptr{DiffLineStruct}, Ptr{Void}))
 
 Base.string(p::GitPatch) = begin
-    s = Uint8[]
+    s = UInt8[]
     @check ccall((:git_patch_print, libgit2), Cint,
                  (Ptr{Void}, Ptr{Void}, Any), p, c_cb_patch_print, &s)
-    return utf8(bytestring(convert(Ptr{Uint8}, s)))
+    return utf8(bytestring(convert(Ptr{UInt8}, s)))
 end
 
 nhunks(p::GitPatch) = int(ccall((:git_patch_num_hunks, libgit2), Cint, (Ptr{Void},), p))

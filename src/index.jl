@@ -25,7 +25,7 @@ Base.convert(::Type{Ptr{Void}}, idx::GitIndex) = idx.ptr
 GitIndex(path::AbstractString) = begin
     idxptr = Ptr{Void}[0]
     @check ccall((:git_index_open, libgit2), Cint,
-                 (Ptr{Ptr{Void}}, Ptr{Uint8}), idxptr, path)
+                 (Ptr{Ptr{Void}}, Ptr{UInt8}), idxptr, path)
     return GitIndex(idxptr[1])
 end
 
@@ -63,13 +63,13 @@ end
 write!(repo::GitRepo) = write!(GitIndex(repo))
 
 function remove!(idx::GitIndex, path::AbstractString, stage::Integer=0)
-    @check ccall((:git_index_remove, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
+    @check ccall((:git_index_remove, libgit2), Cint, (Ptr{Void}, Ptr{UInt8}, Cint),
                  idx, path, stage)
     return idx
 end
 
 function removedir!(idx::GitIndex, path::AbstractString, stage::Integer=0)
-    @check ccall((:git_index_remove_directory, libgit2), Cint, (Ptr{Void}, Ptr{Uint8}, Cint),
+    @check ccall((:git_index_remove_directory, libgit2), Cint, (Ptr{Void}, Ptr{UInt8}, Cint),
                   idx, path, stage)
     return idx
 end
@@ -118,7 +118,7 @@ immutable IndexEntryStruct
     id::Oid
     flags::Cushort
     flags_extended::Cushort
-    path::Ptr{Uint8}
+    path::Ptr{UInt8}
 end
 
 IndexEntryStruct() = IndexEntryStruct(IndexTimeStruct(),
@@ -132,7 +132,7 @@ IndexEntryStruct() = IndexEntryStruct(IndexTimeStruct(),
                                       Oid(),
                                       Cushort(0),
                                       Cushort(0),
-                                      Ptr{Uint8}(0))
+                                      Ptr{UInt8}(0))
 Oid(entry::GitIndexEntry) = entry.id
 
 IndexEntryStruct(entry::GitIndexEntry) = begin
@@ -156,7 +156,7 @@ IndexEntryStruct(entry::GitIndexEntry) = begin
                             entry.id,
                             flags,
                             0,
-                            convert(Ptr{Uint8}, entry.path))
+                            convert(Ptr{UInt8}, entry.path))
 end
 
 function GitIndexEntry(ptr::Ptr{IndexEntryStruct})
@@ -187,7 +187,7 @@ end
 
 Base.push!(idx::GitIndex, path::AbstractString) = begin
     @check ccall((:git_index_add_bypath, libgit2), Cint,
-                 (Ptr{Void}, Ptr{Uint8}), idx, path)
+                 (Ptr{Void}, Ptr{UInt8}), idx, path)
     return idx
 end
 
@@ -201,7 +201,7 @@ end
 
 Base.getindex(idx::GitIndex, path::AbstractString, stage::Integer=0) = begin
     entryptr = ccall((:git_index_get_bypath, libgit2), Ptr{IndexEntryStruct},
-                      (Ptr{Void}, Ptr{Uint8}, Cint), idx, path, stage)
+                      (Ptr{Void}, Ptr{UInt8}, Cint), idx, path, stage)
     entryptr == C_NULL && return nothing
     return GitIndexEntry(entryptr)
 end

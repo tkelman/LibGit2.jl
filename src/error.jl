@@ -72,7 +72,7 @@ const git_error_class = Dict{Int,Symbol}(
 )
 
 immutable ErrorStruct
-    message::Ptr{Uint8}
+    message::Ptr{UInt8}
     class::Cint
 end
 
