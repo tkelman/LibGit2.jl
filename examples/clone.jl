@@ -47,38 +47,39 @@ function pretty_size(n)
 end
 
 # fetch and checkout head with progress indication
-function doclone(repo_url::String, dest_dir::String="")
+function doclone(repo_url::AbstractString, dest_dir::AbstractString)
     if isempty(dest_dir)
         git_dir = joinpath(pwd(), basename(splitext(repo_url)[1]))
     else
-        git_dir = joinpath(dest_dir, basename(splitext(repo_url)[1]))
+        git_dir = joinpath(pwd(), basename(dest_dir))
     end
 
+    info("cloning into $git_dir")
     mkdir(git_dir)
-    info("git dir generated: $git_dir")
 
     total_objects = indexed_objects = received_objects = received_bytes = 0
-    repo = LibGit2.repo_clone(repo_url, git_dir, {
-        :callbacks => {
+    repo = LibGit2.repo_clone(repo_url, git_dir, Dict{Any,Any}(
+        :callbacks => Dict{Any,Any}(
           :transfer_progress => (args...) -> begin
                 total_objects, indexed_objects, received_objects, received_bytes = args
                 perc = int(received_objects / total_objects * 100.0)
                 print("\rReceiving objects: $perc% ($received_objects/$total_objects) ",
                       "$(pretty_size(received_bytes))")
             end
-          }
-        })
+          )
+        ))
 
     println(", done.")
 
     path = completed_steps = total_steps = payload = 0
     LibGit2.checkout_head!(repo,
-        {:strategy => :safe_create,
+        Dict{Any,Any}(
+         :strategy => :safe_create,
          :progress => (args...) -> begin
             path, completed_steps, total_steps = args
             print("\rUnpacking files: $completed_steps/$total_steps")
          end
-        })
+        ))
 
     println(", done.")
     return repo
@@ -86,10 +87,10 @@ end
 
 function main()
     opts = parse_commandline()
-    if haskey(opts, "directory")
+    if haskey(opts, "directory") && opts["directory"] != nothing
         doclone(opts["repo_url"], opts["directory"])
     else
-        doclone(opts["repo_url"])
+        doclone(opts["repo_url"], "")
     end
 end
 
