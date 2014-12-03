@@ -215,10 +215,10 @@ function patch(d::GitDiff; format::Symbol=:patch)
     return UTF8String(s)
 end
 
-# diffable GitTree, GitCommit, GitIndex, or Nothing
-typealias Diffable Union(GitTree, GitCommit, GitIndex, Nothing)
+# diffable GitTree, GitCommit, GitIndex, or Void
+typealias Diffable Union(GitTree, GitCommit, GitIndex, Void)
 
-Base.diff(repo::GitRepo, left::Nothing, right::Nothing, opts::MaybeDict=nothing) = nothing
+Base.diff(repo::GitRepo, left::Void, right::Void, opts::MaybeDict=nothing) = nothing
 
 Base.diff(repo::GitRepo, left::MaybeString, right::MaybeString, opts::MaybeDict=nothing) = begin
     l = left  != nothing ? revparse(repo, left)  : nothing
@@ -237,11 +237,11 @@ Base.diff(repo::GitRepo, left::GitCommit, right::GitCommit, opts::MaybeDict=noth
     return diff(repo, GitTree(left), GitTree(right), opts)
 end
 
-Base.diff(repo::GitRepo, left::GitCommit, right::Nothing, opts::MaybeDict=nothing) = begin
+Base.diff(repo::GitRepo, left::GitCommit, right::Void, opts::MaybeDict=nothing) = begin
     return diff(repo, GitTree(left), nothing, opts)
 end
 
-Base.diff(repo::GitRepo, left::Nothing, right::GitCommit, opts::MaybeDict=nothing) = begin
+Base.diff(repo::GitRepo, left::Void, right::GitCommit, opts::MaybeDict=nothing) = begin
     return diff(repo, nothing, GitTree(right), opts)
 end
 
@@ -262,7 +262,7 @@ Base.diff(repo::GitRepo, left::GitTree, right::GitCommit, opts::MaybeDict=nothin
     return diff(repo, left, GitTree(right), opts)
 end
 
-typealias MaybeGitTree Union(Nothing, GitTree)
+typealias MaybeGitTree Union(Void, GitTree)
 
 Base.diff(repo::GitRepo, left::MaybeGitTree, right::MaybeGitTree, opts::MaybeDict=nothing) = begin
     gopts = parse_git_diff_options(opts)
@@ -312,7 +312,7 @@ Base.diff(repo::GitRepo, idx::GitIndex, opts::MaybeDict=nothing) = begin
     return diff(repo, idx, nothing, opts)
 end
 
-Base.diff(repo::GitRepo, idx::GitIndex, other::Nothing, opts::MaybeDict=nothing) = begin
+Base.diff(repo::GitRepo, idx::GitIndex, other::Void, opts::MaybeDict=nothing) = begin
     gopts = parse_git_diff_options(opts)
     diff_ptr = Ptr{Void}[0]
     @check ccall((:git_diff_index_to_workdir, libgit2), Cint,
@@ -382,7 +382,7 @@ function diff_workdir(repo::GitRepo, left::GitTree, opts::MaybeDict=nothing)
     return GitDiff(diff_ptr[1])
 end
 
-parse_git_diff_options(o::Nothing) = DiffOptionsStruct()
+parse_git_diff_options(o::Void) = DiffOptionsStruct()
 
 function parse_git_diff_options(opts::Dict)
     max_size = Coff_t(0)

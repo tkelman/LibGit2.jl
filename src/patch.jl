@@ -20,7 +20,7 @@ end
 
 Base.convert(::Type{Ptr{Void}}, p::GitPatch) = p.ptr
 
-Base.diff(repo::GitRepo, blob::GitBlob, other::Nothing, opts=nothing) = begin
+Base.diff(repo::GitRepo, blob::GitBlob, other::Void, opts=nothing) = begin
     new_path_ptr = Ptr{UInt8}(0)
     old_path_ptr = Ptr{UInt8}(0)
     if opts != nothing
@@ -161,7 +161,7 @@ type DiffLine
     content::ByteString
     old_lineno::Int
     new_lineno::Int
-    content_offset::Union(Nothing, Int64)
+    content_offset::Union(Void, Int64)
 
     function DiffLine(h::DiffHunk, ptr::Ptr{DiffLineStruct})
         @assert ptr != C_NULL

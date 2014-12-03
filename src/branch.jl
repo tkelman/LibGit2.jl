@@ -119,7 +119,7 @@ function upstream(b::GitBranch)
     return GitBranch(ubranch_ptr[1])
 end
 
-function set_upstream!(b::GitBranch, target::Nothing)
+function set_upstream!(b::GitBranch, target::Void)
     @check ccall((:git_branch_set_upstream, libgit2), Cint,
                  (Ptr{Void}, Ptr{UInt8}), b, C_NULL)
     return b

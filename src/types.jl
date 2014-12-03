@@ -4,8 +4,8 @@ export Signature, GitRepo, GitObject, GitAnyObject, GitBlob, GitCommit, GitTag,
 typealias GitOffT Int64
 typealias GitTimeT Int64
 
-typealias MaybeDict Union(Nothing, Dict{Any,Any})
-typealias MaybeString Union(Nothing, AbstractString)
+typealias MaybeDict Union(Void, Dict{Any,Any})
+typealias MaybeString Union(Void, AbstractString)
 
 # time in a signature
 

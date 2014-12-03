@@ -1,6 +1,6 @@
 export  name, email, time, time_offset
 
-typealias MaybeSignature Union(Nothing, Signature)
+typealias MaybeSignature Union(Void, Signature)
 
 #TODO: better date / time integration when this becomes available in Base
 Signature(name::AbstractString, email::AbstractString) = begin

@@ -13,9 +13,9 @@ export isbare, isempty, workdir, path, init_repo, head, exists,
        is_head_detached, GitCredential, CredDefault, CredPlainText, CredSSHKey,
        repo_clone, foreach, reset!, currentstate, remove_untracked!, branches
 
-typealias MaybeOid Union(Nothing, Oid)
-typealias MaybeString Union(Nothing, AbstractString)
-typealias MaybeSignature Union(Nothing, Signature)
+typealias MaybeOid Union(Void, Oid)
+typealias MaybeString Union(Void, AbstractString)
+typealias MaybeSignature Union(Void, Signature)
 
 GitRepo(path::AbstractString; alternates=[]) = begin
     repo_ptr = Ptr{Void}[0]
@@ -946,7 +946,7 @@ branches(r::GitRepo, filter::Symbol=:all) = collect(GitBranch, foreach(GitBranch
 branch_names(r::GitRepo, filter::Symbol=:all) = map(name, branches(r, filter))
 
 #------- Tree merge ---------
-parse_merge_options(opts::Nothing) = MergeTreeOptsStruct()
+parse_merge_options(opts::Void) = MergeTreeOptsStruct()
 
 function parse_merge_options(opts::Dict)
     if isempty(opts)
@@ -1293,7 +1293,7 @@ const c_cb_checkout_notify = cfunction(cb_checkout_notify, Cint,
                                         Ptr{DiffFileStruct},
                                         Ptr{Void}))
 
-parse_checkout_options(opts::Nothing) = CheckoutOptionsStruct()
+parse_checkout_options(opts::Void) = CheckoutOptionsStruct()
 parse_checkout_options(opts::Dict) = begin
     isempty(opts) && return CheckoutOptionsStruct()
     progress_cb = convert(Ptr{Void}, C_NULL)
@@ -1640,7 +1640,7 @@ end
 const c_cb_remote_credential = cfunction(cb_remote_credentials, Cint,
                                          (Ptr{Ptr{Void}}, Ptr{UInt8}, Ptr{UInt8}, Cuint, Ptr{Void}))
 
-parse_clone_options(opts::Nothing, payload::Dict) = CloneOptionsStruct()
+parse_clone_options(opts::Void, payload::Dict) = CloneOptionsStruct()
 parse_clone_options(opts, payload::Dict) = begin
     isempty(opts) && return CloneOptionsStruct()
     local bare = Cint(0)
