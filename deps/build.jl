@@ -2,11 +2,11 @@ using BinDeps
 
 @BinDeps.setup
 
-version = v"0.21.2"
-libgit2 = library_dependency("libgit2", 
+version = v"0.21.3"
+libgit2 = library_dependency("libgit2",
     validate = (name, handle) -> begin
         major, minor, patch = Cint[0], Cint[0], Cint[0]
-        ccall(dlsym(handle, :git_libgit2_version), Void, 
+        ccall(dlsym(handle, :git_libgit2_version), Void,
               (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}), major, minor, patch)
         v = VersionNumber(major[1], minor[1])
         if v.major == version.major && v.minor == version.minor
@@ -29,15 +29,15 @@ provides(Binaries, URI("http://sourceforge.net/projects/juliadeps-win/files/libg
          libgit2, unpacked_dir="usr$WORD_SIZE/bin", os = :Windows)
 
 prefix = joinpath(BinDeps.depsdir(libgit2),"usr")
-srcdir = joinpath(BinDeps.depsdir(libgit2),"src","libgit2-$version") 
+srcdir = joinpath(BinDeps.depsdir(libgit2),"src","libgit2-$version")
 
 provides(SimpleBuild,
     (@build_steps begin
         GetSources(libgit2)
         @build_steps begin
             ChangeDirectory(srcdir)
-            `cmake . -DCMAKE_INSTALL_PREFIX=$prefix 
-                     -DCMAKE_BUILD_TYPE=Release 
+            `cmake . -DCMAKE_INSTALL_PREFIX=$prefix
+                     -DCMAKE_BUILD_TYPE=Release
                      -DTHREADSAFE=ON
                      -DBUILD_CLAR=OFF`
             `make install`
