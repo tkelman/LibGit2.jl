@@ -22,11 +22,10 @@ provides(Sources,
          libgit2,
          unpacked_dir="libgit2-$version")
 
-# Windows binaries built in MSYS2 via:
-# /d/code/CMake-2.8/bin/cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/usr -G"MSYS Makefiles"
-# /d/code/CMake-2.8/bin/cmake --build . --target install
-provides(Binaries, URI("http://sourceforge.net/projects/juliadeps-win/files/libgit2-v$version.7z"),
-         libgit2, unpacked_dir="usr$WORD_SIZE/bin", os = :Windows)
+@windows_only begin
+    using WinRPM
+    provides(WinRPM.RPM, "libgit2", [libgit2], os = :Windows)
+end
 
 prefix = joinpath(BinDeps.depsdir(libgit2),"usr")
 srcdir = joinpath(BinDeps.depsdir(libgit2),"src","libgit2-$version")
